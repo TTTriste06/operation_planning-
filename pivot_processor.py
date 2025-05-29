@@ -30,6 +30,11 @@ class PivotProcessor:
         output.seek(0)
         return filename, output
 
-
-    def set_additional_data(self, sheets_dict):
-        self.additional_sheets = sheets_dict
+    def set_additional_data(self, sheets_dict: dict):
+            """
+            设置辅助文件：预测、安全库存、新旧料号、供应商-PC。
+            """
+            for key, df in sheets_dict.items():
+                if key == "赛卓-新旧料号":
+                    df = clean_mapping_headers(df)
+                self.additional_sheets[key] = df
