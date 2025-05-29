@@ -10,20 +10,20 @@ GITHUB_TOKEN_KEY = "GITHUB_TOKEN"  # secrets.toml 中的密钥名
 REPO_NAME = "TTTriste06/operation_planning-"
 BRANCH = "main"
 
-FILE_RENAME_MAPPING = {
-    "赛卓-新旧料号.xlsx": "mapping_file.xlsx",
-    "赛卓-安全库存.xlsx": "safety_file.xlsx",
-    "赛卓-预测.xlsx": "pred_file.xlsx"
+# 辅助文件标准名（可扩展）
+FILENAME_KEYS = {
+    "forecast": "预测.xlsx",
+    "safety": "安全库存.xlsx",
+    "mapping": "新旧料号.xlsx",
+    "supplier": "供应商-PC.xlsx"
 }
 
 def upload_to_github(file_obj, filename):
     """
     将 file_obj 文件上传至 GitHub 指定仓库
-    - file_obj: BytesIO 或类文件对象
-    - filename: 仓库中要保存的文件名（含扩展名）
     """
     token = st.secrets[GITHUB_TOKEN_KEY]
-    safe_filename = quote(filename)  # 编码支持中文
+    safe_filename = quote(filename)  # 支持中文
 
     url = f"https://api.github.com/repos/{REPO_NAME}/contents/{safe_filename}"
     headers = {
@@ -31,12 +31,11 @@ def upload_to_github(file_obj, filename):
         "Accept": "application/vnd.github.v3+json"
     }
 
-    # 将文件读取并转为 base64
     file_obj.seek(0)
     content = base64.b64encode(file_obj.read()).decode("utf-8")
     file_obj.seek(0)
 
-    # 检查是否已存在（需要获取 SHA）
+    # 检查是否已存在
     sha = None
     get_resp = requests.get(url, headers=headers)
     if get_resp.status_code == 200:
@@ -58,9 +57,7 @@ def upload_to_github(file_obj, filename):
 
 def download_from_github(filename):
     """
-    从 GitHub 仓库下载指定文件内容（以二进制返回）
-    - filename: 仓库中保存的文件名
-    - 返回: bytes 内容（可用于 pd.read_excel(BytesIO(...))）
+    从 GitHub 下载文件内容（二进制返回）
     """
     token = st.secrets[GITHUB_TOKEN_KEY]
     safe_filename = quote(filename)
@@ -78,28 +75,19 @@ def download_from_github(filename):
     else:
         raise FileNotFoundError(f"❌ GitHub 上找不到文件：{filename} (HTTP {response.status_code})")
 
-def load_or_fallback_from_github(label: str, key: str, filename: str, additional_sheets: dict):
-    """优先加载上传文件，否则从 GitHub 加载 fallback 文件"""
-    uploaded_file = st.file_uploader(f"📎 上传 {label} 文件", type=["xlsx"], key=key)
+def load_or_fallback_from_github(key):
+    """
+    根据 key 加载辅助文件，若 GitHub 上未找到则返回空 DataFrame
+    - key: "forecast" | "safety" | "mapping" | "supplier"
+    """
+    filename = FILENAME_KEYS.get(key)
+    if not filename:
+        st.warning(f"⚠️ 未识别的辅助文件类型：{key}")
+        return pd.DataFrame()
 
-    github_filename = FILE_RENAME_MAPPING.get(filename, filename)
-
-    if uploaded_file:
-        try:
-            df = pd.read_excel(uploaded_file)
-            additional_sheets[filename] = df
-            upload_to_github(uploaded_file, github_filename)  # ✅ 上传到 GitHub 使用英文名
-            st.success(f"✅ 已上传并缓存：{filename}")
-        except Exception as e:
-            st.error(f"❌ 解析上传文件失败：{filename} - {e}")
-    else:
-        try:
-            content = download_from_github(github_filename)  # ✅ 下载 GitHub 使用英文名
-            if content:
-                df = pd.read_excel(BytesIO(content))
-                additional_sheets[filename] = df
-                st.info(f"ℹ️ 已从 GitHub 加载历史文件：{filename}")
-            else:
-                st.warning(f"⚠️ 未提供且未在 GitHub 找到历史文件：{filename}")
-        except Exception as e:
-            st.error(f"❌ 从 GitHub 加载 {filename} 失败: {e}")
+    try:
+        content = download_from_github(filename)
+        return pd.read_excel(BytesIO(content))
+    except Exception as e:
+        st.warning(f"⚠️ 未能加载 GitHub 上的 {filename}：{e}")
+        return pd.DataFrame()
