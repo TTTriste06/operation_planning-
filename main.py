@@ -24,13 +24,13 @@ def main():
         additional_sheets = {}
 
         for name, file in github_files.items():
-        if file:
-            file_bytes = file.read()
-            upload_to_github(BytesIO(file_bytes), name)
-            additional_sheets[name.split(".")[0]] = pd.read_excel(BytesIO(file_bytes))
-        else:
-            df = load_or_fallback_from_github(key=reverse_lookup(name))
-            additional_sheets[name.split(".")[0]] = df
+            if file:
+                file_bytes = file.read()
+                upload_to_github(BytesIO(file_bytes), name)
+                additional_sheets[name.split(".")[0]] = pd.read_excel(BytesIO(file_bytes))
+            else:
+                df = load_or_fallback_from_github(key=reverse_lookup(name))
+                additional_sheets[name.split(".")[0]] = df
 
         processor = PivotProcessor()
         processor.classify_files(uploaded_core_files)
