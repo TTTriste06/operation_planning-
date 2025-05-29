@@ -1,7 +1,13 @@
 import pandas as pd
+from io import BytesIO
 from datetime import datetime
 from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX
-from io import BytesIO
+from mapping_utils import clean_mapping_headers
+
+
+
+    
+
 
 class PivotProcessor:
     def __init__(self):
@@ -9,11 +15,14 @@ class PivotProcessor:
         self.additional_sheets = {}
 
     def classify_files(self, uploaded_files):
+        """
+        根据关键词识别上传的主数据文件，并赋予标准中文名称
+        """
         for file in uploaded_files:
             filename = file.name
-            for key, keyword in FILE_KEYWORDS.items():
+            for keyword, standard_name in FILE_KEYWORDS.items():
                 if keyword in filename:
-                    self.dataframes[key] = pd.read_excel(file)
+                    self.dataframes[standard_name] = pd.read_excel(file)
                     break
 
     def process(self):
@@ -30,11 +39,6 @@ class PivotProcessor:
         output.seek(0)
         return filename, output
 
-    def set_additional_data(self, sheets_dict: dict):
-            """
-            设置辅助文件：预测、安全库存、新旧料号、供应商-PC。
-            """
-            for key, df in sheets_dict.items():
-                if key == "赛卓-新旧料号":
-                    df = clean_mapping_headers(df)
-                self.additional_sheets[key] = df
+
+    def set_additional_data(self, sheets_dict):
+        self.additional_sheets = sheets_dict
