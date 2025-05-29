@@ -5,7 +5,7 @@ FILE_KEYWORDS = {
     "inventory": "成品库存",
     "unfulfilled": "未交订单",
     "order": "下单明细",
-    "sales": "销货明细",
+    "sales": "销货明细"
 }
 
 # 输出文件基础名称
