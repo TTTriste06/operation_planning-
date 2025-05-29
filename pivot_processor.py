@@ -38,12 +38,6 @@ from summary import (
     append_product_in_progress
 )
 from append_summary import append_forecast_unmatched_to_summary_by_keys
-from production_plan import (
-    add_colored_monthly_plan_headers,
-    calculate_first_month_plan,
-    generate_monthly_plan_columns_range,
-    highlight_plan_column
-)
 
 
 FIELD_MAPPINGS = {
