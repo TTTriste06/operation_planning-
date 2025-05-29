@@ -4,11 +4,6 @@ from datetime import datetime
 from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX
 from mapping_utils import clean_mapping_headers
 
-
-
-    
-
-
 class PivotProcessor:
     def __init__(self):
         self.dataframes = {}
