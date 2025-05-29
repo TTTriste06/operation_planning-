@@ -6,7 +6,7 @@ def setup_sidebar():
         st.title(" ")
 
 def get_uploaded_files():
-    st.header("📤 Excel 数据处理与汇总")
+    st.header("📤 Excel 主计划汇总")
     
     uploaded_core_files = file_uploader("📂 上传 6 个主数据文件", type=["xlsx"], accept_multiple_files=True)
 
