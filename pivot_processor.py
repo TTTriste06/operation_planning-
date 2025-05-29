@@ -6,6 +6,7 @@ from io import BytesIO
 class PivotProcessor:
     def __init__(self):
         self.dataframes = {}
+        self.additional_sheets = {}
 
     def classify_files(self, uploaded_files):
         for file in uploaded_files:
@@ -28,3 +29,7 @@ class PivotProcessor:
             df.to_excel(writer, sheet_name="运营主计划", index=False)
         output.seek(0)
         return filename, output
+
+
+    def set_additional_data(self, sheets_dict):
+        self.additional_sheets = sheets_dict
