@@ -1,6 +1,24 @@
 import pandas as pd
 import streamlit as st
 
+def clean_mapping_headers(mapping_df):
+    """
+    将新旧料号表的列名重命名为标准字段，删除其他列。
+    """
+    required_headers = [
+        "旧规格", "旧品名", "旧晶圆品名",
+        "新规格", "新品名", "新晶圆品名",
+        "封装厂", "PC", "半成品", "备注",
+        "替代规格1", "替代品名1", "替代晶圆1",
+        "替代规格2", "替代品名2", "替代晶圆2",
+        "替代规格3", "替代品名3", "替代晶圆3",
+        "替代规格4", "替代品名4", "替代晶圆4"
+    ]
+
+    mapping_df.columns = required_headers[:len(mapping_df.columns)]
+    mapping_df = mapping_df[required_headers]  # 删除多余列
+    return mapping_df
+
 def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
     """
     按品名字段替换主料号（新旧料号映射）
