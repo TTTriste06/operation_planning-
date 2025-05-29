@@ -1,22 +1,46 @@
 import streamlit as st
 from ui import setup_sidebar, get_uploaded_files
 from pivot_processor import PivotProcessor
+from github_utils import upload_to_github, download_from_github
 
 def main():
     st.set_page_config(page_title="运营主计划生成器", layout="wide")
     setup_sidebar()
 
-    uploaded_files, start = get_uploaded_files()
+    uploaded_core_files, forecast_file, safety_file, mapping_file, supplier_file, start = get_uploaded_files()
 
     if start:
-        if len(uploaded_files) < 6:
-            st.error("❌ 请上传所有 6 个主要文件再点击生成！")
+        if len(uploaded_core_files) < 6:
+            st.error("❌ 请上传 6 个主要文件")
             return
 
+        github_files = {
+            "预测.xlsx": forecast_file,
+            "安全库存.xlsx": safety_file,
+            "新旧料号.xlsx": mapping_file,
+            "供应商-PC.xlsx": supplier_file
+        }
+
+        additional_sheets = {}
+
+        for name, file in github_files.items():
+            if file:
+                file_bytes = file.read()
+                upload_to_github(file_bytes, name)  # 上传到 GitHub
+                additional_sheets[name.split(".")[0]] = pd.read_excel(file_bytes)
+            else:
+                content = download_from_github(name)
+                if content:
+                    additional_sheets[name.split(".")[0]] = pd.read_excel(BytesIO(content))
+
         processor = PivotProcessor()
-        processor.classify_files(uploaded_files)
+        processor.classify_files(uploaded_core_files)
+
+        # 将附加数据传入处理器
+        processor.set_additional_data(additional_sheets)
 
         result_df = processor.process()
+        
         filename, output = processor.export_to_excel(result_df)
 
         st.success(f"✅ 成功生成：{filename}")
