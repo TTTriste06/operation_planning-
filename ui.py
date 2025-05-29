@@ -3,10 +3,11 @@ from streamlit import file_uploader
 
 def setup_sidebar():
     with st.sidebar:
-        st.title("📤 Excel 数据处理与汇总")
-        st.markdown("上传所需的六个 Excel 文件，系统将生成汇总后的“运营主计划”。")
+        st.title(" ")
 
 def get_uploaded_files():
+    st.header("📤 Excel 数据处理与汇总")
+    
     uploaded_core_files = file_uploader("📂 上传 6 个主数据文件", type=["xlsx"], accept_multiple_files=True)
 
     st.markdown("### 📎 上传 4 个辅助文件（可选，用于合并与匹配）")
