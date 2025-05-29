@@ -1,7 +1,7 @@
 import streamlit as st
 from ui import setup_sidebar, get_uploaded_files
 from pivot_processor import PivotProcessor
-from github_utils import upload_to_github, download_from_github
+from github_utils import upload_to_github, load_or_fallback_from_github
 
 def main():
     st.set_page_config(page_title="运营主计划生成器", layout="wide")
@@ -24,14 +24,13 @@ def main():
         additional_sheets = {}
 
         for name, file in github_files.items():
-            if file:
-                file_bytes = file.read()
-                upload_to_github(file_bytes, name)  # 上传到 GitHub
-                additional_sheets[name.split(".")[0]] = pd.read_excel(file_bytes)
-            else:
-                content = download_from_github(name)
-                if content:
-                    additional_sheets[name.split(".")[0]] = pd.read_excel(BytesIO(content))
+        if file:
+            file_bytes = file.read()
+            upload_to_github(BytesIO(file_bytes), name)
+            additional_sheets[name.split(".")[0]] = pd.read_excel(BytesIO(file_bytes))
+        else:
+            df = load_or_fallback_from_github(key=reverse_lookup(name))
+            additional_sheets[name.split(".")[0]] = df
 
         processor = PivotProcessor()
         processor.classify_files(uploaded_core_files)
