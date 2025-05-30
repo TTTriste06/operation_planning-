@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from config import CONFIG
 from dateutil.relativedelta import relativedelta
 from datetime import date
 
