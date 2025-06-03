@@ -13,7 +13,7 @@ def main():
     st.set_page_config(page_title="Excel数据透视汇总工具", layout="wide")
     setup_sidebar()
 
-    # 🧩 获取上传文件（主数据 + 明细文件 + 辅助文件）
+    # 获取上传文件
     uploaded_files, forecast_file, safety_file, mapping_file, pc_file, start = get_uploaded_files()
 
     if start:
@@ -21,13 +21,12 @@ def main():
             st.error("❌ 请上传 8 个核心文件（未交订单/成品在制/成品库存/CP在制/晶圆库存/下单明细/销货明细/到货明细）！")
             return
 
-        # 🎯 构建辅助文件：上传则保存至 GitHub，否则从 GitHub 加载
+        # 加载辅助表
         df_forecast = load_file_with_github_fallback("forecast", forecast_file, sheet_name="Sheet1")
         df_safety = load_file_with_github_fallback("safety", safety_file)
         df_mapping = load_file_with_github_fallback("mapping", mapping_file)
         df_pc = load_file_with_github_fallback("pc", pc_file)
 
-        # 🔄 汇总辅助表为 additional_sheets
         additional_sheets = {
             "赛卓-预测": df_forecast,
             "赛卓-安全库存": df_safety,
@@ -35,16 +34,16 @@ def main():
             "赛卓-供应商-PC": df_pc
         }
 
-        # 📊 初始化并执行处理流程
+        # 初始化处理器
         buffer = BytesIO()
         processor = PivotProcessor()
         processor.classify_files(uploaded_files)
-        processor.process(uploaded_files, buffer, additional_sheets)
-        
-        result_df = processor.process()
+        processor.set_additional_data(additional_sheets)
 
-        # 📤 导出为 Excel
-        filename, output_buffer = processor.export_to_excel(result_df)
+        # 处理并写入 Excel
+        processor.process(uploaded_files, buffer, additional_sheets)
+
+        # 下载文件按钮
         file_name = f"运营数据订单-在制-库存汇总报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         st.success("✅ 汇总完成！你可以下载结果文件：")
         st.download_button(
@@ -54,14 +53,12 @@ def main():
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-
-        # 👀 预览所有 Sheet
+        # Sheet 预览
         try:
-            output_buffer.seek(0)
-            with pd.ExcelFile(output_buffer, engine="openpyxl") as xls:
+            buffer.seek(0)
+            with pd.ExcelFile(buffer, engine="openpyxl") as xls:
                 sheet_names = xls.sheet_names
                 tabs = st.tabs(sheet_names)
-
                 for i, sheet_name in enumerate(sheet_names):
                     try:
                         df = pd.read_excel(xls, sheet_name=sheet_name)
@@ -73,6 +70,7 @@ def main():
                             st.error(f"❌ 无法读取工作表 `{sheet_name}`: {e}")
         except Exception as e:
             st.warning(f"⚠️ 无法预览生成的 Excel 文件：{e}")
+
 
 
 if __name__ == "__main__":
