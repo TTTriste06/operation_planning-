@@ -161,10 +161,12 @@ def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFra
         col for col in forecast_df.columns
         if isinstance(col, str) and col.endswith("月预测") and col[:col.index("月")].isdigit()
     ]
+    
     future_month_cols = [
         col for col in month_cols
-        if int(col[:col.index("月")]) >= int(this_month)
+        if int(col[:col.index("月")]) >= this_month_int
     ]
+
     if not future_month_cols:
         st.warning("⚠️ 未找到当月或未来月份的预测列（格式应为“5月预测”）")
         return summary_df, []
