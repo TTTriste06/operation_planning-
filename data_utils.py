@@ -136,16 +136,22 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
     st.write(main_plan_df)
     # ========== 2️⃣ 通过封装厂填入 PC ==========
     pc_df = additional_sheets.get("赛卓-供应商-PC")
+    # ✅ PC（通过封装厂）
     if pc_df is not None and not pc_df.empty:
         pc_df = pc_df.copy()
         pc_df["封装厂"] = pc_df["封装厂"].astype(str).apply(strip_suffix)
         pc_df["PC"] = pc_df["PC"].astype(str).str.strip()
-
+    
+        # 删除 main_plan_df 中可能已有的 PC 列
+        if "PC" in main_plan_df.columns:
+            main_plan_df.drop(columns=["PC"], inplace=True)
+    
+        # 合并
         merged_pc = main_plan_df.merge(
             pc_df[["封装厂", "PC"]].drop_duplicates(),
-            on="封装厂", how="left"
+            on="封装厂",
+            how="left"
         )
-        st.write(merged_pc)
+    
+        # 填回 PC 列
         main_plan_df["PC"] = merged_pc["PC"]
-
-    return main_plan_df
