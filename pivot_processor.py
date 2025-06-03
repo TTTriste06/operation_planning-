@@ -22,7 +22,8 @@ from data_utils import (
 from summary import (
     merge_safety_inventory,
     merge_safety_header,
-    append_unfulfilled_summary_columns_by_date
+    append_unfulfilled_summary_columns_by_date,
+    merge_unfulfilled_order_header
 )
 
 class PivotProcessor:
@@ -125,22 +126,35 @@ class PivotProcessor:
         if safety_df is not None and not safety_df.empty:
             main_plan_df, unmatched_safety = merge_safety_inventory(main_plan_df, safety_df)
             st.success("✅ 已合并安全库存数据")
-
-        ## == 未交订单 ==
-        main_plan_df = append_unfulfilled_summary_columns_by_date(main_plan_df, self.dataframes["赛卓-未交订单"])
-
-
         
+        ## == 未交订单 ==
+        unfulfilled_df = self.dataframes.get("赛卓-未交订单")
+        if unfulfilled_df is not None and not unfulfilled_df.empty:
+            main_plan_df, unmatched_unfulfilled = append_unfulfilled_summary_columns_by_date(main_plan_df, unfulfilled_df)
+            st.success("✅ 已合并未交订单数据")
+        
+                
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
+            # 写入主计划数据，列标题从第2行开始
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
         
+            # 获取工作表对象
             ws = writer.book["主计划"]
+        
+            # 在第一行写入时间戳
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
         
-            merge_safety_header(ws, main_plan_df)  # 🔷 合并标题
+            # 合并“安全库存”标题（你已有的函数）
+            merge_safety_header(ws, main_plan_df)
+        
+            # ✅ 自动合并“未交订单”列标题
+            merge_unfulfilled_order_header(ws)
+        
+            # 调整列宽
             adjust_column_width(ws)
+
 
         output_buffer.seek(0)
 
