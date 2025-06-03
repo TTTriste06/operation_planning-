@@ -17,33 +17,35 @@ def setup_sidebar():
 def get_uploaded_files():
     st.header("📤 Excel 数据处理与汇总")
 
-    # 📅 手动输入历史截止月份
+    # 📅 输入历史截止月份
     manual_month = st.text_input("📅 输入历史数据截止月份（格式: YYYY-MM，可留空表示不筛选）")
     CONFIG["selected_month"] = manual_month.strip() if manual_month.strip() else None
-    
-    # 📂 上传主要文件
-    uploaded_files = st.file_uploader(
-        "📂 上传 5 个核心 Excel 文件（未交订单/成品在制/成品库存/晶圆库存/CP在制）",
+
+    # ✅ 合并上传框：所有主+明细文件统一上传
+    all_files = st.file_uploader(
+        "📁 上传主数据文件 + 到货/下单/销货明细（支持多选）",
         type=["xlsx"],
         accept_multiple_files=True,
-        key="main_files"
+        key="all_files"
     )
-    uploaded_dict = {file.name: file for file in uploaded_files}
-    st.write("✅ 已上传主文件：", list(uploaded_dict.keys()))
 
-    # 📁 上传辅助文件
+    # 将所有文件统一收集到 uploaded_files 字典
+    uploaded_files = {}
+    if all_files:
+        for file in all_files:
+            uploaded_files[file.name] = file
+        st.success(f"✅ 共上传 {len(uploaded_files)} 个文件：")
+        st.write(list(uploaded_files.keys()))
+    else:
+        st.info("📂 尚未上传文件。")
+
+    # 📁 上传辅助文件（可选）
     st.subheader("📁 上传辅助文件（如无更新可跳过）")
     forecast_file = st.file_uploader("📈 上传预测文件", type="xlsx", key="forecast")
     safety_file = st.file_uploader("🔐 上传安全库存文件", type="xlsx", key="safety")
     mapping_file = st.file_uploader("🔁 上传新旧料号对照表", type="xlsx", key="mapping")
 
-    # 📦 上传扩展文件（新增 3 个）
-    st.subheader("📦 上传运营额外明细文件")
-    arrival_file = st.file_uploader("🚚 上传到货明细", type="xlsx", key="arrival")
-    order_file = st.file_uploader("📝 上传下单明细", type="xlsx", key="order")
-    sales_file = st.file_uploader("💰 上传销货明细", type="xlsx", key="sales")
-
     # 🚀 生成按钮
     start = st.button("🚀 生成汇总 Excel")
 
-    return uploaded_dict, forecast_file, safety_file, mapping_file, arrival_file, order_file, sales_file, start
+    return uploaded_files, forecast_file, safety_file, mapping_file, start
