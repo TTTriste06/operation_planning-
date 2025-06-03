@@ -4,6 +4,7 @@ from io import BytesIO
 from datetime import datetime
 
 from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX, FIELD_MAPPINGS
+from excel_utils import adjust_column_width
 from mapping_utils import clean_mapping_headers, apply_mapping_and_merge, apply_extended_substitute_mapping
 
 
@@ -109,9 +110,13 @@ class PivotProcessor:
     
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
             for sheet_name, df in sheet_dict.items():
-                # ✅ 表头写在第 2 行（startrow=1），第 1 行留空
-                df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1)
-    
+                df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1 if sheet_name == "主计划" else 0)
+        
+            workbook = writer.book
+            if "主计划" in writer.sheets:
+                worksheet = writer.sheets["主计划"]
+                adjust_column_width(worksheet)
+
         output.seek(0)
         return filename, output
 
