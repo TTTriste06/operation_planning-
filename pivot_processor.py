@@ -4,6 +4,7 @@ from io import BytesIO
 from datetime import datetime
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
+from openpyxl.styles import Alignment
 
 from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX, FIELD_MAPPINGS
 from excel_utils import adjust_column_width
