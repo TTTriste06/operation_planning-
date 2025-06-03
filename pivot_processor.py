@@ -32,8 +32,41 @@ class PivotProcessor:
         mapping_df = additional_sheets.get("赛卓-新旧料号")
         if mapping_df is None or mapping_df.empty:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
+            
+        # === 构建主计划 ===
+        headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
+        main_plan_df = pd.DataFrame(columns=headers)
+
+        ## == 品名 ==
+        df_unfulfilled = self.dataframes.get("赛卓-未交订单")
+        df_forecast = self.additional_sheets.get("赛卓-预测")
+
+        name_unfulfilled = []
+        name_forecast = []
+
+        if df_unfulfilled is not None and not df_unfulfilled.empty:
+            col_name = FIELD_MAPPINGS["赛卓-未交订单"]["品名"]
+            name_unfulfilled = df_unfulfilled[col_name].astype(str).str.strip().tolist()
+
+        if df_forecast is not None and not df_forecast.empty:
+            col_name = FIELD_MAPPINGS["赛卓-预测"]["品名"]
+            name_forecast = df_forecast[col_name].astype(str).str.strip().tolist()
+
+        df_names = pd.DataFrame({"品名": pd.Series(name_unfulfilled + name_forecast).dropna().astype(str).str.strip()})
         
-        # === 替换品名 ===
+        df_names, _ = apply_mapping_and_merge(df_names, mapping_df, field_map={"品名": "品名"})
+        df_names, _ = apply_extended_substitute_mapping(df_names, mapping_df, field_map={"品名": "品名"})
+        
+        all_names = df_names["品名"].dropna().drop_duplicates().sort_values().reset_index(drop=True)
+
+        main_plan_df = main_plan_df.reindex(index=range(len(all_names)))
+        if not all_names.empty:
+            main_plan_df["品名"] = all_names.values
+
+        ## == 规格和品名 ==
+
+        
+        ## == 替换新旧料号、替代料号 ==
         for sheet_name, df in {
             **self.dataframes,
             **{k: v for k, v in additional_sheets.items() if k not in ["赛卓-新旧料号", "赛卓-供应商-PC"]}
@@ -63,29 +96,7 @@ class PivotProcessor:
             except Exception as e:
                 st.error(f"❌ 替换 {sheet_name} 中的品名失败：{e}")
 
-        # === 构建主计划 ===
-        headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
-        main_plan_df = pd.DataFrame(columns=headers)
-
-        df_unfulfilled = self.dataframes.get("赛卓-未交订单")
-        df_forecast = self.additional_sheets.get("赛卓-预测")
-
-        name_unfulfilled = []
-        name_forecast = []
-
-        if df_unfulfilled is not None and not df_unfulfilled.empty:
-            col_name = FIELD_MAPPINGS["赛卓-未交订单"]["品名"]
-            name_unfulfilled = df_unfulfilled[col_name].astype(str).str.strip().tolist()
-
-        if df_forecast is not None and not df_forecast.empty:
-            col_name = FIELD_MAPPINGS["赛卓-预测"]["品名"]
-            name_forecast = df_forecast[col_name].astype(str).str.strip().tolist()
-
-        all_names = pd.Series(name_unfulfilled + name_forecast).dropna().drop_duplicates().sort_values()
-        main_plan_df = main_plan_df.reindex(index=range(len(all_names)))
-        if not all_names.empty:
-            main_plan_df["品名"] = all_names.values
-
+        
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
