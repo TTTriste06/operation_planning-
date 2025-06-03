@@ -79,13 +79,6 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame, dataframes: dict, addit
 def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
     """
     为主计划表填入封装厂、封装形式、PC 信息。
-
-    参数：
-        main_plan_df: 主计划 DataFrame，需含 "品名" 列
-        product_df: 成品在制（赛卓-成品在制）
-        mapping_df: 新旧料号（赛卓-新旧料号）
-        order_df: 下单明细（赛卓-下单明细）
-        pc_df: 封装厂-PC 映射（赛卓-供应商-PC），应含 "封装厂" 和 "PC"
     """
     def strip_suffix(s):
         return str(s).split("-")[0].strip() if isinstance(s, str) else s
@@ -93,15 +86,8 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
     name_col = "品名"
     pkg_col = "封装形式"
     vendor_col = "封装厂"
-    
-    # ✅ 先初始化主计划中这两列为空（防止 fillna 报错）
-    if vendor_col not in main_plan_df.columns:
-        main_plan_df[vendor_col] = None
-    if pkg_col not in main_plan_df.columns:
-        main_plan_df[pkg_col] = None
-        
-    
-    # ✅ 封装厂 & 封装形式（从成品在制）
+
+    # ✅ 从成品在制填封装厂与封装形式
     if product_df is not None and not product_df.empty:
         product_df = product_df.copy()
         product_df[name_col] = product_df["产品品名"].astype(str).str.strip()
@@ -112,11 +98,16 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
             product_df[[name_col, vendor_col, pkg_col]].drop_duplicates(),
             on=name_col, how="left", suffixes=("", "_prod")
         )
-        main_plan_df[vendor_col] = merged[vendor_col].fillna(main_plan_df.get(vendor_col))
-        main_plan_df[pkg_col] = merged[pkg_col].fillna(main_plan_df.get(pkg_col))
-        st.write(main_plan_df)
 
-    # ✅ 封装厂补充（从新旧料号）
+        # 如果 merge 后列被加后缀，优先使用合并后的列
+        main_plan_df[vendor_col] = main_plan_df.get(vendor_col, pd.Series(index=main_plan_df.index)).fillna(
+            merged.get(vendor_col) or merged.get(f"{vendor_col}_prod")
+        )
+        main_plan_df[pkg_col] = main_plan_df.get(pkg_col, pd.Series(index=main_plan_df.index)).fillna(
+            merged.get(pkg_col) or merged.get(f"{pkg_col}_prod")
+        )
+
+    # ✅ 从新旧料号补充封装厂
     if mapping_df is not None and not mapping_df.empty:
         mapping_df = mapping_df.copy()
         mapping_df["新品名"] = mapping_df["新品名"].astype(str).str.strip()
@@ -124,12 +115,15 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
 
         merged = main_plan_df.merge(
             mapping_df[["新品名", "封装厂"]].drop_duplicates(),
-            left_on=name_col, right_on="新品名", how="left"
+            left_on=name_col, right_on="新品名", how="left", suffixes=("", "_map")
         )
-        main_plan_df[vendor_col] = main_plan_df[vendor_col].fillna(merged["封装厂"])
-        st.write(main_plan_df)
 
-    # ✅ 封装厂补充（从下单明细）
+        col_fallback = "封装厂_map" if "封装厂_map" in merged.columns else "封装厂"
+        main_plan_df[vendor_col] = main_plan_df.get(vendor_col, pd.Series(index=main_plan_df.index)).fillna(
+            merged.get(col_fallback)
+        )
+
+    # ✅ 从下单明细补充封装厂
     if order_df is not None and not order_df.empty:
         order_df = order_df.copy()
         order_df[name_col] = order_df["回货明细_回货品名"].astype(str).str.strip()
@@ -139,10 +133,13 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
             order_df[[name_col, "封装厂"]].drop_duplicates(),
             on=name_col, how="left", suffixes=("", "_order")
         )
-        main_plan_df[vendor_col] = main_plan_df[vendor_col].fillna(merged["封装厂"])
-        st.write(main_plan_df)
 
-    # ✅ PC（通过封装厂）
+        col_fallback = "封装厂_order" if "封装厂_order" in merged.columns else "封装厂"
+        main_plan_df[vendor_col] = main_plan_df.get(vendor_col, pd.Series(index=main_plan_df.index)).fillna(
+            merged.get(col_fallback)
+        )
+
+    # ✅ 通过封装厂找到 PC
     if pc_df is not None and not pc_df.empty:
         pc_df = pc_df.copy()
         pc_df["封装厂"] = pc_df["封装厂"].astype(str).apply(strip_suffix)
@@ -152,6 +149,7 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
             pc_df.drop_duplicates(subset=["封装厂"]),
             on="封装厂", how="left"
         )
-        main_plan_df["PC"] = merged["PC"]
-        st.write(main_plan_df)
+
+        main_plan_df["PC"] = merged.get("PC", pd.Series(index=main_plan_df.index))
+
     return main_plan_df
