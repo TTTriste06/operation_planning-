@@ -37,8 +37,9 @@ def main():
         # 初始化处理器
         buffer = BytesIO()
         processor = PivotProcessor()
-        processor.classify_files(uploaded_files)
         processor.set_additional_data(additional_sheets)
+        processor.process(uploaded_files, buffer, additional_sheets)  # ✅ 不再需要 classify_files()
+
 
         # 处理并写入 Excel
         processor.process(uploaded_files, buffer, additional_sheets)
