@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 from datetime import date
+from config import CONFIG
 
 
 def setup_sidebar():
