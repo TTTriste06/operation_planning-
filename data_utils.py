@@ -155,3 +155,5 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
     
         # 填回 PC 列
         main_plan_df["PC"] = merged_pc["PC"]
+
+     return main_plan_df
