@@ -71,26 +71,28 @@ class PivotProcessor:
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "pc"]
         main_plan_df = pd.DataFrame(columns=headers)
 
-        # 品名：获取映射后的品名
-        unfulfilled_df = self.dataframes.get("赛卓-未交订单")
-        forecast_df = self.additional_sheets.get("赛卓-预测")
-    
+        # 品名：提取未交订单和预测中的品名
         name_unfulfilled = []
         name_forecast = []
     
-        if unfulfilled_df is not None and not unfulfilled_df.empty:
+        df_unfulfilled = self.dataframes.get("赛卓-未交订单")
+        df_forecast = self.additional_sheets.get("赛卓-预测")
+    
+        if df_unfulfilled is not None and not df_unfulfilled.empty:
             col_name = FIELD_MAPPINGS["赛卓-未交订单"]["品名"]
-            name_unfulfilled = unfulfilled_df[col_name].astype(str).str.strip().tolist()
+            name_unfulfilled = df_unfulfilled[col_name].astype(str).str.strip().tolist()
     
-        if forecast_df is not None and not forecast_df.empty:
+        if df_forecast is not None and not df_forecast.empty:
             col_name = FIELD_MAPPINGS["赛卓-预测"]["品名"]
-            name_forecast = forecast_df[col_name].astype(str).str.strip().tolist()
+            name_forecast = df_forecast[col_name].astype(str).str.strip().tolist()
     
-        # 合并品名 + 去重 + 排序
         all_names = pd.Series(name_unfulfilled + name_forecast).dropna().drop_duplicates().sort_values()
-        main_plan_df = pd.DataFrame({"品名": all_names})
-
     
+        # 正确构造空 DataFrame 并填入“品名”列
+        main_plan_df = pd.DataFrame({col: None for col in headers})  # 创建结构
+        main_plan_df = main_plan_df.reindex(index=range(len(all_names)))  # 匹配行数
+        main_plan_df["品名"] = all_names.values  # 仅填“品名”
+
 
         return {"主计划": main_plan_df}
 
