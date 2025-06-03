@@ -1,11 +1,11 @@
 import streamlit as st
-import pandas as pd
 from io import BytesIO
 from datetime import datetime
-from config import CONFIG
+import pandas as pd
+
 from pivot_processor import PivotProcessor
 from ui import setup_sidebar, get_uploaded_files
-from github_utils import upload_to_github, download_from_github
+from github_utils import load_file_with_github_fallback
 from urllib.parse import quote
 
 
@@ -13,67 +13,47 @@ def main():
     st.set_page_config(page_title="Excel数据透视汇总工具", layout="wide")
     setup_sidebar()
 
-    # 获取上传文件（包括新增的 3 个明细文件）
-    uploaded_files, forecast_file, safety_file, mapping_file, arrival_file, order_file, sales_file, start = get_uploaded_files()
+    # 🧩 获取上传文件（主数据 + 明细文件 + 辅助文件）
+    uploaded_files, forecast_file, safety_file, mapping_file, start = get_uploaded_files()
 
     if start:
         if len(uploaded_files) < 5:
-            st.error("❌ 请上传所有 5 个主要文件后再点击生成！")
+            st.error("❌ 请至少上传 5 个核心文件（未交订单/成品在制/成品库存/下单/销货/到货等）！")
             return
 
-        github_files = {
-            "赛卓-预测.xlsx": forecast_file,
-            "赛卓-安全库存.xlsx": safety_file,
-            "赛卓-新旧料号.xlsx": mapping_file,
-            "赛卓-到货明细.xlsx": arrival_file,
-            "赛卓-下单明细.xlsx": order_file,
-            "赛卓-销货明细.xlsx": sales_file
+        # 🎯 构建辅助文件：上传则保存至 GitHub，否则从 GitHub 加载
+        df_forecast = load_file_with_github_fallback("forecast", forecast_file)
+        df_safety = load_file_with_github_fallback("safety", safety_file)
+        df_mapping = load_file_with_github_fallback("mapping", mapping_file)
+
+        # 🔄 汇总辅助表为 additional_sheets
+        additional_sheets = {
+            "赛卓-预测": df_forecast,
+            "赛卓-安全库存": df_safety,
+            "赛卓-新旧料号": df_mapping
         }
 
-        additional_sheets = {}
-
-        for name, file in github_files.items():
-            sheet_name = 0
-            if name == "赛卓-预测.xlsx":
-                sheet_name = "Sheet1"
-            if file:
-                file_bytes = file.read()
-                file_io = BytesIO(file_bytes)
-                safe_name = quote(name)
-                upload_to_github(BytesIO(file_bytes), safe_name)
-                df = pd.read_excel(file_io, sheet_name=sheet_name)
-                additional_sheets[name.replace(".xlsx", "")] = df
-            else:
-                try:
-                    safe_name = quote(name)
-                    content = download_from_github(safe_name)
-                    df = pd.read_excel(BytesIO(content), sheet_name=sheet_name)
-                    additional_sheets[name.replace(".xlsx", "")] = df
-                    st.info(f"📂 使用了 GitHub 上存储的历史版本：{name}")
-                except FileNotFoundError:
-                    st.warning(f"⚠️ 未提供且未在 GitHub 找到历史文件：{name}")
-
-        # 🔄 调试显示额外数据名
-        # st.write("📘 额外数据已准备：", list(additional_sheets.keys()))
-
-        # 生成 Excel 汇总
-        buffer = BytesIO()
+        # 📊 初始化并执行处理流程
         processor = PivotProcessor()
-        processor.process(uploaded_files, buffer, additional_sheets)
+        processor.classify_files(list(uploaded_files.values()))
+        processor.set_additional_data(additional_sheets)
 
-        file_name = f"运营数据订单-在制-库存汇总报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        result_df = processor.process()
+
+        # 📤 导出为 Excel
+        filename, output_buffer = processor.export_to_excel(result_df)
         st.success("✅ 汇总完成！你可以下载结果文件：")
         st.download_button(
             label="📥 下载 Excel 汇总报告",
-            data=buffer.getvalue(),
-            file_name=file_name,
+            data=output_buffer.getvalue(),
+            file_name=filename,
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-        # 🧾 预览生成的每个 sheet
+        # 👀 预览所有 Sheet
         try:
-            buffer.seek(0)
-            with pd.ExcelFile(buffer, engine="openpyxl") as xls:
+            output_buffer.seek(0)
+            with pd.ExcelFile(output_buffer, engine="openpyxl") as xls:
                 sheet_names = xls.sheet_names
                 tabs = st.tabs(sheet_names)
 
@@ -85,9 +65,10 @@ def main():
                             st.dataframe(df, use_container_width=True)
                     except Exception as e:
                         with tabs[i]:
-                            st.error(f"无法读取工作表 `{sheet_name}`: {e}")
+                            st.error(f"❌ 无法读取工作表 `{sheet_name}`: {e}")
         except Exception as e:
-            st.warning(f"⚠️ 预览 Excel 报告失败：{e}")
+            st.warning(f"⚠️ 无法预览生成的 Excel 文件：{e}")
+
 
 if __name__ == "__main__":
     main()
