@@ -36,9 +36,9 @@ def main():
         }
 
         # 📊 初始化并执行处理流程
+        buffer = BytesIO()
         processor = PivotProcessor()
-        processor.classify_files(list(uploaded_files.values()))
-        processor.set_additional_data(additional_sheets)
+        processor.process(uploaded_files, buffer, additional_sheets)
 
         result_df = processor.process()
 
