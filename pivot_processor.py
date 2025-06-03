@@ -145,8 +145,10 @@ class PivotProcessor:
             st.success("✅ 已合并预测数据")
 
         ## == 成品库存 ==
-        finished_df = additional_sheets.get("赛卓-成品库存")
-        mapping_df = self.additional_sheets.get("赛卓-新旧料号")
+        finished_df = self.dataframes.get("赛卓-成品库存")
+        st.write(finished_df)
+        mapping_df = additional_sheets.get("赛卓-新旧料号")
+        st.write(mapping_df)
         if finished_df is not None and not finished_df.empty:
             main_plan_df, unmatched_finished = merge_finished_inventory_with_warehouse_types(main_plan_df, finished_df, mapping_df)
             st.success("✅ 已合并成品库存数据")
