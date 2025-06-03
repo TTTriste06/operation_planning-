@@ -47,10 +47,11 @@ def main():
         st.success("✅ 汇总完成！你可以下载结果文件：")
         st.download_button(
             label="📥 下载 Excel 汇总报告",
-            data=output_buffer.getvalue(),
-            file_name=filename,
+            data=buffer.getvalue(),
+            file_name="主计划.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
 
         # 👀 预览所有 Sheet
         try:
