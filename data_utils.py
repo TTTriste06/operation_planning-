@@ -98,7 +98,7 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
     if product_df is not None and not product_df.empty:
         product_df = product_df.copy()
         product_df[name_col] = product_df["产品品名"].astype(str).str.strip()
-        product_df[vendor_col] = product_df["封装厂"].astype(str).apply(strip_suffix)
+        product_df[vendor_col] = product_df["工作中心"].astype(str).apply(strip_suffix)
         product_df[pkg_col] = product_df["封装形式"].astype(str).str.strip()
 
         merged = main_plan_df.merge(
@@ -126,7 +126,7 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
     if order_df is not None and not order_df.empty:
         order_df = order_df.copy()
         order_df[name_col] = order_df["回货明细_回货品名"].astype(str).str.strip()
-        order_df["封装厂"] = order_df["封装厂"].astype(str).apply(strip_suffix)
+        order_df["封装厂"] = order_df["供应商名称"].astype(str).apply(strip_suffix)
 
         merged = main_plan_df.merge(
             order_df[[name_col, "封装厂"]].drop_duplicates(),
