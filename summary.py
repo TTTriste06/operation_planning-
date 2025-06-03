@@ -7,7 +7,9 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 
 def merge_safety_inventory(main_plan_df: pd.DataFrame, safety_df: pd.DataFrame):
+    st.write(safety_df)
     safety_df = safety_df.rename(columns={"ProductionNO.": "品名"}).copy()
+    st.write(safety_df)
     safety_df = safety_df[["品名", "InvWaf", "InvPart"]].drop_duplicates()
     st.write(safety_df)
     
