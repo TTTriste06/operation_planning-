@@ -70,6 +70,7 @@ class PivotProcessor:
         # 新建主计划df
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "pc"]
         main_plan_df = pd.DataFrame(columns=headers)
+        main_plan_df = main_plan_df.reindex(index=range(len(all_names))) # 用 reindex 来匹配品名数量（行数）
 
         # 品名：提取未交订单和预测中的品名
         name_unfulfilled = []
