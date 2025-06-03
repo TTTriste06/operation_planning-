@@ -68,7 +68,7 @@ class PivotProcessor:
         处理主计划表
         """
         # 新建主计划df
-        headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "pc"]
+        headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
         main_plan_df = pd.DataFrame(columns=headers)
 
         # 品名：提取未交订单和预测中的品名
