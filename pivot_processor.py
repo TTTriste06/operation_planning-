@@ -15,15 +15,14 @@ class PivotProcessor:
         self.dataframes = {}
         self.additional_sheets = {}
 
-    def classify_files(self, uploaded_files):
+    def classify_files(self, uploaded_files: dict):
         """
         根据关键词识别上传的主数据文件，并赋予标准中文名称
         """
-        for file in uploaded_files:
-            filename = file.name
+        for filename, file_obj in uploaded_files.items():
             for keyword, standard_name in FILE_KEYWORDS.items():
                 if keyword in filename:
-                    self.dataframes[standard_name] = pd.read_excel(file)
+                    self.dataframes[standard_name] = pd.read_excel(file_obj)
                     break
 
     
