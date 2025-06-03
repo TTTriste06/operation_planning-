@@ -64,5 +64,6 @@ def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
         # 合并单元格
         ws.merge_cells(f"{start_col}1:{end_col}1")
         ws[f"{start_col}1"] = "安全库存"
+        ws[f"{start_col}1"].alignment = Alignment(horizontal="center", vertical="center")
     except Exception as e:
         st.error(f"⚠️ 安全库存表头合并失败: {e}")
