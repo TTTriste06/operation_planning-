@@ -14,7 +14,7 @@ def main():
     setup_sidebar()
 
     # 🧩 获取上传文件（主数据 + 明细文件 + 辅助文件）
-    uploaded_files, forecast_file, safety_file, mapping_file, start = get_uploaded_files()
+    uploaded_files, forecast_file, safety_file, mapping_file, pc_file, start = get_uploaded_files()
 
     if start:
         if len(uploaded_files) < 8:
@@ -25,12 +25,14 @@ def main():
         df_forecast = load_file_with_github_fallback("forecast", forecast_file)
         df_safety = load_file_with_github_fallback("safety", safety_file)
         df_mapping = load_file_with_github_fallback("mapping", mapping_file)
+        df_pc = load_file_with_github_fallback("pc", pc_file)
 
         # 🔄 汇总辅助表为 additional_sheets
         additional_sheets = {
             "赛卓-预测": df_forecast,
             "赛卓-安全库存": df_safety,
-            "赛卓-新旧料号": df_mapping
+            "赛卓-新旧料号": df_mapping,
+            "赛卓-供应商-PC": df_pc
         }
 
         # 📊 初始化并执行处理流程
