@@ -24,6 +24,44 @@ def clean_mapping_headers(mapping_df):
     # ✅ 仅保留这些列
     return mapping_df[required_headers[:mapping_df.shape[1]]]
 
+
+def replace_all_names_with_mapping(all_names: pd.Series, mapping_df: pd.DataFrame) -> pd.Series:
+    """
+    对品名列表 all_names 应用新旧料号 + 替代料号替换，返回去重后的替换结果。
+
+    参数：
+        all_names: 原始品名列表（pd.Series）
+        mapping_df: 新旧料号映射表，必须包含 '旧品名', '新品名', '替代品名1~4'
+
+    返回：
+        替换后的品名列表（pd.Series），已去重排序
+    """
+    if mapping_df is None or mapping_df.empty:
+        return all_names.dropna().drop_duplicates().sort_values().reset_index(drop=True)
+
+    # 清洗主字段
+    mapping_df["旧品名"] = mapping_df["旧品名"].astype(str).str.strip()
+    mapping_df["新品名"] = mapping_df["新品名"].astype(str).str.strip()
+
+    # 新旧料号替换
+    df_names = all_names.dropna().astype(str).str.strip().to_frame(name="品名")
+    merged = df_names.merge(mapping_df[["旧品名", "新品名"]], how="left", left_on="品名", right_on="旧品名")
+    merged["最终品名"] = merged["新品名"].where(merged["新品名"].notna() & (merged["新品名"] != ""), merged["品名"])
+    all_names = merged["最终品名"]
+
+    # 替代料号替换
+    for i in range(1, 5):
+        sub_col = f"替代品名{i}"
+        if sub_col not in mapping_df.columns:
+            continue
+        mapping_df[sub_col] = mapping_df[sub_col].astype(str).str.strip()
+        sub_map = mapping_df.set_index(sub_col)["新品名"].dropna()
+        all_names = all_names.replace(sub_map)
+
+    # 去重排序
+    return all_names.dropna().drop_duplicates().sort_values().reset_index(drop=True)
+
+
 def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
     """
     按品名字段替换主料号（新旧料号映射）
@@ -77,7 +115,9 @@ def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=True):
                 df.loc[mask, name_col] = row["新品名"]
                 matched_keys.update([row["新品名"]])
 
+    """
     if verbose:
         st.success(f"✅ 替代品名替换完成，共替换: {len(matched_keys)} 种")
+    """
 
     return df, matched_keys
