@@ -150,7 +150,7 @@ def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFra
     - unmatched_keys: list[str]，未匹配的品名
     """
     today = datetime.today()
-    this_month_int = today.month
+    this_month_int = today.month  
 
     # ✅ 统一列名
     forecast_df = forecast_df.rename(columns={"生产料号": "品名"}).copy()
