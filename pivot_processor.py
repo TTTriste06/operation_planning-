@@ -23,7 +23,9 @@ from summary import (
     merge_safety_inventory,
     merge_safety_header,
     append_unfulfilled_summary_columns_by_date,
-    merge_unfulfilled_order_header
+    merge_unfulfilled_order_header, 
+    append_forecast_to_summary,
+    merge_forecast_header
 )
 
 class PivotProcessor:
@@ -132,6 +134,14 @@ class PivotProcessor:
         if unfulfilled_df is not None and not unfulfilled_df.empty:
             main_plan_df, unmatched_unfulfilled = append_unfulfilled_summary_columns_by_date(main_plan_df, unfulfilled_df)
             st.success("✅ 已合并未交订单数据")
+
+
+        ## == 预测 ==
+        forecast_df = additional_sheets.get("赛卓-预测")
+        if forecast_df is not None and not forecast_df.empty:
+            main_plan_df, unmatched_forecast = append_forecast_to_summary(main_plan_df, forecast_df)
+            st.success("✅ 已合并预测数据")
+
         
                 
         # === 写入 Excel 文件（主计划）===
