@@ -232,6 +232,8 @@ def merge_finished_inventory_with_warehouse_types(summary_df: pd.DataFrame, fini
     - 合并后的主计划 DataFrame
     - 未匹配品名列表（仅成品库存中存在但主计划中不存在）
     """
+    st.write("1")
+    
     warehouse_cols = ["HOLD仓", "成品仓", "半成品仓"]
 
     # 初始化列
