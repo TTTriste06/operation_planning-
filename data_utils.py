@@ -1,4 +1,5 @@
 import pandas as pd
+import streamlit as st
 import re
 
 def extract_info(df, mapping, fields=("规格", "晶圆品名")):
@@ -106,6 +107,7 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
         )
         main_plan_df[vendor_col] = merged[vendor_col].fillna(main_plan_df.get(vendor_col))
         main_plan_df[pkg_col] = merged[pkg_col].fillna(main_plan_df.get(pkg_col))
+        st.write(main_plan_df)
 
     # ✅ 封装厂补充（从新旧料号）
     if mapping_df is not None and not mapping_df.empty:
@@ -118,6 +120,7 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
             left_on=name_col, right_on="新品名", how="left"
         )
         main_plan_df[vendor_col] = main_plan_df[vendor_col].fillna(merged["封装厂"])
+        st.write(main_plan_df)
 
     # ✅ 封装厂补充（从下单明细）
     if order_df is not None and not order_df.empty:
@@ -130,6 +133,7 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
             on=name_col, how="left", suffixes=("", "_order")
         )
         main_plan_df[vendor_col] = main_plan_df[vendor_col].fillna(merged["封装厂"])
+        st.write(main_plan_df)
 
     # ✅ PC（通过封装厂）
     if pc_df is not None and not pc_df.empty:
@@ -142,5 +146,5 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
             on="封装厂", how="left"
         )
         main_plan_df["PC"] = merged["PC"]
-
+        st.write(main_plan_df)
     return main_plan_df
