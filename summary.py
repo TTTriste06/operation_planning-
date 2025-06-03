@@ -5,11 +5,12 @@ from datetime import datetime
 from openpyxl.styles import PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
+from openpyxl.styles import Alignment
 
 def merge_safety_inventory(summary_df: pd.DataFrame, safety_df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
     """
     将安全库存表中 InvWaf 和 InvPart 信息按 '品名' 合并到汇总表中，仅根据 '品名' 匹配。
-    如果未匹配，则填入 0（便于后续计算）。
+    对相同品名做 sum 汇总；未匹配的填 0。
 
     参数:
     - summary_df: 汇总后的 DataFrame，含 '品名'
@@ -19,31 +20,30 @@ def merge_safety_inventory(summary_df: pd.DataFrame, safety_df: pd.DataFrame) ->
     - merged: 合并后的 DataFrame（含 InvWaf 和 InvPart，空值填 0）
     - unmatched_keys: list of 未被匹配的品名
     """
-
     # ✅ 清洗并重命名列
     safety_df = safety_df.rename(columns={"ProductionNO.": "品名"}).copy()
     safety_df.columns = safety_df.columns.str.strip()
     safety_df["品名"] = safety_df["品名"].astype(str).str.strip()
 
-    # 只保留需要列 + 去重
-    safety_df = safety_df[["品名", "InvWaf", "InvPart"]].drop_duplicates()
+    # 转换为数值型（NaN 稍后会填 0）
+    safety_df["InvWaf"] = pd.to_numeric(safety_df["InvWaf"], errors="coerce").fillna(0)
+    safety_df["InvPart"] = pd.to_numeric(safety_df["InvPart"], errors="coerce").fillna(0)
 
-    # 转换为数值型（空值也会变成 NaN，稍后会填为 0）
-    safety_df["InvWaf"] = pd.to_numeric(safety_df["InvWaf"], errors="coerce")
-    safety_df["InvPart"] = pd.to_numeric(safety_df["InvPart"], errors="coerce")
+    # ✅ 按品名汇总
+    safety_grouped = safety_df.groupby("品名", as_index=False)[["InvWaf", "InvPart"]].sum()
 
-    # 清洗主计划的品名
+    # ✅ 清洗主计划品名
     summary_df["品名"] = summary_df["品名"].astype(str).str.strip()
 
     # ✅ 合并
-    merged = summary_df.merge(safety_df, on="品名", how="left")
+    merged = summary_df.merge(safety_grouped, on="品名", how="left")
 
     # ✅ 记录未匹配品名
-    matched_keys = set(safety_df["品名"])
+    matched_keys = set(safety_grouped["品名"])
     used_keys = set(merged[~merged[["InvWaf", "InvPart"]].isna().all(axis=1)]["品名"])
     unmatched_keys = list(matched_keys - used_keys)
 
-    # ✅ 空值填 0，便于后续计算
+    # ✅ 空值填 0
     merged["InvWaf"] = merged["InvWaf"].fillna(0)
     merged["InvPart"] = merged["InvPart"].fillna(0)
 
@@ -71,6 +71,7 @@ def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
 def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame, df_unfulfilled: pd.DataFrame) -> pd.DataFrame:
     """
     将未交订单按预交货日分为历史与未来月份，并添加至主计划 DataFrame。
+    仅对新添加的列填补 0，不影响原有列的数据。
 
     参数:
     - main_plan_df: 主计划 DataFrame，需含 '品名'
@@ -119,7 +120,11 @@ def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame, df_un
 
     # 合并进主计划表
     main_plan_df["品名"] = main_plan_df["品名"].astype(str).str.strip()
-    result = pd.merge(main_plan_df, df_merged, on="品名", how="left").fillna(0)
+    result = pd.merge(main_plan_df, df_merged, on="品名", how="left")
+
+    # 仅填补新添加列中的 NaN 为 0
+    for col in ordered_cols[1:]:  # 排除 "品名"
+        if col in result.columns:
+            result[col] = result[col].fillna(0)
 
     return result
-
