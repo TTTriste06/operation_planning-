@@ -133,7 +133,7 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
                 if alt_col in main_plan_df.columns:
                     main_plan_df.drop(columns=[alt_col], inplace=True)
 
-
+    st.write(main_plan_df)
     # ========== 2️⃣ 通过封装厂填入 PC ==========
     pc_df = additional_sheets.get("赛卓-供应商-PC")
     if pc_df is not None and not pc_df.empty:
@@ -145,6 +145,7 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
             pc_df[["封装厂", "PC"]].drop_duplicates(),
             on="封装厂", how="left"
         )
+        st.write(merged_pc)
         main_plan_df["PC"] = merged_pc["PC"]
 
     return main_plan_df
