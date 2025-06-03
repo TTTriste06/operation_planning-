@@ -123,8 +123,10 @@ class PivotProcessor:
         if safety_df is not None and not safety_df.empty:
             main_plan_df, unmatched_safety = merge_safety_inventory(main_plan_df, safety_df)
             st.success("✅ 已合并安全库存数据")
-            if unmatched_safety:
-                st.warning(f"⚠️ 以下品名未在安全库存中匹配到：{unmatched_safety}")
+
+        ## == 未交订单 ==
+        main_plan_df = append_unfulfilled_summary_columns_by_date(main_plan_df, self.dataframes["赛卓-未交订单"])
+
 
         
         # === 写入 Excel 文件（主计划）===
