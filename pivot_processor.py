@@ -11,10 +11,6 @@ from mapping_utils import clean_mapping_headers, apply_mapping_and_merge, apply_
 
 
 class PivotProcessor:
-    def __init__(self):
-        self.dataframes = {}
-        self.additional_sheets = {}
-
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
         """
         替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
