@@ -1,6 +1,6 @@
 from openpyxl.utils import get_column_letter
 
-def adjust_column_width(ws, max_width=40):
+def adjust_column_width(ws, max_width=50):
     """
     自动调整工作表中每列的宽度，适配内容长度。
     忽略第一行（通常用于填充非数据内容），以第二行起为基准。
