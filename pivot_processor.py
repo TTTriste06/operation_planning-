@@ -3,6 +3,7 @@ from io import BytesIO
 from datetime import datetime
 from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX
 from mapping_utils import clean_mapping_headers
+from data_utils import extract_required_columns
 
 class PivotProcessor:
     def __init__(self):
@@ -21,9 +22,37 @@ class PivotProcessor:
                     break
 
     def process(self):
-        # 🚧 TODO: 在此处添加你的数据处理逻辑
-        result = pd.DataFrame({"示例列": ["此处将放置处理结果"]})
-        return result
+        """
+        执行实际数据处理逻辑：提取关键字段、格式化数据，为后续透视或合并做准备。
+        """
+        extracted = {}
+    
+        # 主数据处理
+        for sheet_name, df in self.dataframes.items():
+            try:
+                df_extracted = extract_required_columns(sheet_name, df)
+                extracted[sheet_name] = df_extracted
+            except Exception as e:
+                print(f"❌ 提取 `{sheet_name}` 失败: {e}")
+    
+        # 辅助数据处理（如预测、安全库存）
+        for sheet_name, df in self.additional_sheets.items():
+            try:
+                df_extracted = extract_required_columns(sheet_name, df)
+                extracted[sheet_name] = df_extracted
+            except Exception as e:
+                print(f"❌ 提取辅助 `{sheet_name}` 失败: {e}")
+    
+        # 👉 可将提取后的结果合并成汇总表或分别处理
+        result_summary = pd.DataFrame({
+            "表名": list(extracted.keys()),
+            "行数": [len(df) for df in extracted.values()],
+            "字段": [", ".join(df.columns) for df in extracted.values()]
+        })
+        st.write(result_summary)
+    
+        return result_summary
+
 
     def export_to_excel(self, df):
         output = BytesIO()
