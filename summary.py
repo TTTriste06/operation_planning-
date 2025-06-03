@@ -135,3 +135,34 @@ def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame, df_un
             result[col] = result[col].fillna(0)
 
     return result
+
+def merge_unfulfilled_order_header(sheet):
+    """
+    自动检测以“未交订单 ”开头的列，在第一行合并并写入“未交订单”，居中。
+    
+    参数:
+    - sheet: openpyxl worksheet 对象
+    """
+    # 第2行是列名行（默认 DataFrame 用 dataframe_to_rows 写入时）
+    header_row = list(sheet.iter_rows(min_row=2, max_row=2, values_only=True))[0]
+
+    # 找出所有“未交订单 yyyy-mm”列的索引
+    unfulfilled_cols = [
+        idx for idx, col in enumerate(header_row, start=1)
+        if isinstance(col, str) and col.startswith("未交订单 ")
+    ]
+
+    if not unfulfilled_cols:
+        return  # 没有未交订单列，不处理
+
+    start_col = min(unfulfilled_cols)
+    end_col = max(unfulfilled_cols)
+
+    # 合并单元格范围
+    merge_range = f"{get_column_letter(start_col)}1:{get_column_letter(end_col)}1"
+    sheet.merge_cells(merge_range)
+
+    # 设置合并单元格的值与居中格式
+    cell = sheet.cell(row=1, column=start_col)
+    cell.value = "未交订单"
+    cell.alignment = Alignment(horizontal="center", vertical="center")
