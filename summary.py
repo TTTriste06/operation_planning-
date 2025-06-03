@@ -71,7 +71,8 @@ def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
 def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame, df_unfulfilled: pd.DataFrame) -> pd.DataFrame:
     """
     将未交订单按预交货日分为历史与未来月份，并添加至主计划 DataFrame。
-    仅对新添加的列填补 0，不影响原有列的数据。
+    若存在多个相同品名的记录，则先合并汇总。
+    仅对新添加的列填 0，不影响原有列的数据。
 
     参数:
     - main_plan_df: 主计划 DataFrame，需含 '品名'
@@ -92,38 +93,44 @@ def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame, df_un
     df["品名"] = df["品名"].astype(str).str.strip()
     df["月份"] = df["预交货日"].dt.to_period("M")
 
-    # 历史未交订单
-    df["是否历史"] = df["月份"] < today.to_period("M")
-    df_hist = df[df["是否历史"]].groupby("品名")["未交订单数量"].sum().rename("历史未交订单").reset_index()
+    # 合并相同品名与月份的数据（避免重复记录）
+    df = df.groupby(["品名", "月份"], as_index=False)["未交订单数量"].sum()
 
-    # 未来未交订单
+    # 标记是否为历史
+    df["是否历史"] = df["月份"] < today.to_period("M")
+
+    # 历史未交订单合并
+    df_hist = df[df["是否历史"]].groupby("品名", as_index=False)["未交订单数量"].sum()
+    df_hist = df_hist.rename(columns={"未交订单数量": "历史未交订单"})
+
+    # 未来未交订单：转换为列
     df_future = df[~df["是否历史"]].copy()
     df_future["月份"] = df_future["月份"].astype(str)
     df_pivot = df_future.pivot_table(index="品名", columns="月份", values="未交订单数量", aggfunc="sum").fillna(0)
     df_pivot.columns = [f"未交订单 {col}" for col in df_pivot.columns]
     df_pivot = df_pivot.reset_index()
 
-    # 确保列完整
+    # 补齐缺失月份列
     for col in future_cols:
         if col not in df_pivot.columns:
             df_pivot[col] = 0
 
-    # 合并历史与未来
+    # 合并历史与未来数据
     df_merged = pd.merge(df_hist, df_pivot, on="品名", how="outer").fillna(0)
 
-    # 总未交订单
+    # 计算总未交订单
     df_merged["总未交订单"] = df_merged["历史未交订单"] + df_merged[future_cols].sum(axis=1)
 
     # 整理列顺序
     ordered_cols = ["品名", "总未交订单", "历史未交订单"] + future_cols
     df_merged = df_merged[ordered_cols]
 
-    # 合并进主计划表
+    # 合并进主计划
     main_plan_df["品名"] = main_plan_df["品名"].astype(str).str.strip()
     result = pd.merge(main_plan_df, df_merged, on="品名", how="left")
 
-    # 仅填补新添加列中的 NaN 为 0
-    for col in ordered_cols[1:]:  # 排除 "品名"
+    # 仅填补新添加列
+    for col in ordered_cols[1:]:
         if col in result.columns:
             result[col] = result[col].fillna(0)
 
