@@ -25,11 +25,8 @@ class PivotProcessor:
 
     def process(self):
         """
-        创建“主计划”并对所有数据表中的“品名”字段进行标准化替换（新旧料号 + 替代料号）。
+        处理上传数据，替换新旧料号、替代料号。
         """
-        # 新建主计划df
-        main_plan_df = pd.DataFrame()
-
         # 提取新旧料号
         mapping_df = self.additional_sheets.get("赛卓-新旧料号")
         if mapping_df is None or mapping_df.empty:
@@ -67,14 +64,34 @@ class PivotProcessor:
             except Exception as e:
                 st.error(f"❌ 替换 {sheet_name} 中的品名失败：{e}")
 
-        # ✅ 输出所有处理完的表（用于调试查看）
-        st.markdown("## ✅ 已处理表格预览（仅前5行）")
-        
-        for name, df in {**self.dataframes, **self.additional_sheets}.items():
-            st.subheader(f"📄 {name}")
-            st.dataframe(df.head(), use_container_width=True)
+        """
+        处理主计划表
+        """
+        # 新建主计划df
+        headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "pc"]
+        main_plan_df = pd.DataFrame(columns=headers)
+
+        # 品名：获取映射后的品名
+        unfulfilled_df = self.dataframes.get("赛卓-未交订单")
+        forecast_df = self.additional_sheets.get("赛卓-预测")
+    
+        name_unfulfilled = []
+        name_forecast = []
+    
+        if unfulfilled_df is not None and not unfulfilled_df.empty:
+            col_name = FIELD_MAPPINGS["赛卓-未交订单"]["品名"]
+            name_unfulfilled = unfulfilled_df[col_name].astype(str).str.strip().tolist()
+    
+        if forecast_df is not None and not forecast_df.empty:
+            col_name = FIELD_MAPPINGS["赛卓-预测"]["品名"]
+            name_forecast = forecast_df[col_name].astype(str).str.strip().tolist()
+    
+        # 合并品名 + 去重 + 排序
+        all_names = pd.Series(name_unfulfilled + name_forecast).dropna().drop_duplicates().sort_values()
+        main_plan_df = pd.DataFrame({"品名": all_names})
 
     
+
         return {"主计划": main_plan_df}
 
         
