@@ -1,3 +1,5 @@
+from openpyxl.utils import get_column_letter
+
 def adjust_column_width(writer, sheet_name, df):
     """
     自动调整 Excel 工作表中各列的宽度以适应内容长度。
