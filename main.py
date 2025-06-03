@@ -44,11 +44,12 @@ def main():
 
         # 📤 导出为 Excel
         filename, output_buffer = processor.export_to_excel(result_df)
+        file_name = f"运营数据订单-在制-库存汇总报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         st.success("✅ 汇总完成！你可以下载结果文件：")
         st.download_button(
             label="📥 下载 Excel 汇总报告",
             data=buffer.getvalue(),
-            file_name="主计划.xlsx",
+            file_name=file_name,
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
