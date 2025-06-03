@@ -14,4 +14,4 @@ def adjust_column_width(ws, max_width=40):
                     max_length = max(max_length, len(str(cell.value)))
             except:
                 pass
-        ws.column_dimensions[col_letter].width = min(max_length + 2, max_width)
+        ws.column_dimensions[col_letter].width = min(max_length + 5, max_width)
