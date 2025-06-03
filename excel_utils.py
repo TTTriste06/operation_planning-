@@ -1,19 +1,20 @@
 from openpyxl.utils import get_column_letter
 
-def adjust_column_width(writer, sheet_name, df):
-    """
-    自动调整 Excel 工作表中各列的宽度以适应内容长度。
+from openpyxl.utils import get_column_letter
 
-    参数:
-    - writer: pandas 的 ExcelWriter 对象
-    - sheet_name: 要调整的工作表名称
-    - df: 对应写入工作表的 DataFrame 数据
+def adjust_column_width(ws, max_width=40):
     """
-    worksheet = writer.sheets[sheet_name]
-    for idx, col in enumerate(df.columns, 1):
-        # 获取该列中所有字符串长度的最大值
-        max_content_len = df[col].astype(str).str.len().max()
-        header_len = len(str(col))
-        column_width = max(max_content_len, header_len) * 1.2 + 8
-        worksheet.column_dimensions[get_column_letter(idx)].width = min(column_width, 50)
-
+    自动调整 openpyxl 工作表中每列宽度，默认最大宽度为 max_width。
+    """
+    for col in ws.columns:
+        max_length = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            try:
+                cell_value = str(cell.value)
+                if cell_value:
+                    max_length = max(max_length, len(cell_value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, max_width)
+        ws.column_dimensions[col_letter].width = adjusted_width
