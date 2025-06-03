@@ -15,7 +15,7 @@ def merge_safety_inventory(main_plan_df: pd.DataFrame, safety_df: pd.DataFrame):
     merged = main_plan_df.merge(safety_df, on="品名", how="left")
 
     used_keys = set(
-        merged[~merged[[" InvWaf", " InvPart"]].isna().all(axis=1)]["品名"]
+        merged[~merged[["InvWaf", "InvPart"]].isna().all(axis=1)]["品名"]
         .dropna().astype(str).str.strip()
     )
 
@@ -25,11 +25,11 @@ def merge_safety_inventory(main_plan_df: pd.DataFrame, safety_df: pd.DataFrame):
 
 def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
     """
-    将“ InvWaf”和“ InvPart”两列的上方合并写入“安全库存”标题。
+    将“InvWaf”和“InvPart”两列的上方合并写入“安全库存”标题。
     """
     try:
-        invwaf_col_idx = df.columns.get_loc(" InvWaf") + 1  # openpyxl是1-indexed
-        invpart_col_idx = df.columns.get_loc(" InvPart") + 1
+        invwaf_col_idx = df.columns.get_loc("InvWaf") + 1  # openpyxl是1-indexed
+        invpart_col_idx = df.columns.get_loc("InvPart") + 1
 
         start_col = get_column_letter(invwaf_col_idx)
         end_col = get_column_letter(invpart_col_idx)
