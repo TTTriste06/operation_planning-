@@ -3,7 +3,7 @@ import streamlit as st
 
 def clean_mapping_headers(mapping_df):
     """
-    将新旧料号表的列名重命名为标准字段，删除其他列。
+    将新旧料号表的列名重命名为标准字段，按列数自动对齐；若列数超限则报错。
     """
     required_headers = [
         "旧规格", "旧品名", "旧晶圆品名",
@@ -15,9 +15,14 @@ def clean_mapping_headers(mapping_df):
         "替代规格4", "替代品名4", "替代晶圆4"
     ]
 
-    # mapping_df.columns = required_headers[:len(mapping_df.columns)+1]
-    # mapping_df = mapping_df[required_headers]  # 删除多余列
-    return mapping_df
+    if mapping_df.shape[1] > len(required_headers):
+        raise ValueError(f"❌ 新旧料号列数超出预期：共 {mapping_df.shape[1]} 列，最多支持 {len(required_headers)} 列")
+
+    # ✅ 重命名当前列
+    mapping_df.columns = required_headers[:mapping_df.shape[1]]
+
+    # ✅ 仅保留这些列
+    return mapping_df[required_headers[:mapping_df.shape[1]]]
 
 def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
     """
