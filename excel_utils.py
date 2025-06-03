@@ -1,7 +1,5 @@
 from openpyxl.utils import get_column_letter
 
-from openpyxl.utils import get_column_letter
-
 def adjust_column_width(ws, max_width=40):
     """
     自动调整 openpyxl 工作表中每列宽度，默认最大宽度为 max_width。
