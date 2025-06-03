@@ -38,8 +38,9 @@ def main():
         # 📊 初始化并执行处理流程
         buffer = BytesIO()
         processor = PivotProcessor()
+        processor.classify_files(uploaded_files)
         processor.process(uploaded_files, buffer, additional_sheets)
-
+        
         result_df = processor.process()
 
         # 📤 导出为 Excel
