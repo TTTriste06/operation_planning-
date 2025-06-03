@@ -15,8 +15,8 @@ def clean_mapping_headers(mapping_df):
         "替代规格4", "替代品名4", "替代晶圆4"
     ]
 
-    mapping_df.columns = required_headers[:len(mapping_df.columns)+1]
-    mapping_df = mapping_df[required_headers]  # 删除多余列
+    # mapping_df.columns = required_headers[:len(mapping_df.columns)+1]
+    # mapping_df = mapping_df[required_headers]  # 删除多余列
     return mapping_df
 
 def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
