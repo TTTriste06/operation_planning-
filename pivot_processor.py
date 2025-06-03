@@ -73,6 +73,7 @@ class PivotProcessor:
         mapping_df = self.additional_sheets.get("赛卓-新旧料号")
         if mapping_df is not None and not mapping_df.empty:
             try:
+                st.write(mapping_df)
                 cleaned = clean_mapping_headers(mapping_df)
                 self.additional_sheets["赛卓-新旧料号"] = cleaned
                 st.write(mapping_df)
