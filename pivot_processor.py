@@ -17,13 +17,26 @@ class PivotProcessor:
 
     def classify_files(self, uploaded_files: dict):
         """
-        根据 FILE_KEYWORDS 将上传文件归类为标准名称
+        根据 FILE_KEYWORDS 将上传文件归类为标准名称。
+        例如：上传文件名为 '成品在制529.xlsx'，将其识别为 '赛卓-成品在制'
         """
+        unmatched = []
+    
         for filename, file_obj in uploaded_files.items():
+            matched = False
             for keyword, standard_name in FILE_KEYWORDS.items():
                 if keyword in filename:
                     self.dataframes[standard_name] = pd.read_excel(file_obj)
+                    matched = True
                     break
+            if not matched:
+                unmatched.append(filename)
+    
+        if unmatched:
+            st.warning(f"⚠️ 以下文件未能识别为标准表，请检查文件名是否包含关键字：{unmatched}")
+        else:
+            st.success(f"✅ 所有上传文件均已成功识别：{list(self.dataframes.keys())}")
+
 
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
         """
