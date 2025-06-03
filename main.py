@@ -17,8 +17,8 @@ def main():
     uploaded_files, forecast_file, safety_file, mapping_file, start = get_uploaded_files()
 
     if start:
-        if len(uploaded_files) < 5:
-            st.error("❌ 请至少上传 5 个核心文件（未交订单/成品在制/成品库存/下单/销货/到货等）！")
+        if len(uploaded_files) < 8:
+            st.error("❌ 请上传 8 个核心文件（未交订单/成品在制/成品库存/CP在制/晶圆库存/下单明细/销货明细/到货明细）！")
             return
 
         # 🎯 构建辅助文件：上传则保存至 GitHub，否则从 GitHub 加载
