@@ -15,8 +15,8 @@ class PivotProcessor:
         """
         替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
         """
-
-        # 统一文件名为标准 key（例：成品在制529.xlsx → 赛卓-成品在制）
+        
+        # === 标准化上传文件名 ===
         self.dataframes = {}
         for filename, file_obj in uploaded_files.items():
             matched = False
@@ -26,40 +26,37 @@ class PivotProcessor:
                     matched = True
                     break
             if not matched:
-                st.warning(f"⚠️ 上传文件 `{filename}` 未包含任何关键词，未被识别，已跳过！")
-
-        # === 替换品名 ===
+                st.warning(f"⚠️ 上传文件 `{filename}` 未识别关键词，跳过")
+        
+        self.additional_sheets = additional_sheets
         mapping_df = additional_sheets.get("赛卓-新旧料号")
         if mapping_df is None or mapping_df.empty:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
-
-        all_tables = {
-            **uploaded_files,
+        
+        # === 替换品名 ===
+        for sheet_name, df in {
+            **self.dataframes,
             **{k: v for k, v in additional_sheets.items() if k not in ["赛卓-新旧料号", "赛卓-供应商-PC"]}
-        }
-
-        self.dataframes = {}
-        self.additional_sheets = additional_sheets
-
-        for sheet_name, df in all_tables.items():
+        }.items():
             if sheet_name not in FIELD_MAPPINGS:
-                st.warning(f"⚠️ {sheet_name} 没有在 FIELD_MAPPINGS 中注册，跳过替换")
+                st.warning(f"⚠️ {sheet_name} 未在 FIELD_MAPPINGS 注册，跳过替换")
                 continue
-
+        
             field_map = FIELD_MAPPINGS[sheet_name]
             if "品名" not in field_map:
-                st.warning(f"⚠️ {sheet_name} 的 FIELD_MAPPINGS 中未定义 '品名' 映射，跳过")
+                st.warning(f"⚠️ {sheet_name} 的 FIELD_MAPPINGS 中未定义 '品名'，跳过")
                 continue
-
+        
             actual_name_col = field_map["品名"]
             if actual_name_col not in df.columns:
                 st.warning(f"⚠️ {sheet_name} 中找不到列：{actual_name_col}，跳过")
                 continue
-
+        
             try:
-                df, keys_main = apply_mapping_and_merge(df, mapping_df, field_map={"品名": actual_name_col})
-                df, keys_sub = apply_extended_substitute_mapping(df, mapping_df, field_map={"品名": actual_name_col})
-                if sheet_name in uploaded_files:
+                df, _ = apply_mapping_and_merge(df, mapping_df, field_map={"品名": actual_name_col})
+                df, _ = apply_extended_substitute_mapping(df, mapping_df, field_map={"品名": actual_name_col})
+        
+                if sheet_name in self.dataframes:
                     self.dataframes[sheet_name] = df
                 else:
                     self.additional_sheets[sheet_name] = df
