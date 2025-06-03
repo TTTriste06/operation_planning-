@@ -120,13 +120,15 @@ class PivotProcessor:
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
-            # 写主计划，表头从第2行开始
-            main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
-
+            # ✅ 替换所有 NaN 为 "" 以避免 Excel 中显示 nan
+            clean_df = main_plan_df.fillna("")
+        
+            # ✅ 写主计划，表头从第2行开始
+            clean_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
+        
             ws = writer.book["主计划"]
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
             adjust_column_width(ws)
-
         output_buffer.seek(0)
 
 
