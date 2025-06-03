@@ -25,7 +25,9 @@ from summary import (
     append_unfulfilled_summary_columns_by_date,
     merge_unfulfilled_order_header, 
     append_forecast_to_summary,
-    merge_forecast_header
+    merge_forecast_header,
+    merge_finished_inventory_with_warehouse_types,
+    merge_inventory_header
 )
 
 class PivotProcessor:
@@ -142,7 +144,15 @@ class PivotProcessor:
             main_plan_df, unmatched_forecast = append_forecast_to_summary(main_plan_df, forecast_df)
             st.success("✅ 已合并预测数据")
 
+        ## == 成品库存 ==
+        finished_df = additional_sheets.get("赛卓-成品库存")
+        mapping_df = additional_sheets.get("赛卓-新旧料号")
+        if finished_df is not None and not finished_df.empty:
+            main_plan_df, unmatched_finished = merge_finished_inventory_with_warehouse_types(main_plan_df, finished_df, mapping_df)
+            st.success("✅ 已合并成品库存数据")
         
+        
+                
                 
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -159,6 +169,7 @@ class PivotProcessor:
             merge_safety_header(ws, main_plan_df)
             merge_unfulfilled_order_header(ws)
             merge_forecast_header(ws)
+            merge_inventory_header(ws)
         
             # 调整列宽
             adjust_column_width(ws)
