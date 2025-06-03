@@ -15,7 +15,7 @@ def clean_mapping_headers(mapping_df):
         "替代规格4", "替代品名4", "替代晶圆4"
     ]
 
-    mapping_df.columns = required_headers[:len(mapping_df.columns)]
+    mapping_df.columns = required_headers[:len(mapping_df.columns)+1]
     mapping_df = mapping_df[required_headers]  # 删除多余列
     return mapping_df
 
