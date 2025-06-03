@@ -120,6 +120,7 @@ class PivotProcessor:
 
         ## == 安全库存 ==
         safety_df = additional_sheets.get("赛卓-安全库存")
+        st.write(safety_df)
         if safety_df is not None and not safety_df.empty:
             main_plan_df, unmatched_safety = merge_safety_inventory(main_plan_df, safety_df)
             st.success("✅ 已合并安全库存数据")
