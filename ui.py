@@ -44,8 +44,9 @@ def get_uploaded_files():
     forecast_file = st.file_uploader("📈 上传预测文件", type="xlsx", key="forecast")
     safety_file = st.file_uploader("🔐 上传安全库存文件", type="xlsx", key="safety")
     mapping_file = st.file_uploader("🔁 上传新旧料号对照表", type="xlsx", key="mapping")
+    pc_file = st.file_uploader("🔁 上传PC-供应商表", type="xlsx", key="pc")
 
     # 🚀 生成按钮
     start = st.button("🚀 生成汇总 Excel")
 
-    return uploaded_files, forecast_file, safety_file, mapping_file, start
+    return uploaded_files, forecast_file, safety_file, mapping_file, pc_file, start
