@@ -101,7 +101,7 @@ class PivotProcessor:
 
     def export_to_excel(self, sheet_dict: dict):
         """
-        接收一个包含多个 sheet 的 dict，并写入 Excel 文件。
+        将多个 DataFrame 写入 Excel 文件，并将表头写在第 2 行（第 1 行为空）。
         """
         output = BytesIO()
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -109,10 +109,12 @@ class PivotProcessor:
     
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
             for sheet_name, df in sheet_dict.items():
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                # ✅ 表头写在第 2 行（startrow=1），第 1 行留空
+                df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1)
     
         output.seek(0)
         return filename, output
+
 
 
     def set_additional_data(self, sheets_dict):
