@@ -134,3 +134,87 @@ def merge_unfulfilled_order_header(sheet):
     cell = sheet.cell(row=1, column=start_col)
     cell.value = "未交订单"
     cell.alignment = Alignment(horizontal="center", vertical="center")
+
+
+def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
+    """
+    从预测表中提取当月及未来的预测信息（仅按“品名”匹配），合并至 summary_df。
+    返回合并后的表格和未匹配的品名列表。
+
+    参数:
+    - summary_df: 主计划 DataFrame（需含 '品名'）
+    - forecast_df: 原始预测表（需含 '生产料号' 及预测列）
+
+    返回:
+    - result: 合并后的 DataFrame
+    - unmatched_keys: list[str]，未匹配的品名
+    """
+    today = datetime.today()
+    this_month = today.strftime("%m").lstrip("0") + "月"
+
+    # ✅ 统一列名
+    forecast_df = forecast_df.rename(columns={"生产料号": "品名"}).copy()
+    forecast_df["品名"] = forecast_df["品名"].astype(str).str.strip()
+
+    # ✅ 识别预测列（仅保留“x月预测”且月份 >= 当前月）
+    month_cols = [
+        col for col in forecast_df.columns
+        if isinstance(col, str) and col.endswith("月预测") and col[:col.index("月")].isdigit()
+    ]
+    future_month_cols = [
+        col for col in month_cols
+        if int(col[:col.index("月")]) >= int(this_month)
+    ]
+    if not future_month_cols:
+        st.warning("⚠️ 未找到当月或未来月份的预测列（格式应为“5月预测”）")
+        return summary_df, []
+
+    # ✅ 汇总相同品名的预测值
+    forecast_df[future_month_cols] = forecast_df[future_month_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+    forecast_grouped = forecast_df.groupby("品名", as_index=False)[future_month_cols].sum()
+
+    # ✅ 合并到主计划
+    summary_df["品名"] = summary_df["品名"].astype(str).str.strip()
+    result = summary_df.merge(forecast_grouped, on="品名", how="left")
+
+    # ✅ 填补新预测列中的 NaN 为 0（不影响原有列）
+    for col in future_month_cols:
+        if col in result.columns:
+            result[col] = result[col].fillna(0)
+
+    # ✅ 找出未匹配品名
+    forecast_keys = set(forecast_grouped["品名"])
+    summary_keys = set(summary_df["品名"])
+    unmatched_keys = sorted(list(forecast_keys - summary_keys))
+
+    return result, unmatched_keys
+
+def merge_forecast_header(sheet):
+    """
+    自动检测以“月预测”结尾的列（如“6月预测”、“7月预测”），
+    在第一行合并这些列的单元格并写入“预测”，设置居中。
+    """
+    header_row = list(sheet.iter_rows(min_row=2, max_row=2, values_only=True))[0]
+
+    # 找到所有“月预测”结尾的列索引
+    forecast_cols = [
+        idx for idx, col in enumerate(header_row, start=1)
+        if isinstance(col, str) and col.endswith("月预测")
+    ]
+
+    if not forecast_cols:
+        return  # 没有预测列，不处理
+
+    start_col = min(forecast_cols)
+    end_col = max(forecast_cols)
+
+    # 合并单元格
+    merge_range = f"{get_column_letter(start_col)}1:{get_column_letter(end_col)}1"
+    sheet.merge_cells(merge_range)
+
+    # 设置内容与样式
+    cell = sheet.cell(row=1, column=start_col)
+    cell.value = "预测"
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+
+
