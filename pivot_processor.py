@@ -58,7 +58,7 @@ class PivotProcessor:
     
             try:
                 df, keys_main = apply_mapping_and_merge(df, mapping_df, field_map={"品名": actual_name_col})
-                df, keys_sub = apply_extended_substitute_mapping(df, mapping_df, field_map={"品名": actual_name_col}, keys_main=keys_main)
+                df, keys_sub = apply_extended_substitute_mapping(df, mapping_df, field_map={"品名": actual_name_col})
                 # 更新处理后的表
                 if sheet_name in self.dataframes:
                     self.dataframes[sheet_name] = df
