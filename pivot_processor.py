@@ -7,8 +7,12 @@ from openpyxl import load_workbook
 
 from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX, FIELD_MAPPINGS
 from excel_utils import adjust_column_width
-from mapping_utils import clean_mapping_headers, apply_mapping_and_merge, apply_extended_substitute_mapping
-
+from mapping_utils import (
+    clean_mapping_headers, 
+    replace_all_names_with_mapping, 
+    apply_mapping_and_merge, 
+    apply_extended_substitute_mapping
+)
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -52,12 +56,9 @@ class PivotProcessor:
             col_name = FIELD_MAPPINGS["赛卓-预测"]["品名"]
             name_forecast = df_forecast[col_name].astype(str).str.strip().tolist()
 
-        df_names = pd.DataFrame({"品名": pd.Series(name_unfulfilled + name_forecast).dropna().astype(str).str.strip()})
-        
-        df_names, _ = apply_mapping_and_merge(df_names, mapping_df, field_map={"品名": "品名"})
-        df_names, _ = apply_extended_substitute_mapping(df_names, mapping_df, field_map={"品名": "品名"})
-        
-        all_names = df_names["品名"].dropna().drop_duplicates().sort_values().reset_index(drop=True)
+        all_names = pd.Series(name_unfulfilled + name_forecast)
+        all_names = replace_all_names_with_mapping(all_names, mapping_df)
+
 
         main_plan_df = main_plan_df.reindex(index=range(len(all_names)))
         if not all_names.empty:
