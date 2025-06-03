@@ -15,13 +15,13 @@ class PivotProcessor:
         self.dataframes = {}
         self.additional_sheets = {}
 
-    def classify_files(self, uploaded_files: dict):
+    def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
         """
-        根据 FILE_KEYWORDS 将上传文件归类为标准名称。
-        例如：上传文件名为 '成品在制529.xlsx'，将其识别为 '赛卓-成品在制'
+        替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
         """
-        unmatched = []
-    
+
+        # 统一文件名为标准 key（例：成品在制529.xlsx → 赛卓-成品在制）
+        self.dataframes = {}
         for filename, file_obj in uploaded_files.items():
             matched = False
             for keyword, standard_name in FILE_KEYWORDS.items():
@@ -30,18 +30,8 @@ class PivotProcessor:
                     matched = True
                     break
             if not matched:
-                unmatched.append(filename)
-    
-        if unmatched:
-            st.warning(f"⚠️ 以下文件未能识别为标准表，请检查文件名是否包含关键字：{unmatched}")
-        else:
-            st.success(f"✅ 所有上传文件均已成功识别：{list(self.dataframes.keys())}")
+                st.warning(f"⚠️ 上传文件 `{filename}` 未包含任何关键词，未被识别，已跳过！")
 
-
-    def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
-        """
-        替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
-        """
         # === 替换品名 ===
         mapping_df = additional_sheets.get("赛卓-新旧料号")
         if mapping_df is None or mapping_df.empty:
