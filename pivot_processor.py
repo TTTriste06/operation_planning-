@@ -72,11 +72,13 @@ class PivotProcessor:
         main_plan_df = pd.DataFrame(columns=headers)
 
         # 品名：提取未交订单和预测中的品名
-        name_unfulfilled = []
-        name_forecast = []
+
     
         df_unfulfilled = self.dataframes.get("赛卓-未交订单")
         df_forecast = self.additional_sheets.get("赛卓-预测")
+    
+        name_unfulfilled = []
+        name_forecast = []
     
         if df_unfulfilled is not None and not df_unfulfilled.empty:
             col_name = FIELD_MAPPINGS["赛卓-未交订单"]["品名"]
@@ -86,17 +88,15 @@ class PivotProcessor:
             col_name = FIELD_MAPPINGS["赛卓-预测"]["品名"]
             name_forecast = df_forecast[col_name].astype(str).str.strip().tolist()
     
+        # ✅ 合并并去重（即使两个来源都空也不报错）
         all_names = pd.Series(name_unfulfilled + name_forecast).dropna().drop_duplicates().sort_values()
     
-        # 正确构造空 DataFrame 并填入“品名”列
-        main_plan_df = main_plan_df.reindex(index=range(len(all_names))) # 用 reindex 来匹配品名数量（行数）
-        main_plan_df = pd.DataFrame({col: None for col in headers})  # 创建结构
-        main_plan_df["品名"] = all_names.values  # 仅填“品名”
-
-
+        # ✅ 创建空 DataFrame 并填入品名
+        main_plan_df = main_plan_df.reindex(index=range(len(all_names)))
+        if not all_names.empty:
+            main_plan_df["品名"] = all_names.values
+    
         return {"主计划": main_plan_df}
-
-        
 
 
     def export_to_excel(self, sheet_dict: dict):
