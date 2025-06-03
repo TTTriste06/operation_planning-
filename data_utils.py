@@ -93,7 +93,14 @@ def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
     name_col = "品名"
     pkg_col = "封装形式"
     vendor_col = "封装厂"
-
+    
+    # ✅ 先初始化主计划中这两列为空（防止 fillna 报错）
+    if vendor_col not in main_plan_df.columns:
+        main_plan_df[vendor_col] = None
+    if pkg_col not in main_plan_df.columns:
+        main_plan_df[pkg_col] = None
+        
+    
     # ✅ 封装厂 & 封装形式（从成品在制）
     if product_df is not None and not product_df.empty:
         product_df = product_df.copy()
