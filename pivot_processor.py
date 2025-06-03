@@ -80,11 +80,10 @@ class PivotProcessor:
         ## == 封装厂，封装形式和PC ==
         main_plan_df = fill_packaging_info(
             main_plan_df,
-            product_df=self.dataframes.get("赛卓-成品在制"),
-            mapping_df=self.additional_sheets.get("赛卓-新旧料号"),
-            order_df=self.dataframes.get("赛卓-下单明细"),
-            pc_df=self.additional_sheets.get("赛卓-供应商-PC")
+            dataframes=self.dataframes,
+            additional_sheets=self.additional_sheets
         )
+
 
         
         ## == 替换新旧料号、替代料号 ==
