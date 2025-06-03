@@ -87,9 +87,17 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
     返回：
         填入字段后的主计划 DataFrame
     """
+    # ✅ 封装厂别名映射
+    VENDOR_ALIAS = {
+        "绍兴千欣电子技术有限公司": "绍兴千欣",
+        "南通宁芯": "南通宁芯微电子"
+    }
+    
+    def normalize_vendor_name(name: str) -> str:
+        name = str(name).strip()
+        name = name.split("-")[0]  # 先去除 -CP 之类后缀
+        return VENDOR_ALIAS.get(name, name)
 
-    def strip_suffix(s):
-        return str(s).split("-")[0].strip() if isinstance(s, str) else s
 
     name_col = "品名"
     vendor_col = "封装厂"
@@ -109,7 +117,7 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
 
         df = df.copy()
         df[field_map["品名"]] = df[field_map["品名"]].astype(str).str.strip()
-        df[field_map["封装厂"]] = df[field_map["封装厂"]].astype(str).apply(strip_suffix)
+        df[field_map["封装厂"]] = df[field_map["封装厂"]].astype(str).apply(normalize_vendor_name)
 
         extract_cols = {
             name_col: df[field_map["品名"]],
@@ -133,13 +141,12 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
                 if alt_col in main_plan_df.columns:
                     main_plan_df.drop(columns=[alt_col], inplace=True)
 
-    st.write(main_plan_df)
     # ========== 2️⃣ 通过封装厂填入 PC ==========
     pc_df = additional_sheets.get("赛卓-供应商-PC")
     
     if pc_df is not None and not pc_df.empty:
         pc_df = pc_df.copy()
-        pc_df["封装厂"] = pc_df["封装厂"].astype(str).apply(strip_suffix)
+        pc_df["封装厂"] = pc_df["封装厂"].astype(str).apply(normalize_vendor_name)
         pc_df["PC"] = pc_df["PC"].astype(str).str.strip()
     
         # 删除 main_plan_df 中可能已有的 PC 列
