@@ -2,49 +2,43 @@ import pandas as pd
 import re
 import streamlit as st
 from openpyxl.styles import PatternFill
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 
 
-def merge_safety_inventory(summary_df, safety_df):
-    """
-    将安全库存表中 InvWaf 和 InvPart 信息按 '品名' 合并到汇总表中，仅根据 '品名' 匹配。
+def merge_safety_inventory(main_plan_df: pd.DataFrame, safety_df: pd.DataFrame):
+    safety_df = safety_df.rename(columns={"ProductionNO.": "品名"}).copy()
+    safety_df = safety_df[["品名", " InvWaf", " InvPart"]].drop_duplicates()
 
-    参数:
-    - summary_df: 汇总后的 DataFrame，含 '品名'
-    - safety_df: 安全库存表，含 'ProductionNO.'、' InvWaf'、' InvPart'
+    all_keys = set(safety_df["品名"].dropna().astype(str).str.strip())
 
-    返回:
-    - merged: 合并后的 DataFrame
-    - unmatched_keys: list of 品名 未被匹配的记录
-    """
+    merged = main_plan_df.merge(safety_df, on="品名", how="left")
 
-    # 统一列名
-    safety_df = safety_df.rename(columns={
-        'ProductionNO.': '品名'
-    }).copy()
-
-    # 去重，避免品名重复导致合并爆炸
-    safety_df = safety_df[['品名', ' InvWaf', ' InvPart']].drop_duplicates()
-
-    # 获取所有品名键
-    all_keys = set(safety_df['品名'].dropna().astype(str).str.strip())
-
-    # 合并
-    merged = summary_df.merge(
-        safety_df,
-        on='品名',
-        how='left'
-    )
-
-    # 实际用到的品名
     used_keys = set(
-        merged[~merged[[' InvWaf', ' InvPart']].isna().all(axis=1)]['品名']
+        merged[~merged[[" InvWaf", " InvPart"]].isna().all(axis=1)]["品名"]
         .dropna().astype(str).str.strip()
     )
 
-    # 找出未被用到的品名
     unmatched_keys = list(all_keys - used_keys)
 
     return merged, unmatched_keys
+
+def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
+    """
+    将“ InvWaf”和“ InvPart”两列的上方合并写入“安全库存”标题。
+    """
+    try:
+        invwaf_col_idx = df.columns.get_loc(" InvWaf") + 1  # openpyxl是1-indexed
+        invpart_col_idx = df.columns.get_loc(" InvPart") + 1
+
+        start_col = get_column_letter(invwaf_col_idx)
+        end_col = get_column_letter(invpart_col_idx)
+
+        # 合并单元格
+        ws.merge_cells(f"{start_col}1:{end_col}1")
+        ws[f"{start_col}1"] = "安全库存"
+    except Exception as e:
+        st.error(f"⚠️ 安全库存表头合并失败: {e}")
 
 
 def append_unfulfilled_summary_columns(summary_df, pivoted_df):
