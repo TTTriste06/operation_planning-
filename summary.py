@@ -221,5 +221,75 @@ def merge_forecast_header(sheet):
     cell = sheet.cell(row=1, column=start_col)
     cell.value = "预测"
     cell.alignment = Alignment(horizontal="center", vertical="center")
+    
+
+def merge_finished_inventory_with_warehouse_types(summary_df: pd.DataFrame, finished_inventory_df: pd.DataFrame, mapping_df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
+    """
+    从成品库存中提取“HOLD仓”、“成品仓”、“半成品仓”数据，根据“品名”合并到 summary_df 中；
+    若 mapping_df 中存在“半成品”→“新品名”映射，也一并添加半成品库存数据。
+
+    返回合并后的 DataFrame 与未匹配的品名列表。
+    """
+    warehouse_cols = ["HOLD仓", "成品仓", "半成品仓"]
+
+    # 初始化三列
+    for col in warehouse_cols:
+        if col not in summary_df.columns:
+            summary_df[col] = 0
+
+    # 清洗数据
+    finished_inventory_df = finished_inventory_df.copy()
+    finished_inventory_df["品名"] = finished_inventory_df["品名"].astype(str).str.strip()
+    finished_inventory_df["仓库名称"] = finished_inventory_df["仓库名称"].astype(str).str.strip()
+    finished_inventory_df["数量"] = pd.to_numeric(finished_inventory_df["数量"], errors="coerce").fillna(0)
+
+    # 分组聚合：每个品名在每个仓库的总数量
+    grouped = finished_inventory_df.groupby(["品名", "仓库名称"], as_index=False)["数量"].sum()
+
+    # 合并进主计划
+    summary_df["品名"] = summary_df["品名"].astype(str).str.strip()
+    for _, row in grouped.iterrows():
+        pname, warehouse, qty = row["品名"], row["仓库名称"], row["数量"]
+        if warehouse in warehouse_cols and pname in summary_df["品名"].values:
+            summary_df.loc[summary_df["品名"] == pname, warehouse] += qty
+
+    # 处理“半成品 → 新品名”映射：将“半成品”的半成品仓，加到新品名对应行的“半成品仓”
+    mapping_df = mapping_df.copy()
+    mapping_df["半成品"] = mapping_df["半成品"].astype(str).str.strip()
+    mapping_df["新品名"] = mapping_df["新品名"].astype(str).str.strip()
+    half_mappings = mapping_df[mapping_df["半成品"] != ""]
+
+    for _, row in half_mappings.iterrows():
+        old_name = row["半成品"]
+        new_name = row["新品名"]
+        if old_name in summary_df["品名"].values and new_name in summary_df["品名"].values:
+            delta = summary_df.loc[summary_df["品名"] == old_name, "半成品仓"].sum()
+            summary_df.loc[summary_df["品名"] == new_name, "半成品仓"] += delta
+
+    # 查找未匹配品名（只查成品库存里的）
+    unmatched = sorted(list(set(grouped["品名"]) - set(summary_df["品名"])))
+
+    return summary_df, unmatched
+
+
+def merge_inventory_header(sheet):
+    """
+    合并“HOLD仓”、“成品仓”、“半成品仓”标题，写入“库存”，居中
+    """
+    header_row = list(sheet.iter_rows(min_row=2, max_row=2, values_only=True))[0]
+
+    inventory_cols = [
+        idx for idx, col in enumerate(header_row, start=1)
+        if col in ["HOLD仓", "成品仓", "半成品仓"]
+    ]
+    if not inventory_cols:
+        return
+
+    start_col = min(inventory_cols)
+    end_col = max(inventory_cols)
+    sheet.merge_cells(f"{get_column_letter(start_col)}1:{get_column_letter(end_col)}1")
+    cell = sheet.cell(row=1, column=start_col)
+    cell.value = "库存"
+    cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
