@@ -13,6 +13,7 @@ from mapping_utils import (
     apply_mapping_and_merge, 
     apply_extended_substitute_mapping
 )
+from data_utils import extract_info
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -65,7 +66,35 @@ class PivotProcessor:
             main_plan_df["品名"] = all_names.values
 
         ## == 规格和品名 ==
-
+        sources = [
+            ("赛卓-未交订单", ("规格", "晶圆品名")),
+            ("赛卓-安全库存", ("规格", "晶圆品名")),
+            ("赛卓-新旧料号", ("规格", "晶圆品名")),
+            ("赛卓-成品在制", ("规格", "晶圆品名")),
+            ("赛卓-成品库存", ("规格", "晶圆品名")),
+            ("赛卓-预测", ("规格",))  # ❗预测只有规格
+        ]
+        
+        for sheet, fields in sources:
+            source_df = (
+                self.dataframes.get(sheet)
+                if sheet in self.dataframes
+                else self.additional_sheets.get(sheet)
+            )
+            if sheet in FIELD_MAPPINGS:
+                mapping = FIELD_MAPPINGS[sheet]
+                extracted = extract_info(source_df, mapping, fields=fields)
+                if not extracted.empty:
+                    main_plan_df = main_plan_df.merge(
+                        extracted, on="品名", how="left", suffixes=("", f"_{sheet}")
+                    )
+                    for f in fields:
+                        col_f_alt = f"{f}_{sheet}"
+                        if col_f_alt in main_plan_df.columns:
+                            main_plan_df[f] = main_plan_df[f].combine_first(main_plan_df[col_f_alt])
+                            main_plan_df.drop(columns=[col_f_alt], inplace=True)
+        
+                
         
         ## == 替换新旧料号、替代料号 ==
         for sheet_name, df in {
