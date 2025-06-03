@@ -130,7 +130,9 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
                 main_plan_df[col] = main_plan_df.get(col, pd.Series(index=main_plan_df.index)).combine_first(
                     merged[alt_col]
                 )
-                main_plan_df.drop(columns=[alt_col], inplace=True)
+                if alt_col in main_plan_df.columns:
+                    main_plan_df.drop(columns=[alt_col], inplace=True)
+
 
     # ========== 2️⃣ 通过封装厂填入 PC ==========
     pc_df = additional_sheets.get("赛卓-供应商-PC")
