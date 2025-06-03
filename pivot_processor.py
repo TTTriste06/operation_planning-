@@ -18,6 +18,10 @@ from data_utils import (
     fill_spec_and_wafer_info, 
     fill_packaging_info
 )
+from summary import (
+    merge_safety_inventory,
+    merge_safety_header
+)
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -84,8 +88,6 @@ class PivotProcessor:
             additional_sheets=self.additional_sheets
         )
 
-
-        
         ## == 替换新旧料号、替代料号 ==
         for sheet_name, df in {
             **self.dataframes,
@@ -116,22 +118,29 @@ class PivotProcessor:
             except Exception as e:
                 st.error(f"❌ 替换 {sheet_name} 中的品名失败：{e}")
 
+        ## == 安全库存 ==
+        safety_df = additional_sheets.get("赛卓-安全库存")
+        if safety_df is not None and not safety_df.empty:
+            main_plan_df, unmatched_safety = merge_safety_inventory(main_plan_df, safety_df)
+            st.success("✅ 已合并安全库存数据")
+            if unmatched_safety:
+                st.warning(f"⚠️ 以下品名未在安全库存中匹配到：{unmatched_safety}")
+
         
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
-            # ✅ 替换所有 NaN 为 "" 以避免 Excel 中显示 nan
-            clean_df = main_plan_df.fillna("")
-        
-            # ✅ 写主计划，表头从第2行开始
-            clean_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
+            main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
         
             ws = writer.book["主计划"]
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
+        
+            merge_safety_header(ws, main_plan_df)  # 🔷 合并标题
             adjust_column_width(ws)
+
         output_buffer.seek(0)
 
-
+        
     def set_additional_data(self, sheets_dict):
         """
         设置辅助数据表，如 预测、安全库存、新旧料号 等
