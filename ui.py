@@ -23,7 +23,7 @@ def get_uploaded_files():
 
     # ✅ 合并上传框：所有主+明细文件统一上传
     all_files = st.file_uploader(
-        "📁 上传主数据文件 + 到货/下单/销货明细（支持多选）",
+        "📁 上传主文件: 未交订单/成品在制/成品库存/CP在制/晶圆库存/下单明细/销货明细/到货明细（支持多选）",
         type=["xlsx"],
         accept_multiple_files=True,
         key="all_files"
