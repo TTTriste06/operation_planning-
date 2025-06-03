@@ -20,7 +20,9 @@ def merge_safety_inventory(main_plan_df: pd.DataFrame, safety_df: pd.DataFrame):
     )
 
     unmatched_keys = list(all_keys - used_keys)
-
+    
+    st.write(merged)
+    
     return merged, unmatched_keys
 
 def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
@@ -40,7 +42,7 @@ def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
     except Exception as e:
         st.error(f"⚠️ 安全库存表头合并失败: {e}")
 
-
+"""
 def append_unfulfilled_summary_columns(summary_df, pivoted_df):
     """
     提取历史未交订单 + 各未来月份未交订单列，仅根据 '品名' 合并到 summary_df 中。
@@ -232,3 +234,4 @@ def append_product_in_progress(summary_df, product_in_progress_df, mapping_df):
     # st.dataframe(pd.DataFrame(check_log))
 
     return summary_df, list(set(unmatched_keys) - used_keys)
+"""
