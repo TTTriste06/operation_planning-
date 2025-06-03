@@ -1,7 +1,8 @@
 import streamlit as st
+import pandas as pd
 from io import BytesIO
 from datetime import datetime
-import pandas as pd
+from config import CONFIG
 from pivot_processor import PivotProcessor
 from ui import setup_sidebar, get_uploaded_files
 from github_utils import upload_to_github, download_from_github
