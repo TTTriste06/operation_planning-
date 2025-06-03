@@ -17,13 +17,14 @@ class PivotProcessor:
 
     def classify_files(self, uploaded_files: dict):
         """
-        根据关键词识别上传的主数据文件，并赋予标准中文名称
+        根据 FILE_KEYWORDS 将上传文件归类为标准名称
         """
         for filename, file_obj in uploaded_files.items():
             for keyword, standard_name in FILE_KEYWORDS.items():
                 if keyword in filename:
                     self.dataframes[standard_name] = pd.read_excel(file_obj)
                     break
+
 
     
 
