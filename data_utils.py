@@ -16,6 +16,65 @@ def extract_info(df, mapping, fields=("规格", "晶圆品名")):
         return pd.DataFrame(columns=["品名"] + list(fields))
 
 
+def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame, dataframes: dict, additional_sheets: dict, field_mappings: dict) -> pd.DataFrame:
+    """
+    为主计划 DataFrame 补全 规格 和 晶圆品名 字段，按优先级从多个数据源中逐步填充。
+
+    参数：
+        main_plan_df: 主计划表，含 '品名' 列
+        dataframes: 主文件字典，来自 classify_files 后的 self.dataframes
+        additional_sheets: 辅助表字典，如预测、新旧料号等
+        field_mappings: 各表字段映射配置（FIELD_MAPPINGS）
+
+    返回：
+        已补全规格和晶圆品名的主计划表
+    """
+    sources = [
+        ("赛卓-未交订单", ("规格", "晶圆品名")),
+        ("赛卓-安全库存", ("规格", "晶圆品名")),
+        ("赛卓-新旧料号", ("规格", "晶圆品名")),
+        ("赛卓-成品在制", ("规格", "晶圆品名")),
+        ("赛卓-成品库存", ("规格", "晶圆品名")),
+        ("赛卓-预测", ("规格",))  # ❗预测中无晶圆品名
+    ]
+
+    for sheet, fields in sources:
+        source_df = (
+            dataframes.get(sheet)
+            if sheet in dataframes
+            else additional_sheets.get(sheet)
+        )
+        if source_df is None or source_df.empty:
+            continue
+
+        if sheet not in field_mappings:
+            continue
+
+        mapping = field_mappings[sheet]
+        if "品名" not in mapping or not all(f in mapping for f in fields):
+            continue
+
+        # 构建映射列
+        try:
+            extracted = source_df.copy()
+            extracted = extracted[[mapping["品名"]] + [mapping[f] for f in fields]]
+            extracted.columns = ["品名"] + list(fields)
+            extracted["品名"] = extracted["品名"].astype(str).str.strip()
+            extracted = extracted.drop_duplicates(subset=["品名"])
+        except Exception:
+            continue
+
+        # 合并并优先填入主列
+        main_plan_df = main_plan_df.merge(extracted, on="品名", how="left", suffixes=("", f"_{sheet}"))
+        for f in fields:
+            alt_col = f"{f}_{sheet}"
+            if alt_col in main_plan_df.columns:
+                main_plan_df[f] = main_plan_df[f].combine_first(main_plan_df[alt_col])
+                main_plan_df.drop(columns=[alt_col], inplace=True)
+
+    return main_plan_df
+
+
 def fill_packaging_info(main_plan_df, product_df, mapping_df, order_df, pc_df):
     """
     为主计划表填入封装厂、封装形式、PC 信息。
