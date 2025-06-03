@@ -11,39 +11,22 @@ def merge_safety_inventory(summary_df: pd.DataFrame, safety_df: pd.DataFrame) ->
     """
     将安全库存表中 InvWaf 和 InvPart 信息按 '品名' 合并到汇总表中，仅根据 '品名' 匹配。
     对相同品名做 sum 汇总；未匹配的填 0。
-
-    参数:
-    - summary_df: 汇总后的 DataFrame，含 '品名'
-    - safety_df: 安全库存表，含 'ProductionNO.'、'InvWaf'、'InvPart'
-
-    返回:
-    - merged: 合并后的 DataFrame（含 InvWaf 和 InvPart，空值填 0）
-    - unmatched_keys: list of 未被匹配的品名
     """
-    # ✅ 清洗并重命名列
     safety_df = safety_df.rename(columns={"ProductionNO.": "品名"}).copy()
     safety_df.columns = safety_df.columns.str.strip()
     safety_df["品名"] = safety_df["品名"].astype(str).str.strip()
-
-    # 转换为数值型（NaN 稍后会填 0）
     safety_df["InvWaf"] = pd.to_numeric(safety_df["InvWaf"], errors="coerce").fillna(0)
     safety_df["InvPart"] = pd.to_numeric(safety_df["InvPart"], errors="coerce").fillna(0)
 
-    # ✅ 按品名汇总
     safety_grouped = safety_df.groupby("品名", as_index=False)[["InvWaf", "InvPart"]].sum()
 
-    # ✅ 清洗主计划品名
     summary_df["品名"] = summary_df["品名"].astype(str).str.strip()
-
-    # ✅ 合并
     merged = summary_df.merge(safety_grouped, on="品名", how="left")
 
-    # ✅ 记录未匹配品名
     matched_keys = set(safety_grouped["品名"])
     used_keys = set(merged[~merged[["InvWaf", "InvPart"]].isna().all(axis=1)]["品名"])
     unmatched_keys = list(matched_keys - used_keys)
 
-    # ✅ 空值填 0
     merged["InvWaf"] = merged["InvWaf"].fillna(0)
     merged["InvPart"] = merged["InvPart"].fillna(0)
 
@@ -68,73 +51,58 @@ def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
     except Exception as e:
         st.error(f"⚠️ 安全库存表头合并失败: {e}")
 
-def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame, df_unfulfilled: pd.DataFrame) -> pd.DataFrame:
+def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame, df_unfulfilled: pd.DataFrame) -> tuple[pd.DataFrame, list]:
     """
     将未交订单按预交货日分为历史与未来月份，并添加至主计划 DataFrame。
-    若存在多个相同品名的记录，则先合并汇总。
-    仅对新添加的列填 0，不影响原有列的数据。
-
-    参数:
-    - main_plan_df: 主计划 DataFrame，需含 '品名'
-    - df_unfulfilled: 未交订单 DataFrame，含 '品名', '未交订单数量', '预交货日'
-
-    返回:
-    - main_plan_df: 合并后的 DataFrame，包含“总未交订单”、“历史未交订单”、“未交订单 yyyy-mm”等列
+    返回合并后的主计划表和未匹配品名列表（df_unfulfilled 中存在但主计划中没有的）。
     """
-    today = pd.Timestamp(datetime.today().replace(day=1))  # 当前月份的第一天
-    final_month = pd.Timestamp("2025-11-01")  # 最晚月份（可根据需求修改）
+    today = pd.Timestamp(datetime.today().replace(day=1))
+    final_month = pd.Timestamp("2025-11-01")
     future_months = pd.period_range(today.to_period("M"), final_month.to_period("M"), freq="M")
     future_cols = [f"未交订单 {str(p)}" for p in future_months]
 
-    # 清洗数据
     df = df_unfulfilled.copy()
     df["预交货日"] = pd.to_datetime(df["预交货日"], errors="coerce")
     df["未交订单数量"] = pd.to_numeric(df["未交订单数量"], errors="coerce").fillna(0)
     df["品名"] = df["品名"].astype(str).str.strip()
     df["月份"] = df["预交货日"].dt.to_period("M")
 
-    # 合并相同品名与月份的数据（避免重复记录）
+    # 合并重复品名+月份记录
     df = df.groupby(["品名", "月份"], as_index=False)["未交订单数量"].sum()
-
-    # 标记是否为历史
     df["是否历史"] = df["月份"] < today.to_period("M")
 
-    # 历史未交订单合并
     df_hist = df[df["是否历史"]].groupby("品名", as_index=False)["未交订单数量"].sum()
     df_hist = df_hist.rename(columns={"未交订单数量": "历史未交订单"})
 
-    # 未来未交订单：转换为列
     df_future = df[~df["是否历史"]].copy()
     df_future["月份"] = df_future["月份"].astype(str)
     df_pivot = df_future.pivot_table(index="品名", columns="月份", values="未交订单数量", aggfunc="sum").fillna(0)
     df_pivot.columns = [f"未交订单 {col}" for col in df_pivot.columns]
     df_pivot = df_pivot.reset_index()
 
-    # 补齐缺失月份列
     for col in future_cols:
         if col not in df_pivot.columns:
             df_pivot[col] = 0
 
-    # 合并历史与未来数据
     df_merged = pd.merge(df_hist, df_pivot, on="品名", how="outer").fillna(0)
-
-    # 计算总未交订单
     df_merged["总未交订单"] = df_merged["历史未交订单"] + df_merged[future_cols].sum(axis=1)
 
-    # 整理列顺序
     ordered_cols = ["品名", "总未交订单", "历史未交订单"] + future_cols
     df_merged = df_merged[ordered_cols]
 
-    # 合并进主计划
     main_plan_df["品名"] = main_plan_df["品名"].astype(str).str.strip()
     result = pd.merge(main_plan_df, df_merged, on="品名", how="left")
 
-    # 仅填补新添加列
     for col in ordered_cols[1:]:
         if col in result.columns:
             result[col] = result[col].fillna(0)
 
-    return result
+    # ✅ 未匹配品名（df_unfulfilled 中有，但 main_plan_df 中没有）
+    all_unfulfilled_names = set(df_unfulfilled["品名"].dropna().astype(str).str.strip())
+    all_main_names = set(main_plan_df["品名"].dropna().astype(str).str.strip())
+    unmatched = sorted(list(all_unfulfilled_names - all_main_names))
+
+    return result, unmatched
 
 def merge_unfulfilled_order_header(sheet):
     """
