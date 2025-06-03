@@ -71,6 +71,7 @@ class PivotProcessor:
     
         # ✅ 对新旧料号进行列名清洗
         mapping_df = self.additional_sheets.get("赛卓-新旧料号")
+        st.write(mapping_df)
         if mapping_df is not None and not mapping_df.empty:
             try:
                 st.write(mapping_df)
