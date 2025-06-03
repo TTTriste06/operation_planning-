@@ -18,7 +18,8 @@ FILENAME_KEYS = {
     "supplier": "供应商-PC.xlsx",
     "arrival": "到货明细.xlsx",
     "order": "下单明细.xlsx",
-    "sales": "销货明细.xlsx"
+    "sales": "销货明细.xlsx",
+    "pc": "供应商-PC.xlsx",
 }
 
 
