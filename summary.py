@@ -150,22 +150,25 @@ def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFra
     - unmatched_keys: list[str]，未匹配的品名
     """
     today = datetime.today()
-    this_month = today.strftime("%m").lstrip("0") + "月"
+    this_month_int = today.month
 
     # ✅ 统一列名
     forecast_df = forecast_df.rename(columns={"生产料号": "品名"}).copy()
     forecast_df["品名"] = forecast_df["品名"].astype(str).str.strip()
 
-    # ✅ 识别预测列（仅保留“x月预测”且月份 >= 当前月）
+    # ✅ 识别预测列（仅保留“x月预测”且月份 >= 当前月）    
+    # 获取所有“x月预测”列，且月份合法
     month_cols = [
         col for col in forecast_df.columns
-        if isinstance(col, str) and col.endswith("月预测") and col[:col.index("月")].isdigit()
+        if isinstance(col, str) and col.endswith("月预测") and "月" in col and col[:col.index("月")].isdigit()
     ]
     
+    # 保留当前月及以后的预测列
     future_month_cols = [
         col for col in month_cols
         if int(col[:col.index("月")]) >= this_month_int
     ]
+
 
     if not future_month_cols:
         st.warning("⚠️ 未找到当月或未来月份的预测列（格式应为“5月预测”）")
