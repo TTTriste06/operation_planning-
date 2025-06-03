@@ -156,11 +156,9 @@ class PivotProcessor:
             # 在第一行写入时间戳
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
         
-            # 合并“安全库存”标题（你已有的函数）
             merge_safety_header(ws, main_plan_df)
-        
-            # ✅ 自动合并“未交订单”列标题
             merge_unfulfilled_order_header(ws)
+            merge_forecast_header(ws)
         
             # 调整列宽
             adjust_column_width(ws)
