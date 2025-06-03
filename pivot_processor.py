@@ -20,7 +20,8 @@ from data_utils import (
 )
 from summary import (
     merge_safety_inventory,
-    merge_safety_header
+    merge_safety_header,
+    append_unfulfilled_summary_columns_by_date
 )
 
 class PivotProcessor:
