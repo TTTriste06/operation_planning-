@@ -80,7 +80,7 @@ def download_from_github(filename):
         raise FileNotFoundError(f"❌ GitHub 上找不到文件：{filename} (HTTP {response.status_code})")
 
 
-def load_file_with_github_fallback(key, uploaded_file):
+def load_file_with_github_fallback(key, uploaded_file, sheet_name="Sheet1"):
     """
     加载上传文件或从 GitHub 下载。如果上传了文件，就保存至 GitHub 并返回 DataFrame；
     否则尝试从 GitHub 下载。若失败返回空 DataFrame。
@@ -98,22 +98,19 @@ def load_file_with_github_fallback(key, uploaded_file):
         return pd.DataFrame()
 
     if uploaded_file is not None:
-        # 上传文件，保存到 GitHub
         file_bytes = uploaded_file.read()
         file_io = BytesIO(file_bytes)
         try:
             upload_to_github(BytesIO(file_bytes), filename)
             st.success(f"✅ 使用上传文件并保存到 GitHub：{filename}")
         except Exception as e:
-            st.warning(f"⚠️ 上传文件到 GitHub 失败：{e}")
-        return pd.read_excel(file_io)
+            st.warning(f"⚠️ 上传失败：{e}")
+        return pd.read_excel(file_io, sheet_name=sheet_name)  # ✅ 强制读取 Sheet1
 
     else:
-        # 没有上传，从 GitHub 加载
         try:
             content = download_from_github(filename)
-            st.info(f"📂 使用 GitHub 历史版本：{filename}")
-            return pd.read_excel(BytesIO(content))
+            return pd.read_excel(BytesIO(content), sheet_name=sheet_name)  # ✅ 强制读取 Sheet1
         except FileNotFoundError as e:
             st.warning(str(e))
             return pd.DataFrame()
