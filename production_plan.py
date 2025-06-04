@@ -296,6 +296,52 @@ def aggregate_actual_arrivals(main_plan_df: pd.DataFrame, df_arrival: pd.DataFra
     return main_plan_df
 
 
+def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
+    """
+    将销货明细中的销售数量和销售金额按照月份填入主计划表。
+
+    参数：
+    - main_plan_df: 主计划 DataFrame（含“品名”列）
+    - df_sales: 销货明细 DataFrame，含“交易日期”、“品名”、“数量”、“原币金额”
+    - forecast_months: 月份列表，如 [6, 7, 8]
+
+    返回：
+    - main_plan_df: 添加了“X月销售数量”和“X月销售金额”的列
+    """
+    if df_sales.empty or not forecast_months:
+        return main_plan_df
+
+    df_sales = df_sales[["交易日期", "品名", "数量", "原币金额"]].dropna()
+    df_sales["品名"] = df_sales["品名"].astype(str).str.strip()
+    df_sales["销售月份"] = pd.to_datetime(df_sales["交易日期"], errors="coerce").dt.month
+
+    result_qty = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
+    result_amt = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
+    for m in forecast_months:
+        result_qty[f"{m}月销售数量"] = 0
+        result_amt[f"{m}月销售金额"] = 0
+
+    for _, row in df_sales.iterrows():
+        part = row["品名"]
+        qty = row["数量"]
+        amt = row["原币金额"]
+        month = row["销售月份"]
+        if month in forecast_months:
+            col_qty = f"{month}月销售数量"
+            col_amt = f"{month}月销售金额"
+            match_idx = result_qty[result_qty["品名"] == part].index
+            if not match_idx.empty:
+                result_qty.loc[match_idx[0], col_qty] += qty
+                result_amt.loc[match_idx[0], col_amt] += amt
+
+    for col in result_qty.columns[1:]:
+        main_plan_df[col] = result_qty[col]
+
+    for col in result_amt.columns[1:]:
+        main_plan_df[col] = result_amt[col]
+
+    return main_plan_df
+
 
 
 
