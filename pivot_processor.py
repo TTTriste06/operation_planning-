@@ -193,7 +193,11 @@ class PivotProcessor:
 
 
         df_plan = pd.DataFrame(index=main_plan_df.index)
+        
+        def safe_col(self, col: str) -> pd.Series:
+            return pd.to_numeric(self.summary_df[col], errors="coerce").fillna(0) if col in self.summary_df.columns else pd.Series(0, index=self.summary_df.index)
 
+        
         for idx, month in enumerate(forecast_months[:-1]):  # 最后一个月不生成
             this_month = f"{month}月"
             next_month = f"{forecast_months[idx + 1]}月"
@@ -207,7 +211,7 @@ class PivotProcessor:
             col_target = f"{this_month}_成品投单计划"
             col_actual_prod = f"{this_month}_成品实际投单"
             col_target_prev = f"{prev_month}_成品投单计划" if prev_month else None
-        
+            
             if idx == 0:
                 # 第一个月：特殊算法
                 df_plan[col_target] = (
