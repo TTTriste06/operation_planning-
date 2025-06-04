@@ -42,7 +42,8 @@ from production_plan import (
     generate_monthly_semi_plan,
     generate_monthly_adjust_plan,
     generate_monthly_return_adjustment,
-    generate_monthly_return_plan
+    generate_monthly_return_plan,
+    apply_monthly_grouped_headers
 )
 
 class PivotProcessor:
