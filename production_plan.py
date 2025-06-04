@@ -77,28 +77,28 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
 
         st.write(col_forecast_this, col_order_this, col_forecast_next, col_order_next, col_target, col_actual_prod, col_target_prev)
         
+       
+        # 安全提取列，如果缺失则填 0
+        def get(col):
+            return main_plan_df[col].fillna(0) if col in main_plan_df.columns else pd.Series(0, index=main_plan_df.index)
+    
+        def get_plan(col):
+            return df_plan[col].fillna(0) if col in df_plan.columns else pd.Series(0, index=main_plan_df.index)
+    
         if idx == 0:
             df_plan[col_target] = (
-                safe_col(main_plan_df, "InvPart") +
-                pd.DataFrame({
-                    "f": safe_col(main_plan_df, col_forecast_this),
-                    "o": safe_col(main_plan_df, col_order_this)
-                }).max(axis=1) +
-                pd.DataFrame({
-                    "f": safe_col(main_plan_df, col_forecast_next),
-                    "o": safe_col(main_plan_df, col_order_next)
-                }).max(axis=1) -
-                safe_col(main_plan_df, "成品仓") -
-                safe_col(main_plan_df, "成品在制")
+                get("InvPart") +
+                pd.concat([get(col_forecast_this), get(col_order_this)], axis=1).max(axis=1) +
+                pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1) -
+                get("成品仓") -
+                get("成品在制")
             )
         else:
             df_plan[col_target] = (
-                pd.DataFrame({
-                    "f": safe_col(main_plan_df, col_forecast_next),
-                    "o": safe_col(main_plan_df, col_order_next)
-                }).max(axis=1) +
-                (safe_col(df_plan, col_target_prev) - safe_col(main_plan_df, col_actual_prod))
+                pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1) +
+                (get(col_target_prev) - get(col_actual_prod))
             )
+
 
     plan_cols_in_summary = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
     
