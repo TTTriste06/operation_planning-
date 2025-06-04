@@ -85,7 +85,7 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
                     "f": safe_col(main_plan_df, col_forecast_next),
                     "o": safe_col(main_plan_df, col_order_next)
                 }).max(axis=1) -
-                safe_col(main_plan_df, "数量_成品仓") -
+                safe_col(main_plan_df, "成品仓") -
                 safe_col(main_plan_df, "成品在制")
             )
         else:
