@@ -102,17 +102,17 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
 
 
         if idx > 0:
-        target_prev = get_plan(col_target_prev)
-        actual_prod = get(col_actual_prod)
-        max2 = pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
-    
-        df_plan[col_target] = max2 + (target_prev - actual_prod)
-    
-        for i in range(len(main_plan_df)):
-            st.write(
-                f"第{i+1}行: max({get(col_forecast_next)[i]}, {get(col_order_next)[i]}) + "
-                f"({target_prev[i]} - {actual_prod[i]}) = {df_plan.at[i, col_target]}"
-            )
+            target_prev = get_plan(col_target_prev)
+            actual_prod = get(col_actual_prod)
+            max2 = pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
+        
+            df_plan[col_target] = max2 + (target_prev - actual_prod)
+        
+            for i in range(len(main_plan_df)):
+                st.write(
+                    f"第{i+1}行: max({get(col_forecast_next)[i]}, {get(col_order_next)[i]}) + "
+                    f"({target_prev[i]} - {actual_prod[i]}) = {df_plan.at[i, col_target]}"
+                )
 
 
 
