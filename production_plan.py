@@ -469,6 +469,10 @@ def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     - 第一个月为空
     - 后续月份为上月投单计划调整
     """
+    st.write("1")
+
+
+
     return_plan_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col and "PC" not in col]
     adjust_plan_cols = [col for col in main_plan_df.columns if "投单计划调整" in col]
 
