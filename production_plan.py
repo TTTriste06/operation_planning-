@@ -127,7 +127,8 @@ def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFram
     df_order = df_order[["下单日期", "回货明细_回货品名", "回货明细_回货数量"]].dropna()
     df_order["回货明细_回货品名"] = df_order["回货明细_回货品名"].astype(str).str.strip()
     df_order["下单月份"] = pd.to_datetime(df_order["下单日期"], errors="coerce").dt.month
-
+    st.write("df_order111")
+    st.write(df_order)
     # 筛选出主计划中存在的品名
     valid_parts = set(main_plan_df["品名"].astype(str))
     df_order = df_order[df_order["回货明细_回货品名"].isin(valid_parts)]
