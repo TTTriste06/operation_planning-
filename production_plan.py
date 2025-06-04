@@ -75,6 +75,8 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
         col_actual_prod = f"{this_month}_成品实际投单"
         col_target_prev = f"{prev_month}_成品投单计划" if prev_month else None
 
+        st.write(col_forecast_this, col_order_this, col_forecast_next, col_order_next, col_target, col_actual_prod, col_target_prev)
+        
         if idx == 0:
             df_plan[col_target] = (
                 safe_col(main_plan_df, "InvPart") +
