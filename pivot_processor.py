@@ -41,7 +41,6 @@ from production_plan import (
     aggregate_sales_quantity_and_amount,
     generate_monthly_semi_plan,
     generate_monthly_adjust_plan,
-    generate_monthly_return_plan,
     generate_monthly_return_adjustment
 )
 
