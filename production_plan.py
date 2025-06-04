@@ -6,11 +6,43 @@ from datetime import datetime
 from collections import defaultdict
 from openpyxl.styles import numbers
 
-MONTHLY_FIELDS = [
-    "销售数量", "销售金额", "成品投单计划", "半成品投单计划", "投单计划调整",
-    "成品可行投单", "半成品可行投单", "成品实际投单", "半成品实际投单",
-    "回货计划", "回货计划调整", "PC回货计划", "回货实际"
-]
+def init_monthly_fields(main_plan_df: pd.DataFrame) -> list[int]:
+    """
+    自动识别主计划中预测字段的月份，添加 HEADER_TEMPLATE 中的所有月度字段列。
+    初始化为 ""。
+    
+    返回：
+    - forecast_months: 所有识别出的月份列表（升序）
+    """
+    HEADER_TEMPLATE = [
+        "销售数量", "销售金额", "成品投单计划", "半成品投单计划", "投单计划调整",
+        "成品可行投单", "半成品可行投单", "成品实际投单", "半成品实际投单",
+        "回货计划", "回货计划调整", "PC回货计划", "回货实际"
+    ]
+
+    month_pattern = re.compile(r"^(\d{1,2})月预测$")
+    forecast_months = sorted({
+        int(match.group(1)) for col in main_plan_df.columns
+        if isinstance(col, str) and (match := month_pattern.match(col.strip()))
+    })
+
+    if not forecast_months:
+        return []
+
+    start_month = datetime.today().month
+    end_month = max(forecast_months) - 1
+
+    for m in range(start_month, end_month + 1):
+        for header in HEADER_TEMPLATE:
+            col = f"{m}月{header}"
+            if col not in main_plan_df.columns:
+                main_plan_df[col] = ""
+
+    return forecast_months
+
+
+
+
 
 
 def apply_monthly_grouped_headers(ws):
