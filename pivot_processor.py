@@ -171,6 +171,8 @@ class PivotProcessor:
 
         # 成品实际投单
         df_order = self.dataframes.get("赛卓-下单明细", pd.DataFrame())
+        st.write("df_order")
+        st.write(df_order)
         main_plan_df = aggregate_actual_fg_orders(main_plan_df, df_order, forecast_months)
 
         
