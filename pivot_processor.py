@@ -31,7 +31,7 @@ from summary import (
     append_product_in_progress,
     merge_product_in_progress_header
 )
-from production_plan import MonthlyPlanGenerator, MonthlyFieldAggregator
+from production_plan import merge_monthly_header, MonthlyPlanGenerator, MonthlyFieldAggregator
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
