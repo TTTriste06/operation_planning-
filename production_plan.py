@@ -435,9 +435,6 @@ def generate_monthly_return_adjustment(main_plan_df: pd.DataFrame) -> pd.DataFra
     actual_plan_cols = [col for col in main_plan_df.columns if "成品实际投单" in col and "半成品" not in col]
     adjust_plan_cols = [col for col in main_plan_df.columns if "投单计划调整" in col]
 
-    if not (len(adjust_return_cols) == len(return_plan_cols) == len(actual_plan_cols) == len(adjust_plan_cols)):
-        raise ValueError("❌ 回货计划调整列数不一致，无法逐月对应")
-
     for i in range(len(adjust_return_cols)):
         col_adjust = adjust_return_cols[i]
         col_return = return_plan_cols[i]
