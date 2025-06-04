@@ -595,3 +595,26 @@ def highlight_production_plan_cells(ws, df):
                 cell.fill = yellow_fill
             elif val > 2 * safety:
                 cell.fill = orange_fill
+
+def drop_last_forecast_month_columns(main_plan_df: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
+    """
+    删除 AC列（第29列）后所有含有最后一个预测月份的字段列，如 '12月销售数量' 等。
+    """
+    if not forecast_months:
+        return main_plan_df  # 无预测月份，不处理
+
+    last_valid_month = forecast_months[-1]
+    last_month_str = f"{last_valid_month}月"
+
+    # 起始列为 AC = 第29列，0-based index 为 28
+    fixed_part = main_plan_df.iloc[:, :28]
+    dynamic_part = main_plan_df.iloc[:, 28:]
+
+    # 仅保留不包含最后预测月的列
+    dynamic_part = dynamic_part.loc[:, ~dynamic_part.columns.str.contains(fr"^{last_month_str}")]
+
+    # 合并回主表
+    cleaned_df = pd.concat([fixed_part, dynamic_part], axis=1)
+
+    return cleaned_df
+
