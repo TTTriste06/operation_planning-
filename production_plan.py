@@ -388,6 +388,42 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
     return main_plan_df
 
 
+from openpyxl.utils import get_column_letter
+
+def generate_monthly_adjust_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    根据已有字段直接填充投单计划调整列。
+    第一个月为空，后续为公式字符串。
+    """
+    adjust_cols = [col for col in main_plan_df.columns if "投单计划调整" in col]
+    fg_plan_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
+    fg_actual_cols = [col for col in main_plan_df.columns if "成品实际投单" in col and "半成品" not in col]
+
+    if not adjust_cols or not fg_plan_cols or not fg_actual_cols:
+        raise ValueError("❌ 缺少必要的列：投单计划调整 / 成品投单计划 / 成品实际投单")
+
+    for i, col in enumerate(adjust_cols):
+        if i == 0:
+            # 第一个月为空字符串
+            main_plan_df[col] = ""
+        else:
+            # 后续月：写入公式
+            curr_plan_col = fg_plan_cols[i] if i < len(fg_plan_cols) else None
+            prev_plan_col = fg_plan_cols[i - 1]
+            prev_actual_col = fg_actual_cols[i - 1]
+
+            # 获取 Excel 的列号（+1 因为 openpyxl 是从 1 开始）
+            col_curr_plan = get_column_letter(main_plan_df.columns.get_loc(curr_plan_col) + 1)
+            col_prev_plan = get_column_letter(main_plan_df.columns.get_loc(prev_plan_col) + 1)
+            col_prev_actual = get_column_letter(main_plan_df.columns.get_loc(prev_actual_col) + 1)
+
+            def build_formula(row_idx: int) -> str:
+                row_num = row_idx + 3  # 数据起始于 Excel 第 3 行
+                return f"={col_curr_plan}{row_num}+({col_prev_plan}{row_num}-{col_prev_actual}{row_num})"
+
+            main_plan_df[col] = [build_formula(i) for i in range(len(main_plan_df))]
+
+    return main_plan_df
 
 
 
