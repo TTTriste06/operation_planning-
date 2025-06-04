@@ -3,6 +3,27 @@ from openpyxl.styles import Alignment, PatternFill
 import pandas as pd
 import re
 from datetime import datetime
+from openpyxl.styles import numbers
+
+cell.number_format = '#,##0'
+
+def merge_monthly_header(sheet, base_labels: list[str]):
+    """
+    自动合并各类 'xx月_字段' 列的表头，写入字段名（如“销售数量”、“投单计划”等）。
+    base_labels: 例如 ["销售数量", "销售金额", "成品投单计划"]
+    """
+    header_row = list(sheet.iter_rows(min_row=2, max_row=2, values_only=True))[0]
+
+    for label in base_labels:
+        cols = [i for i, v in enumerate(header_row, start=1) if isinstance(v, str) and v.endswith(label)]
+        if cols:
+            start_col = min(cols)
+            end_col = max(cols)
+            sheet.merge_cells(f"{get_column_letter(start_col)}1:{get_column_letter(end_col)}1")
+            cell = sheet.cell(row=1, column=start_col)
+            cell.value = label
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+
 
 class MonthlyPlanGenerator:
     HEADER_TEMPLATE = [
