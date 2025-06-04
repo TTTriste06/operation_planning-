@@ -160,32 +160,50 @@ class PivotProcessor:
             main_plan_df, unmatched_in_progress = append_product_in_progress(main_plan_df, product_in_progress_df, mapping_df)
             st.success("✅ 已合并成品在制数据")
 
-        
-        
-                
-                
+
+        # ✅ 构造月度生成器与聚合器
+        plan_generator = MonthlyPlanGenerator(main_plan_df)
+        forecast_months = plan_generator.forecast_months
+        plan_generator.init_monthly_columns()
+
+        field_aggregator = MonthlyFieldAggregator(main_plan_df, forecast_months)
+
+        # ✅ 聚合销售、到货、下单实际数据
+        df_sales = additional_sheets.get("赛卓-销货明细", pd.DataFrame())
+        df_arrival = additional_sheets.get("赛卓-到货明细", pd.DataFrame())
+        df_order = additional_sheets.get("赛卓-下单明细", pd.DataFrame())
+
+        field_aggregator.aggregate_sales(df_sales)
+        field_aggregator.aggregate_arrival(df_arrival)
+        field_aggregator.aggregate_orders(df_order)
+
+        # ✅ 生成投单计划与半成品投单
+        plan_generator.compute_product_plan()
+        plan_generator.compute_semi_plan()
+
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
-            # 写入主计划数据，列标题从第2行开始
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
-        
-            # 获取工作表对象
+
             ws = writer.book["主计划"]
-        
-            # 在第一行写入时间戳
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
-        
+
             merge_safety_header(ws, main_plan_df)
             merge_unfulfilled_order_header(ws)
             merge_forecast_header(ws)
             merge_inventory_header(ws)
             merge_product_in_progress_header(ws)
 
-        
-            # 调整列宽
-            adjust_column_width(ws)
+            # ✅ 合并月度字段表头
+            plan_generator.merge_monthly_headers(ws)
 
+            # ✅ 写入半成品投单、回货调整、计划调整的公式
+            plan_generator.write_formulas_to_excel(ws, "半成品投单计划")
+            plan_generator.write_formulas_to_excel(ws, "回货计划调整")
+            plan_generator.write_formulas_to_excel(ws, "投单计划调整")
+
+            adjust_column_width(ws)
 
         output_buffer.seek(0)
 
