@@ -5,9 +5,13 @@ from config import FIELD_MAPPINGS
 
 def clean_df(df: pd.DataFrame) -> pd.DataFrame:
     """
-    将 DataFrame 中的 NaN 替换为空字符串，并移除全为空的列（可选）。
+    清洗 DataFrame：
+    - 将 NaN 和 'nan' 替换为空字符串；
+    - 去除字符串前后空格；
     """
-    return df.fillna("").replace("nan", "")  # 防止 "nan" 字符串也被写入
+    df = df.fillna("").replace("nan", "")
+    df = df.applymap(lambda x: str(x).strip() if isinstance(x, str) else x)
+    return df
 
 
 def append_all_standardized_sheets(writer: pd.ExcelWriter, main_tables: dict, additional_tables: dict):
