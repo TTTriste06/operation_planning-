@@ -387,83 +387,79 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
 
     return main_plan_df
     
-
+from openpyxl.utils import get_column_letter
 
 def generate_monthly_adjust_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
-    生成“投单计划调整”列，并根据其值写入“回货计划”列：
-    - 第一个月：两列都为空
-    - 第二个月：投单调整有公式，但回货计划为空
-    - 后续月份：回货计划 = 上月投单计划调整
+    根据已有字段直接填充投单计划调整列。
+    第一个月为空，后续为公式字符串。
     """
     adjust_cols = [col for col in main_plan_df.columns if "投单计划调整" in col]
-    plan_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
-    actual_cols = [col for col in main_plan_df.columns if "成品实际投单" in col and "半成品" not in col]
-    return_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col and "PC" not in col]
+    fg_plan_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
+    fg_actual_cols = [col for col in main_plan_df.columns if "成品实际投单" in col and "半成品" not in col]
 
-    if not (len(adjust_cols) == len(plan_cols) == len(actual_cols) == len(return_cols)):
-        raise ValueError("❌ 月份列数不一致，请检查“成品投单计划/实际投单/投单调整/回货计划”字段。")
+    if not adjust_cols or not fg_plan_cols or not fg_actual_cols:
+        raise ValueError("❌ 缺少必要的列：投单计划调整 / 成品投单计划 / 成品实际投单")
 
-    for i in range(len(adjust_cols)):
-        col_adjust = adjust_cols[i]
-        col_plan = plan_cols[i]
-        col_actual = actual_cols[i]
-        col_return = return_cols[i]
+    for i, col in enumerate(adjust_cols):
+        if i == 0:
+            # 第一个月为空字符串
+            main_plan_df[col] = ""
+        else:
+            # 后续月：写入公式
+            curr_plan_col = fg_plan_cols[i] if i < len(fg_plan_cols) else None
+            prev_plan_col = fg_plan_cols[i - 1]
+            prev_actual_col = fg_actual_cols[i - 1]
 
-        col_idx_plan = main_plan_df.columns.get_loc(col_plan) + 1
-        col_idx_prev_adjust = main_plan_df.columns.get_loc(adjust_cols[i - 1]) + 1 if i > 0 else None
-        col_idx_prev_actual = main_plan_df.columns.get_loc(actual_cols[i - 1]) + 1 if i > 0 else None
-        col_idx_return = main_plan_df.columns.get_loc(col_return) + 1
+            # 获取 Excel 的列号（+1 因为 openpyxl 是从 1 开始）
+            col_curr_plan = get_column_letter(main_plan_df.columns.get_loc(curr_plan_col) + 1)
+            col_prev_plan = get_column_letter(main_plan_df.columns.get_loc(prev_plan_col) + 1)
+            col_prev_actual = get_column_letter(main_plan_df.columns.get_loc(prev_actual_col) + 1)
 
-        for row in range(3, len(main_plan_df) + 3):  # 从第3行开始
-            if i == 0:
-                main_plan_df.at[row - 3, col_adjust] = ""
-                main_plan_df.at[row - 3, col_return] = ""
-            else:
-                col_plan_letter = get_column_letter(col_idx_plan)
-                col_prev_adjust_letter = get_column_letter(col_idx_prev_adjust)
-                col_prev_actual_letter = get_column_letter(col_idx_prev_actual)
+            def build_formula(row_idx: int) -> str:
+                row_num = row_idx + 3  # 数据起始于 Excel 第 3 行
+                return f"={col_curr_plan}{row_num}+({col_prev_plan}{row_num}-{col_prev_actual}{row_num})"
 
-                # 写入投单计划调整公式
-                adjust_formula = f"={col_plan_letter}{row}+({col_prev_adjust_letter}{row}-{col_prev_actual_letter}{row})"
-                main_plan_df.at[row - 3, col_adjust] = adjust_formula
-
-                # 第二个月的回货计划为空，从第三个月开始填公式
-                if i == 1:
-                    main_plan_df.at[row - 3, col_return] = ""
-                else:
-                    main_plan_df.at[row - 3, col_return] = f"={col_prev_adjust_letter}{row}"
+            main_plan_df[col] = [build_formula(i) for i in range(len(main_plan_df))]
 
     return main_plan_df
 
 
-
-
-def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
+def generate_monthly_return_adjustment(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
-    根据逻辑填充每月回货计划字段：
+    在 main_plan_df 中填写“回货计划调整”列，每月计算如下：
     - 第一个月为空
-    - 后续月份为上月投单计划调整
+    - 后续月份：= 本月回货计划 + (上月成品实际投单 - 上月投单计划调整)
     """
+    adjust_return_cols = [col for col in main_plan_df.columns if "回货计划调整" in col]
     return_plan_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col]
+    actual_plan_cols = [col for col in main_plan_df.columns if "成品实际投单" in col and "半成品" not in col]
     adjust_plan_cols = [col for col in main_plan_df.columns if "投单计划调整" in col]
 
-    if len(return_plan_cols) != len(adjust_plan_cols):
-        raise ValueError("❌ 回货计划列数与投单计划调整列数不一致，无法逐月对应。")
+    # 校验列数一致性
+    if not (len(adjust_return_cols) == len(return_plan_cols) == len(actual_plan_cols) == len(adjust_plan_cols)):
+        raise ValueError("❌ 回货计划调整的计算列数不一致，请检查对应字段。")
 
-    for i, col in enumerate(return_plan_cols):
-        if i == 0:
-            main_plan_df[col] = ""
-        else:
-            # 获取上一个月投单计划调整列的 Excel 列号
-            prev_adjust_col = adjust_plan_cols[i - 1]
-            col_prev_adjust = get_column_letter(main_plan_df.columns.get_loc(prev_adjust_col) + 1)
+    for i in range(len(adjust_return_cols)):
+        col_return = return_plan_cols[i]
+        col_adjust_return = adjust_return_cols[i]
+        col_idx_adjust_return = main_plan_df.columns.get_loc(col_adjust_return) + 1
+        col_idx_return = main_plan_df.columns.get_loc(col_return) + 1
 
-            def build_formula(row_idx: int) -> str:
-                row_num = row_idx + 3  # Excel中从第3行开始
-                return f"={col_prev_adjust}{row_num}"
+        if i > 0:
+            col_idx_prev_actual = main_plan_df.columns.get_loc(actual_plan_cols[i - 1]) + 1
+            col_idx_prev_adjust = main_plan_df.columns.get_loc(adjust_plan_cols[i - 1]) + 1
 
-            main_plan_df[col] = [build_formula(j) for j in range(len(main_plan_df))]
+        for row in range(3, len(main_plan_df) + 3):  # 数据从第3行开始
+            if i == 0:
+                main_plan_df.at[row - 3, col_adjust_return] = ""
+            else:
+                col_letter_return = get_column_letter(col_idx_return)
+                col_letter_prev_actual = get_column_letter(col_idx_prev_actual)
+                col_letter_prev_adjust = get_column_letter(col_idx_prev_adjust)
+
+                formula = f"={col_letter_return}{row} + ({col_letter_prev_actual}{row} - {col_letter_prev_adjust}{row})"
+                main_plan_df.at[row - 3, col_adjust_return] = formula
 
     return main_plan_df
 
