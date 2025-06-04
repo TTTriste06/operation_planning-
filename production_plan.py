@@ -342,54 +342,40 @@ def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd
 
     return main_plan_df
 
-def generate_monthly_semi_plan(
-    main_plan_df: pd.DataFrame,
-    forecast_months: list[int],
-    ws
-):
-    """
-    填写半成品投单计划（每月）：
-    - 第一个月 = 成品投单计划 - 半成品在制
-    - 后续月份 = 成品投单计划 - 半成品在制 + （上月半成品投单计划 - 上月半成品实际投单）
 
-    参数:
-    - main_plan_df: DataFrame，主计划数据
-    - forecast_months: 月份列表（如 [6, 7, 8]）
-    - ws: openpyxl 的工作表对象
+def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
     """
-    # 半成品投单计划目标列
+    自动生成每月的半成品投单计划，并直接写入 main_plan_df：
+    - 第一个月为：成品投单计划 - 半成品在制（数值填入）
+    - 后续月份为：上月半成品投单计划 + （上月成品投单计划 - 上月半成品实际投单）（写入 Excel 公式字符串）
+
+    返回修改后的 main_plan_df
+    """
+    # 提取所有相关列
     semi_plan_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
     fg_plan_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
+    actual_semi_cols = [col for col in main_plan_df.columns if "半成品实际投单" in col]
 
-    # 创建 DataFrame 保存首月的数值（后续用 Excel 公式）
-    df_semi_plan = pd.DataFrame()
+    if not semi_plan_cols or not fg_plan_cols:
+        raise ValueError("❌ 缺少必要的投单列")
 
-    if semi_plan_cols and fg_plan_cols:
-        # 只处理第一个月：真实值
-        df_semi_plan[semi_plan_cols[0]] = (
-            main_plan_df[fg_plan_cols[0]] - main_plan_df.get("半成品在制", 0)
-        )
+    for i, col in enumerate(semi_plan_cols):
+        if i == 0:
+            # ✅ 第一个月：直接数值填入
+            main_plan_df[col] = (
+                pd.to_numeric(main_plan_df[fg_plan_cols[0]], errors="coerce").fillna(0) -
+                pd.to_numeric(main_plan_df.get("半成品在制", 0), errors="coerce").fillna(0)
+            )
+        else:
+            prev_semi_col = semi_plan_cols[i - 1]
+            prev_fg_col = fg_plan_cols[i - 1]
+            prev_actual_col = actual_semi_cols[i - 1] if i - 1 < len(actual_semi_cols) else ""
 
-        # 写入 Excel
-        for i, col in enumerate(semi_plan_cols):
-            col_idx = main_plan_df.columns.get_loc(col) + 1
-            col_letter = get_column_letter(col_idx)
-
-            for row in range(3, len(main_plan_df) + 3):  # 数据从第3行开始
-                cell = ws.cell(row=row, column=col_idx)
-
-                if i == 0:
-                    # 第一个月用实际值
-                    cell.value = df_semi_plan.iloc[row - 3, 0]
-                else:
-                    # 后续月份用公式
-                    prev_col_letter = get_column_letter(col_idx - 1)
-                    col_13_back = get_column_letter(col_idx - 13)  # 成品投单计划列（位置固定）
-                    col_8_back = get_column_letter(col_idx - 8)   # 半成品实际投单
-
-                    # 公式 = 上月 +（上月成品投单计划 - 上月实际投单）
-                    formula = f"={prev_col_letter}{row} + ({col_13_back}{row} - {col_8_back}{row})"
-                    cell.value = formula
+            def build_formula(row_idx: int) -> str:
+                row_num = row_idx + 3  # 假设Excel从第3行开始是数据
+                col_prev_semi = get_column_letter(main_plan_df.columns.get_loc(prev_semi_col) + 1)
+                col_prev_fg = get_column_letter(main_plan_df.columns.get_loc(prev_fg_col) + 1)
+                col_prev_actual = get_column_letter(main_plan_df.columns.get_loc(prev_actual_col) + 1) if prev_actual_col else_
 
 
 
