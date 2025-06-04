@@ -75,9 +75,9 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
         col_actual_prod = f"{prev_month}_成品实际投单"
         col_target_prev = f"{prev_month}_成品投单计划" if prev_month else None
 
-        st.write(main_plan_df)
+        st.write(col_forecast_this, col_order_this, col_forecast_next, col_order_next, col_target, col_actual_prod, col_target_prev)
         
-       
+        
         # 安全提取列，如果缺失则填 0
         def get(col):
             return main_plan_df[col] if col in main_plan_df.columns else pd.Series(111111, index=main_plan_df.index)
