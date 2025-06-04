@@ -40,6 +40,77 @@ def init_monthly_fields(main_plan_df: pd.DataFrame) -> list[int]:
 
     return forecast_months
 
+def safe_col(df: pd.DataFrame, col: str) -> pd.Series:
+    """确保列为数字，若不存在则返回 0"""
+    return pd.to_numeric(df[col], errors="coerce").fillna(0) if col in df.columns else pd.Series(0, index=df.index)
+
+def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
+    """
+    生成每月“成品投单计划”列，规则：
+    - 第一个月：InvPart + max(预测, 未交) + max(预测, 未交)（下月） - 成品仓 - 成品在制
+    - 后续月份：max(预测, 未交)（下月） + （上月投单 - 上月实际投单）
+    
+    参数：
+    - main_plan_df: 主计划表（含所有字段）
+    - forecast_months: 所有月份的列表（int 类型，如 [6, 7, 8, ...]）
+
+    返回：
+    - main_plan_df: 添加了成品投单计划字段的 DataFrame
+    """
+
+    df_plan = pd.DataFrame(index=main_plan_df.index)
+
+    for idx, month in enumerate(forecast_months[:-1]):  # 最后一个月不生成
+        this_month = f"{month}月"
+        next_month = f"{forecast_months[idx + 1]}月"
+        prev_month = f"{forecast_months[idx - 1]}月" if idx > 0 else None
+
+        # 构造字段名
+        col_forecast_this = f"{month}月预测"
+        col_order_this = f"未交订单数量_2025-{month:02d}"
+        col_forecast_next = f"{forecast_months[idx + 1]}月预测"
+        col_order_next = f"未交订单数量_2025-{forecast_months[idx + 1]:02d}"
+        col_target = f"{this_month}_成品投单计划"
+        col_actual_prod = f"{this_month}_成品实际投单"
+        col_target_prev = f"{prev_month}_成品投单计划" if prev_month else None
+
+        if idx == 0:
+            df_plan[col_target] = (
+                safe_col(main_plan_df, "InvPart") +
+                pd.DataFrame({
+                    "f": safe_col(main_plan_df, col_forecast_this),
+                    "o": safe_col(main_plan_df, col_order_this)
+                }).max(axis=1) +
+                pd.DataFrame({
+                    "f": safe_col(main_plan_df, col_forecast_next),
+                    "o": safe_col(main_plan_df, col_order_next)
+                }).max(axis=1) -
+                safe_col(main_plan_df, "数量_成品仓") -
+                safe_col(main_plan_df, "成品在制")
+            )
+        else:
+            df_plan[col_target] = (
+                pd.DataFrame({
+                    "f": safe_col(main_plan_df, col_forecast_next),
+                    "o": safe_col(main_plan_df, col_order_next)
+                }).max(axis=1) +
+                (safe_col(df_plan, col_target_prev) - safe_col(main_plan_df, col_actual_prod))
+            )
+
+    # 回填到主计划中
+    for col in df_plan.columns:
+        main_plan_df[col] = df_plan[col]
+
+    return main_plan_df
+
+
+
+
+
+
+
+
+
 
 
 
