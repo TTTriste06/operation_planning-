@@ -167,7 +167,10 @@ class PivotProcessor:
 
         # === 投单计划 ===
         forecast_months = init_monthly_fields(main_plan_df)
-        st.write("✅ 识别的 forecast_months:", forecast_months)
+        
+        # 成品投单计划
+        main_plan_df = generate_monthly_fg_plan(main_plan_df, forecast_months)
+
 
         
 
