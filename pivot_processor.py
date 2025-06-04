@@ -233,7 +233,7 @@ class PivotProcessor:
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
 
-            append_uploaded_sheets_to_excel_by_mapping(writer, uploaded_files, FIELD_MAPPINGS)
+            append_uploaded_sheets_to_excel_by_mapping(writer, uploaded_files)
 
             adjust_column_width(ws)
 
