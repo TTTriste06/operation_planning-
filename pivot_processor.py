@@ -47,7 +47,7 @@ from production_plan import (
     highlight_production_plan_cells,
     drop_last_forecast_month_columns
 )
-from sheet_add import append_all_standardized_sheets
+from sheet_add import clean_df, append_all_standardized_sheets
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -219,6 +219,7 @@ class PivotProcessor:
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
+            main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
 
             ws = writer.book["主计划"]
