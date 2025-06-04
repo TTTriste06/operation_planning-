@@ -98,10 +98,15 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
                 (safe_col(df_plan, col_target_prev) - safe_col(main_plan_df, col_actual_prod))
             )
 
-    st.write(df_plan)
+    plan_cols_in_summary = [col for col in summary_preview.columns if "成品投单计划" in col and "半成品" not in col]
+    
     # 回填到主计划中
-    for col in df_plan.columns:
-        main_plan_df[col] = df_plan[col]
+    if len(plan_cols_in_summary) != df_plan.shape[1]:
+        st.error(f"❌ 写入失败：df_plan 有 {df_plan.shape[1]} 列，summary 中有 {len(plan_cols_in_summary)} 个 '成品投单计划' 列")
+    else:
+        # ✅ 将 df_plan 的列按顺序填入 summary_preview
+        for i, col in enumerate(plan_cols_in_summary):
+            main_plan_df[col] = df_plan.iloc[:, i]
 
     return main_plan_df
 
