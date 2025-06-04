@@ -1,7 +1,8 @@
+import re
+import pandas as pd
+import streamlit as st
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment, PatternFill, Font
-import pandas as pd
-import re
 from datetime import datetime
 from collections import defaultdict
 from openpyxl.styles import numbers
@@ -97,6 +98,7 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
                 (safe_col(df_plan, col_target_prev) - safe_col(main_plan_df, col_actual_prod))
             )
 
+    st.write(df_plan)
     # 回填到主计划中
     for col in df_plan.columns:
         main_plan_df[col] = df_plan[col]
