@@ -68,12 +68,12 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
 
         # 构造字段名
         col_forecast_this = f"{month}月预测"
-        col_order_this = f"未交订单数量_2025-{month:02d}"
+        col_order_this = f"未交订单 2025-{month:02d}"
         col_forecast_next = f"{forecast_months[idx + 1]}月预测"
-        col_order_next = f"未交订单数量_2025-{forecast_months[idx + 1]:02d}"
+        col_order_next = f"未交订单 2025-{forecast_months[idx + 1]:02d}"
         col_target = f"{month}月成品投单计划"
-        col_actual_prod = f"{prev_month}_成品实际投单"
-        col_target_prev = f"{prev_month}_成品投单计划" if prev_month else None
+        col_actual_prod = f"{prev_month}月成品实际投单"
+        col_target_prev = f"{prev_month}月成品投单计划" if prev_month else None
 
         st.write(col_forecast_this, col_order_this, col_forecast_next, col_order_next, col_target, col_actual_prod, col_target_prev)
         
