@@ -121,6 +121,7 @@ def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFram
     - main_plan_df: 添加了成品实际投单列的 DataFrame
     """
     if df_order.empty or not forecast_months:
+        st.write("!11")
         return main_plan_df
 
     df_order = df_order.copy()
