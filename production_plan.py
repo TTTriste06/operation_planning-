@@ -426,7 +426,7 @@ def generate_monthly_adjust_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
 
 def generate_monthly_return_adjustment(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
-    在 main_plan_df 中填写“回货计划调整”列，每月计算如下：
+    填写“回货计划调整”列：
     - 第一个月为空
     - 后续月份：= 本月回货计划 + (上月成品实际投单 - 上月投单计划调整)
     """
@@ -435,29 +435,37 @@ def generate_monthly_return_adjustment(main_plan_df: pd.DataFrame) -> pd.DataFra
     actual_plan_cols = [col for col in main_plan_df.columns if "成品实际投单" in col and "半成品" not in col]
     adjust_plan_cols = [col for col in main_plan_df.columns if "投单计划调整" in col]
 
+    if not (len(adjust_return_cols) == len(return_plan_cols) == len(actual_plan_cols) == len(adjust_plan_cols)):
+        raise ValueError("❌ 回货计划调整列数不一致，无法逐月对应")
 
     for i in range(len(adjust_return_cols)):
+        col_adjust = adjust_return_cols[i]
         col_return = return_plan_cols[i]
-        col_adjust_return = adjust_return_cols[i]
-        col_idx_adjust_return = main_plan_df.columns.get_loc(col_adjust_return) + 1
-        col_idx_return = main_plan_df.columns.get_loc(col_return) + 1
 
+        # 本月列索引
+        col_idx_return = main_plan_df.columns.get_loc(col_return) + 1
+        col_idx_adjust = main_plan_df.columns.get_loc(col_adjust) + 1
+
+        # 上月列（用于差值计算）
         if i > 0:
             col_idx_prev_actual = main_plan_df.columns.get_loc(actual_plan_cols[i - 1]) + 1
             col_idx_prev_adjust = main_plan_df.columns.get_loc(adjust_plan_cols[i - 1]) + 1
 
-        for row in range(3, len(main_plan_df) + 3):  # 数据从第3行开始
+        for row in range(3, len(main_plan_df) + 3):  # 第3行起是数据行
             if i == 0:
-                main_plan_df.at[row - 3, col_adjust_return] = ""
+                main_plan_df.at[row - 3, col_adjust] = ""
             else:
-                col_letter_return = get_column_letter(col_idx_return)
-                col_letter_prev_actual = get_column_letter(col_idx_prev_actual)
-                col_letter_prev_adjust = get_column_letter(col_idx_prev_adjust)
+                # 本月回货计划
+                col_r = get_column_letter(col_idx_return)
+                # 上月：成品实际投单与投单计划调整
+                col_prev_actual = get_column_letter(col_idx_prev_actual)
+                col_prev_adjust = get_column_letter(col_idx_prev_adjust)
 
-                formula = f"={col_letter_return}{row} + ({col_letter_prev_actual}{row} - {col_letter_prev_adjust}{row})"
-                main_plan_df.at[row - 3, col_adjust_return] = formula
+                formula = f"={col_r}{row} + ({col_prev_actual}{row} - {col_prev_adjust}{row})"
+                main_plan_df.at[row - 3, col_adjust] = formula
 
     return main_plan_df
+
 
 
 
