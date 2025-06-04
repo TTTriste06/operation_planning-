@@ -495,22 +495,43 @@ def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
 
     return main_plan_df
 
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Alignment, Font, PatternFill
+import re
+
 def format_monthly_grouped_headers(ws):
     """
-    对主计划 sheet 中从 AC（第29列）开始，每13列为一个月：
-    - 去掉第二行每列前缀的“x月”
-    - 合并第一行13列单元格，写入“x月”作为大标题
+    从AC列开始，每13列为一个月块：
+    - 合并第1行写“x月”
+    - 去掉第2行每列前缀的“x月”
+    - 每月块用不同背景色填充前两行
     """
-    start_col = 29  # AC列在Excel中是第29列
+    start_col = 29  # AC列 = 第29列
     row_1 = 1
     row_2 = 2
     max_col = ws.max_column
 
-    month_pattern = re.compile(r"^(\d{1,2})月(.+)")  # 匹配“6月销售数量”这样的列名
+    # 几组可循环的浅色背景（Excel兼容性好的十六进制RGB）
+    fill_colors = [
+        "FFF2CC",  # 浅黄色
+        "D9EAD3",  # 浅绿色
+        "D0E0E3",  # 浅蓝色
+        "F4CCCC",  # 浅红色
+        "EAD1DC",  # 浅紫色
+        "CFE2F3",  # 浅青色
+        "FFE599",  # 明亮黄
+    ]
 
+    month_pattern = re.compile(r"^(\d{1,2})月(.+)")
     col = start_col
+    month_index = 0
+
     while col <= max_col:
         month_title = None
+        fill_color = PatternFill(start_color=fill_colors[month_index % len(fill_colors)],
+                                 end_color=fill_colors[month_index % len(fill_colors)],
+                                 fill_type="solid")
+
         for offset in range(13):
             curr_col = col + offset
             cell = ws.cell(row=row_2, column=curr_col)
@@ -519,12 +540,14 @@ def format_monthly_grouped_headers(ws):
                 match = month_pattern.match(value.strip())
                 if match:
                     if month_title is None:
-                        month_title = match.group(1)  # 提取月份
-                    new_label = match.group(2)
-                    cell.value = new_label  # 去掉“x月”
-        
+                        month_title = match.group(1)
+                    cell.value = match.group(2)
+
+            # 填充第2行颜色
+            ws.cell(row=row_2, column=curr_col).fill = fill_color
+
         if month_title:
-            # 合并第一行单元格
+            # 合并第1行
             start_letter = get_column_letter(col)
             end_letter = get_column_letter(col + 12)
             ws.merge_cells(f"{start_letter}{row_1}:{end_letter}{row_1}")
@@ -532,5 +555,7 @@ def format_monthly_grouped_headers(ws):
             top_cell.value = f"{month_title}月"
             top_cell.alignment = Alignment(horizontal="center", vertical="center")
             top_cell.font = Font(bold=True)
-        
+            top_cell.fill = fill_color
+
         col += 13
+        month_index += 1
