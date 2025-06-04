@@ -495,43 +495,42 @@ def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
 
     return main_plan_df
 
-
-def apply_monthly_grouped_headers(ws):
+def format_monthly_grouped_headers(ws):
     """
-    为“主计划”中的月份列设置一级合并表头，如“5月”，并合并每个月的相关字段
+    对主计划 sheet 中从 AC（第29列）开始，每13列为一个月：
+    - 去掉第二行每列前缀的“x月”
+    - 合并第一行13列单元格，写入“x月”作为大标题
     """
-    import re
-    from openpyxl.utils import get_column_letter
+    start_col = 29  # AC列在Excel中是第29列
+    row_1 = 1
+    row_2 = 2
+    max_col = ws.max_column
 
-    # 获取标题行（默认第1行为主标题，第2行为具体字段名）
-    second_row = [cell.value for cell in ws[2]]
+    month_pattern = re.compile(r"^(\d{1,2})月(.+)")  # 匹配“6月销售数量”这样的列名
 
-    # 按“5月预测”“5月销售数量”等字段提取出所有月份
-    month_pattern = re.compile(r"(\d{1,2})月")
-    month_groups = {}
-    for idx, val in enumerate(second_row):
-        if isinstance(val, str):
-            match = month_pattern.match(val.strip())
-            if match:
-                month = match.group(1)
-                if month not in month_groups:
-                    month_groups[month] = []
-                month_groups[month].append(idx + 1)  # Excel列从1开始
-
-    # 设置一级标题并合并单元格
-    for month, cols in month_groups.items():
-        start_col, end_col = min(cols), max(cols)
-        col_letter_start = get_column_letter(start_col)
-        col_letter_end = get_column_letter(end_col)
-
-        # 合并单元格
-        ws.merge_cells(f"{col_letter_start}1:{col_letter_end}1")
-
-        # 写入合并后的单元格标题
-        cell = ws.cell(row=1, column=start_col)
-        if cell is not None:
-            cell.value = f"{month}月"
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-            cell.font = Font(bold=True)
-        else:
-            raise ValueError(f"❌ 无法获取单元格：row=1, col={start_col}")
+    col = start_col
+    while col <= max_col:
+        month_title = None
+        for offset in range(13):
+            curr_col = col + offset
+            cell = ws.cell(row=row_2, column=curr_col)
+            value = cell.value
+            if isinstance(value, str):
+                match = month_pattern.match(value.strip())
+                if match:
+                    if month_title is None:
+                        month_title = match.group(1)  # 提取月份
+                    new_label = match.group(2)
+                    cell.value = new_label  # 去掉“x月”
+        
+        if month_title:
+            # 合并第一行单元格
+            start_letter = get_column_letter(col)
+            end_letter = get_column_letter(col + 12)
+            ws.merge_cells(f"{start_letter}{row_1}:{end_letter}{row_1}")
+            top_cell = ws.cell(row=row_1, column=col)
+            top_cell.value = f"{month_title}月"
+            top_cell.alignment = Alignment(horizontal="center", vertical="center")
+            top_cell.font = Font(bold=True)
+        
+        col += 13
