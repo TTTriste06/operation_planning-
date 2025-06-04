@@ -496,52 +496,42 @@ def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     return main_plan_df
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def apply_monthly_grouped_headers(ws):
     """
-    自动合并主计划中按“月_字段”格式的列，如“6月销售数量”，将每月字段统一合并为“6月”标题。
+    为“主计划”中的月份列设置一级合并表头，如“5月”，并合并每个月的相关字段
     """
-    header_row = [cell.value for cell in ws[2]]  # 第2行是字段名
-    pattern = re.compile(r"^(\d{1,2})月(.*)$")
+    import re
+    from openpyxl.utils import get_column_letter
 
-    # group: {month -> [col_idx, ...]}
-    monthly_groups = defaultdict(list)
+    # 获取标题行（默认第1行为主标题，第2行为具体字段名）
+    second_row = [cell.value for cell in ws[2]]
 
-    for i, col in enumerate(header_row):
-        if not isinstance(col, str):
-            continue
-        match = pattern.match(col.strip())
-        if match:
-            month = int(match.group(1))
-            monthly_groups[month].append(i + 1)  # openpyxl 列号从1开始
+    # 按“5月预测”“5月销售数量”等字段提取出所有月份
+    month_pattern = re.compile(r"(\d{1,2})月")
+    month_groups = {}
+    for idx, val in enumerate(second_row):
+        if isinstance(val, str):
+            match = month_pattern.match(val.strip())
+            if match:
+                month = match.group(1)
+                if month not in month_groups:
+                    month_groups[month] = []
+                month_groups[month].append(idx + 1)  # Excel列从1开始
 
-    # 遍历每个识别到的月份
-    for month, cols in sorted(monthly_groups.items()):
-        start_col = min(cols)
-        end_col = max(cols)
+    # 设置一级标题并合并单元格
+    for month, cols in month_groups.items():
+        start_col, end_col = min(cols), max(cols)
+        col_letter_start = get_column_letter(start_col)
+        col_letter_end = get_column_letter(end_col)
 
-        if end_col >= start_col:
-            ws.merge_cells(start_row=1, start_column=start_col, end_row=1, end_column=end_col)
+        # 合并单元格
+        ws.merge_cells(f"{col_letter_start}1:{col_letter_end}1")
 
+        # 写入合并后的单元格标题
         cell = ws.cell(row=1, column=start_col)
-        cell.value = f"{month}月"
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-        cell.font = Font(bold=True)
-        cell.fill = PatternFill("solid", fgColor="FFFF00")
+        if cell is not None:
+            cell.value = f"{month}月"
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.font = Font(bold=True)
+        else:
+            raise ValueError(f"❌ 无法获取单元格：row=1, col={start_col}")
