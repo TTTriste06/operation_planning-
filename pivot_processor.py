@@ -47,7 +47,7 @@ from production_plan import (
     highlight_production_plan_cells,
     drop_last_forecast_month_columns
 )
-from sheet_add import append_all_source_sheets_to_excel
+from sheet_add import append_all_standardized_sheets
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -233,7 +233,8 @@ class PivotProcessor:
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
 
-            append_all_source_sheets_to_excel(writer, uploaded_files, additional_sheets)
+            append_all_standardized_sheets(writer, self.dataframes, self.additional_sheets)
+
 
             adjust_column_width(ws)
 
