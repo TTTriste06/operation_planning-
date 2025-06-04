@@ -343,6 +343,8 @@ def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd
     return main_plan_df
 
 
+from openpyxl.utils import get_column_letter
+
 def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
     """
     自动生成每月的半成品投单计划，并直接写入 main_plan_df：
@@ -375,10 +377,12 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
                 row_num = row_idx + 3  # 假设Excel从第3行开始是数据
                 col_prev_semi = get_column_letter(main_plan_df.columns.get_loc(prev_semi_col) + 1)
                 col_prev_fg = get_column_letter(main_plan_df.columns.get_loc(prev_fg_col) + 1)
-                col_prev_actual = get_column_letter(main_plan_df.columns.get_loc(prev_actual_col) + 1) if prev_actual_col else_
+                col_prev_actual = get_column_letter(main_plan_df.columns.get_loc(prev_actual_col) + 1) if prev_actual_col else "X"
+                return f"={col_prev_semi}{row_num} + ({col_prev_fg}{row_num} - {col_prev_actual}{row_num})"
 
+            main_plan_df[col] = [build_formula(i) for i in range(len(main_plan_df))]
 
-
+    return main_plan_df
 
 
 
