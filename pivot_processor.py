@@ -154,7 +154,7 @@ class PivotProcessor:
             st.success("✅ 已合并成品库存数据")
 
         ## == 成品在制 ==
-        product_in_progress_df = additional_sheets.get("赛卓-成品在制")
+        product_in_progress_df = self.dataframes.get("赛卓-成品在制")
         mapping_df = additional_sheets.get("赛卓-新旧料号")
         if product_in_progress_df is not None and not product_in_progress_df.empty:
             main_plan_df, unmatched_in_progress = append_product_in_progress(main_plan_df, product_in_progress_df, mapping_df)
