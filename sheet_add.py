@@ -2,6 +2,7 @@ import re
 import pandas as pd
 import streamlit as st
 from config import FIELD_MAPPINGS
+from excel_utils import adjust_column_width
 
 def clean_df(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -16,12 +17,8 @@ def clean_df(df: pd.DataFrame) -> pd.DataFrame:
 
 def append_all_standardized_sheets(writer: pd.ExcelWriter, main_tables: dict, additional_tables: dict):
     """
-    将 main_tables + additional_tables 中所有标准化命名的表写入 Excel，每个作为一个 sheet。
-
-    参数：
-    - writer: pd.ExcelWriter
-    - main_tables: dict，通常为 self.dataframes（标准化后的主数据）
-    - additional_tables: dict，通常为 self.additional_sheets（辅助数据）
+    将 main_tables 和 additional_tables 中的所有标准化命名的 DataFrame 写入 Excel Sheet，
+    并对每个 Sheet 自动执行 NaN 清洗 + 列宽调整。
     """
     combined_tables = {**main_tables, **additional_tables}
 
@@ -30,5 +27,6 @@ def append_all_standardized_sheets(writer: pd.ExcelWriter, main_tables: dict, ad
             if isinstance(df, pd.DataFrame) and not df.empty:
                 cleaned_df = clean_df(df)
                 cleaned_df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
+                adjust_column_width(writer, sheet_name, cleaned_df)
         except Exception as e:
             print(f"❌ 写入 sheet [{sheet_name}] 失败：{e}")
