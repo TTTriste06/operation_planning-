@@ -465,9 +465,23 @@ def generate_monthly_return_adjustment(main_plan_df: pd.DataFrame) -> pd.DataFra
 
 def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
-    填写回货计划：前两个月为空，从第3个月开始回货计划 = 上个月的投单计划调整
+    填写回货计划：第一个月为空，从第二个月开始，回货计划列 = 第前18列对应列的值
     """
+    return_plan_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col]
     
+    for i, col in enumerate(return_plan_cols):
+        if i == 0:
+            main_plan_df[col] = ""
+        else:
+            # 获取当前列索引
+            curr_idx = main_plan_df.columns.get_loc(col)
+            ref_idx = curr_idx - 18
+            if ref_idx >= 0:
+                ref_col = main_plan_df.columns[ref_idx]
+                main_plan_df[col] = pd.to_numeric(main_plan_df[ref_col], errors="coerce").fillna(0)
+            else:
+                main_plan_df[col] = 0  # 防止索引越界
+
     return main_plan_df
 
 
