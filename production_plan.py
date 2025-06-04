@@ -75,7 +75,7 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
         col_actual_prod = f"{prev_month}_成品实际投单"
         col_target_prev = f"{prev_month}_成品投单计划" if prev_month else None
 
-        st.write(main_plan_df["InvPart"])
+        st.write(main_plan_df)
         
        
         # 安全提取列，如果缺失则填 0
