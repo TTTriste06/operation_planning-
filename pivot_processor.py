@@ -47,7 +47,7 @@ from production_plan import (
     highlight_production_plan_cells,
     drop_last_forecast_month_columns
 )
-from sheet_add import append_uploaded_sheets_to_excel_by_mapping
+from sheet_add import append_all_source_sheets_to_excel
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
