@@ -75,9 +75,6 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
         col_actual_prod = f"{prev_month}成品实际投单"
         col_target_prev = f"{prev_month}成品投单计划" if prev_month else None
 
-        st.write(col_forecast_this, col_order_this, col_forecast_next, col_order_next, col_target, col_actual_prod, col_target_prev)
-        
-        
         # 安全提取列，如果缺失则填 0
         def get(col):
             return pd.to_numeric(main_plan_df[col], errors="coerce").fillna(0) if col in main_plan_df.columns else pd.Series(0, index=main_plan_df.index)
@@ -85,7 +82,6 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
         def get_plan(col):
             return pd.to_numeric(df_plan[col], errors="coerce").fillna(0) if col in df_plan.columns else pd.Series(0, index=main_plan_df.index)
 
-        st.write(df_plan)
         if idx == 0:
             df_plan[col_target] = (
                 get("InvPart") +
@@ -99,24 +95,6 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
                 pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1) +
                 (get_plan(col_target_prev) - get(col_actual_prod))
             )
-
-
-
-        if idx > 0:
-            target_prev = get_plan(col_target_prev)
-            actual_prod = get(col_actual_prod)
-            max2 = pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
-        
-            df_plan[col_target] = max2 + (target_prev - actual_prod)
-        
-            for i in range(len(main_plan_df)):
-                st.write(
-                    f"第{i+1}行: max({get(col_forecast_next)[i]}, {get(col_order_next)[i]}) + "
-                    f"({target_prev[i]} - {actual_prod[i]}) = {df_plan.at[i, col_target]}"
-                )
-
-
-
 
     plan_cols_in_summary = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
     
@@ -170,7 +148,8 @@ def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFram
             match_idx = order_summary[order_summary["品名"] == part].index
             if not match_idx.empty:
                 order_summary.loc[match_idx[0], col_name] += qty
-
+    st.write("order_summary")
+    st.write(order_summary)
     # 回填结果到主计划表
     for col in order_summary.columns[1:]:
         main_plan_df[col] = order_summary[col]
