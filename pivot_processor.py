@@ -38,7 +38,8 @@ from production_plan import (
     aggregate_actual_fg_orders,
     aggregate_actual_sfg_orders,
     aggregate_actual_arrivals,
-    aggregate_sales_quantity_and_amount
+    aggregate_sales_quantity_and_amount,
+    generate_monthly_semi_plan
 )
 
 class PivotProcessor:
@@ -186,6 +187,10 @@ class PivotProcessor:
 
         # 成品投单计划
         main_plan_df = generate_monthly_fg_plan(main_plan_df, forecast_months)
+
+        # 半成品投单计划
+        main_plan_df = generate_monthly_semi_plan(main_plan_df, forecast_months, ws)
+
 
 
         
