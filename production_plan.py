@@ -386,10 +386,7 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
             main_plan_df[col] = [build_formula(i) for i in range(len(main_plan_df))]
 
     return main_plan_df
-
-
-from openpyxl.utils import get_column_letter
-
+    
 def generate_monthly_adjust_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
     根据已有字段直接填充投单计划调整列。
@@ -422,6 +419,35 @@ def generate_monthly_adjust_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
                 return f"={col_curr_plan}{row_num}+({col_prev_plan}{row_num}-{col_prev_actual}{row_num})"
 
             main_plan_df[col] = [build_formula(i) for i in range(len(main_plan_df))]
+
+    return main_plan_df
+
+
+def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    根据逻辑填充每月回货计划字段：
+    - 第一个月为空
+    - 后续月份为上月投单计划调整
+    """
+    return_plan_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col]
+    adjust_plan_cols = [col for col in main_plan_df.columns if "投单计划调整" in col]
+
+    if len(return_plan_cols) != len(adjust_plan_cols):
+        raise ValueError("❌ 回货计划列数与投单计划调整列数不一致，无法逐月对应。")
+
+    for i, col in enumerate(return_plan_cols):
+        if i == 0:
+            main_plan_df[col] = ""
+        else:
+            # 获取上一个月投单计划调整列的 Excel 列号
+            prev_adjust_col = adjust_plan_cols[i - 1]
+            col_prev_adjust = get_column_letter(main_plan_df.columns.get_loc(prev_adjust_col) + 1)
+
+            def build_formula(row_idx: int) -> str:
+                row_num = row_idx + 3  # Excel中从第3行开始
+                return f"={col_prev_adjust}{row_num}"
+
+            main_plan_df[col] = [build_formula(j) for j in range(len(main_plan_df))]
 
     return main_plan_df
 
