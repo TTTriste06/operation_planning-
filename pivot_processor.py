@@ -46,6 +46,7 @@ from production_plan import (
     format_monthly_grouped_headers,
     highlight_production_plan_cells
 )
+from sheet_add import 
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -208,7 +209,7 @@ class PivotProcessor:
         st.write(main_plan_df)
         
         # 检查
-        last_valid_month = forecast_months[-2]  # 倒数第一个月
+        last_valid_month = forecast_months[-1]  # 倒数第一个月
         st.write(last_valid_month)
         for col in main_plan_df.columns:
             if re.match(r"12月", col) and not re.match(f"{last_valid_month}月", col):
