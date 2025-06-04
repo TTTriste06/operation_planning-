@@ -172,7 +172,7 @@ class PivotProcessor:
         # ✅ 聚合销售、到货、下单实际数据
         df_sales = self.dataframes.get("赛卓-销货明细", pd.DataFrame())
         df_arrival = self.dataframes.get("赛卓-到货明细", pd.DataFrame())
-        df_order = self.dataframes.get"赛卓-下单明细", pd.DataFrame())
+        df_order = self.dataframes.get("赛卓-下单明细", pd.DataFrame())
 
         field_aggregator.aggregate_sales(df_sales)
         field_aggregator.aggregate_arrival(df_arrival)
