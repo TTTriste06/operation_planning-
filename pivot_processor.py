@@ -194,8 +194,11 @@ class PivotProcessor:
 
         df_plan = pd.DataFrame(index=main_plan_df.index)
         
-        def safe_col(self, col: str) -> pd.Series:
-            return pd.to_numeric(self.main_plan_df[col], errors="coerce").fillna(0) if col in self.main_plan_df.columns else pd.Series(0, index=self.main_plan_df.index)
+        def safe_col(df: pd.DataFrame, col: str) -> pd.Series:
+            """
+            确保某列为数字，若列不存在则返回 0 列
+            """
+            return pd.to_numeric(df[col], errors="coerce").fillna(0) if col in df.columns else pd.Series(0, index=df.index)
 
         
         for idx, month in enumerate(forecast_months[:-1]):  # 最后一个月不生成
