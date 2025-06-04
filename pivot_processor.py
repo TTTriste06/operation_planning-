@@ -34,7 +34,8 @@ from summary import (
 )
 from production_plan import (
     init_monthly_fields,
-    generate_monthly_fg_plan
+    generate_monthly_fg_plan,
+    aggregate_actual_fg_orders
 )
 
 class PivotProcessor:
@@ -169,6 +170,8 @@ class PivotProcessor:
         forecast_months = init_monthly_fields(main_plan_df)
 
         # 成品实际投单
+        df_order = self.dataframes.get("赛卓-下单明细", pd.DataFrame())
+        main_plan_df = aggregate_actual_fg_orders(main_plan_df, df_order, forecast_months)
 
         
         # 成品投单计划
