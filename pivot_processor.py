@@ -43,7 +43,8 @@ from production_plan import (
     generate_monthly_adjust_plan,
     generate_monthly_return_adjustment,
     generate_monthly_return_plan,
-    format_monthly_grouped_headers
+    format_monthly_grouped_headers,
+    highlight_production_plan_cells
 )
 
 class PivotProcessor:
@@ -227,7 +228,8 @@ class PivotProcessor:
             merge_product_in_progress_header(ws)
 
             format_monthly_grouped_headers(ws)
-            
+            highlight_production_plan_cells(ws, main_plan_df)
+
             adjust_column_width(ws)
 
         output_buffer.seek(0)
