@@ -470,8 +470,6 @@ def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     return_plan_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col]
     adjust_plan_cols = [col for col in main_plan_df.columns if "投单计划调整" in col]
 
-    if len(return_plan_cols) != len(adjust_plan_cols):
-        raise ValueError("❌ 回货计划列数与投单计划调整列数不一致，无法逐月对应。")
 
     for i, col in enumerate(return_plan_cols):
         if i < 2:
