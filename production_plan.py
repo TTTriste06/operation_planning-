@@ -465,23 +465,23 @@ def generate_monthly_return_adjustment(main_plan_df: pd.DataFrame) -> pd.DataFra
 
 def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
-    填写回货计划：前两月为空，后续月份 = 上月的“投单计划调整”列的值
+    填写回货计划：前两个月为空，从第3个月开始回货计划 = 上个月的投单计划调整
     """
     return_plan_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col]
     adjust_plan_cols = [col for col in main_plan_df.columns if "投单计划调整" in col]
 
+    if len(return_plan_cols) != len(adjust_plan_cols):
+        raise ValueError("❌ 回货计划列数与投单计划调整列数不一致，无法逐月对应。")
 
-    for i, col in enumerate(return_plan_cols):
+    for i in range(len(return_plan_cols)):
+        return_col = return_plan_cols[i]
         if i < 2:
-            # 前两个月填空
-            main_plan_df[col] = ""
+            main_plan_df[return_col] = ""
         else:
             prev_adjust_col = adjust_plan_cols[i - 1]
-            main_plan_df[col] = pd.to_numeric(main_plan_df[prev_adjust_col], errors="coerce").fillna(0)
+            main_plan_df[return_col] = pd.to_numeric(main_plan_df[prev_adjust_col], errors="coerce").fillna(0)
 
     return main_plan_df
-
-
 
 
 
