@@ -195,7 +195,7 @@ class PivotProcessor:
         df_plan = pd.DataFrame(index=main_plan_df.index)
         
         def safe_col(self, col: str) -> pd.Series:
-            return pd.to_numeric(self.summary_df[col], errors="coerce").fillna(0) if col in self.summary_df.columns else pd.Series(0, index=self.summary_df.index)
+            return pd.to_numeric(self.main_plan_df[col], errors="coerce").fillna(0) if col in self.main_plan_df.columns else pd.Series(0, index=self.main_plan_df.index)
 
         
         for idx, month in enumerate(forecast_months[:-1]):  # 最后一个月不生成
