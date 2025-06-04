@@ -1,28 +1,50 @@
 from openpyxl.utils import get_column_letter
-from openpyxl.styles import Alignment, PatternFill
+from openpyxl.styles import Alignment, PatternFill, Font
 import pandas as pd
 import re
 from datetime import datetime
+from collections import defaultdict
 from openpyxl.styles import numbers
 
-cell.number_format = '#,##0'
+MONTHLY_FIELDS = [
+    "销售数量", "销售金额", "成品投单计划", "半成品投单计划", "投单计划调整",
+    "成品可行投单", "半成品可行投单", "成品实际投单", "半成品实际投单",
+    "回货计划", "回货计划调整", "PC回货计划", "回货实际"
+]
 
-def merge_monthly_header(sheet, base_labels: list[str]):
-    """
-    自动合并各类 'xx月_字段' 列的表头，写入字段名（如“销售数量”、“投单计划”等）。
-    base_labels: 例如 ["销售数量", "销售金额", "成品投单计划"]
-    """
-    header_row = list(sheet.iter_rows(min_row=2, max_row=2, values_only=True))[0]
 
-    for label in base_labels:
-        cols = [i for i, v in enumerate(header_row, start=1) if isinstance(v, str) and v.endswith(label)]
-        if cols:
-            start_col = min(cols)
-            end_col = max(cols)
-            sheet.merge_cells(f"{get_column_letter(start_col)}1:{get_column_letter(end_col)}1")
-            cell = sheet.cell(row=1, column=start_col)
-            cell.value = label
-            cell.alignment = Alignment(horizontal="center", vertical="center")
+def apply_monthly_grouped_headers(ws):
+    """
+    自动合并主计划中按“月_字段”格式的列，如“6月销售数量”，将每月字段统一合并为“6月”标题。
+    """
+    header_row = [cell.value for cell in ws[2]]  # 第2行是字段名
+    pattern = re.compile(r"^(\d{1,2})月(.*)$")
+
+    # group: {month -> [col_idx, ...]}
+    monthly_groups = defaultdict(list)
+
+    for i, col in enumerate(header_row):
+        if not isinstance(col, str):
+            continue
+        match = pattern.match(col.strip())
+        if match:
+            month = int(match.group(1))
+            monthly_groups[month].append(i + 1)  # openpyxl 列号从1开始
+
+    # 遍历每个识别到的月份
+    for month, cols in sorted(monthly_groups.items()):
+        start_col = min(cols)
+        end_col = max(cols)
+
+        if end_col >= start_col:
+            ws.merge_cells(start_row=1, start_column=start_col, end_row=1, end_column=end_col)
+
+        cell = ws.cell(row=1, column=start_col)
+        cell.value = f"{month}月"
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill("solid", fgColor="FFFF00")
+
 
 
 class MonthlyPlanGenerator:
