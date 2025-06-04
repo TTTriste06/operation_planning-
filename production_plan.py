@@ -98,7 +98,7 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
                 (safe_col(df_plan, col_target_prev) - safe_col(main_plan_df, col_actual_prod))
             )
 
-    plan_cols_in_summary = [col for col in summary_preview.columns if "成品投单计划" in col and "半成品" not in col]
+    plan_cols_in_summary = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
     
     # 回填到主计划中
     if len(plan_cols_in_summary) != df_plan.shape[1]:
