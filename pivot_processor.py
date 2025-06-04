@@ -37,7 +37,8 @@ from production_plan import (
     generate_monthly_fg_plan,
     aggregate_actual_fg_orders,
     aggregate_actual_sfg_orders,
-    aggregate_actual_arrivals
+    aggregate_actual_arrivals,
+    aggregate_sales_quantity_and_amount
 )
 
 class PivotProcessor:
@@ -174,11 +175,15 @@ class PivotProcessor:
         main_plan_df = aggregate_actual_fg_orders(main_plan_df, df_order, forecast_months)
         main_plan_df = aggregate_actual_sfg_orders(main_plan_df, df_order, mapping_df, forecast_months)
 
-        #回货实际
+        # 回货实际
         df_arrival = self.dataframes.get("赛卓-到货明细", pd.DataFrame())
         main_plan_df = aggregate_actual_arrivals(main_plan_df, df_arrival, forecast_months)
 
-        
+        # 销售数量&销售金额
+        df_sales = self.dataframes.get("赛卓-销货明细", pd.DataFrame())
+        main_plan_df = aggregate_sales_quantity_and_amount(main_plan_df, df_sales, forecast_months)
+
+
         # 成品投单计划
         main_plan_df = generate_monthly_fg_plan(main_plan_df, forecast_months)
 
