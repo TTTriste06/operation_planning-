@@ -253,7 +253,47 @@ def aggregate_actual_sfg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFra
 
     return main_plan_df
 
+def aggregate_actual_arrivals(main_plan_df: pd.DataFrame, df_arrival: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
+    """
+    从“到货明细”中提取回货实际数量并填入主计划表。
 
+    参数：
+    - main_plan_df: 主计划 DataFrame（需包含“品名”列）
+    - df_arrival: 到货明细 DataFrame，含“到货日期”、“品名”、“允收数量”
+    - forecast_months: 月份整数列表，如 [6, 7, 8]
+
+    返回：
+    - main_plan_df: 添加了“X月回货实际”的列
+    """
+    if df_arrival.empty or not forecast_months:
+        return main_plan_df
+
+    # 保留有效列并清洗
+    df_arrival = df_arrival[["到货日期", "品名", "允收数量"]].dropna()
+    df_arrival["品名"] = df_arrival["品名"].astype(str).str.strip()
+    df_arrival["到货月份"] = pd.to_datetime(df_arrival["到货日期"], errors="coerce").dt.month
+
+    # 初始化结果表
+    result_df = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
+    for m in forecast_months:
+        result_df[f"{m}月回货实际"] = 0
+
+    # 汇总每月数据
+    for _, row in df_arrival.iterrows():
+        part = row["品名"]
+        qty = row["允收数量"]
+        month = row["到货月份"]
+        col = f"{month}月回货实际"
+        if month in forecast_months:
+            match_idx = result_df[result_df["品名"] == part].index
+            if not match_idx.empty:
+                result_df.loc[match_idx[0], col] += qty
+
+    # 写入主计划表
+    for col in result_df.columns[1:]:
+        main_plan_df[col] = result_df[col]
+
+    return main_plan_df
 
 
 
