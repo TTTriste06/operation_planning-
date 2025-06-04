@@ -225,7 +225,8 @@ class PivotProcessor:
             merge_inventory_header(ws)
             merge_product_in_progress_header(ws)
 
-
+            apply_monthly_grouped_headers(ws)
+            
             adjust_column_width(ws)
 
         output_buffer.seek(0)
