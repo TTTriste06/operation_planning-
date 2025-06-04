@@ -40,10 +40,6 @@ def main():
         processor.set_additional_data(additional_sheets)
         processor.process(uploaded_files, buffer, additional_sheets)  # ✅ 不再需要 classify_files()
 
-
-        # 处理并写入 Excel
-        processor.process(uploaded_files, buffer, additional_sheets)
-
         # 下载文件按钮
         file_name = f"运营数据订单-在制-库存汇总报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         st.success("✅ 汇总完成！你可以下载结果文件：")
