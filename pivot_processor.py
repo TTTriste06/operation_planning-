@@ -32,7 +32,7 @@ from summary import (
     append_product_in_progress,
     merge_product_in_progress_header
 )
-from production_plan import apply_monthly_grouped_headers
+from production_plan import init_monthly_fields
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -163,98 +163,13 @@ class PivotProcessor:
             st.success("✅ 已合并成品在制数据")
 
         # === 投单计划 ===
-
-        HEADER_TEMPLATE = [
-                    "销售数量", "销售金额", "成品投单计划", "半成品投单计划", "投单计划调整",
-                    "成品可行投单", "半成品可行投单", "成品实际投单", "半成品实际投单",
-                    "回货计划", "回货计划调整", "PC回货计划", "回货实际"
-        ]
-        
-        today_month = datetime.today().month
-        month_pattern = re.compile(r"(\d{1,2})月预测")
-        forecast_months = []
-        
-        for col in main_plan_df.columns:
-            match = month_pattern.match(str(col))
-            if match:
-                forecast_months.append(int(match.group(1)))
-
-        st.write(forecast_months)
-        
-        # 确定添加月份范围
-        start_month = today_month
-        end_month = max(forecast_months) - 1 if forecast_months else start_month
-
-        # ✅ 在 main_plan_df 中添加每月字段列（全部初始化为空或0）
-        for m in range(start_month, end_month + 1):
-            for header in HEADER_TEMPLATE:
-                new_col = f"{m}_{header}"
-                main_plan_df[new_col] = ""
-
-
-        df_plan = pd.DataFrame(index=main_plan_df.index)
-        
-        def safe_col(df: pd.DataFrame, col: str) -> pd.Series:
-            """
-            确保某列为数字，若列不存在则返回 0 列
-            """
-            return pd.to_numeric(df[col], errors="coerce").fillna(0) if col in df.columns else pd.Series(0, index=df.index)
+        forecast_months = init_monthly_fields(main_plan_df)
+        st.write("✅ 识别的 forecast_months:", forecast_months)
 
         
-        for idx, month in enumerate(forecast_months[:-1]):  # 最后一个月不生成
-            this_month = f"{month}月"
-            next_month = f"{forecast_months[idx + 1]}月"
-            prev_month = f"{forecast_months[idx - 1]}月" if idx > 0 else None
-        
-            # 构造字段名
-            col_forecast_this = f"{month}月预测"
-            col_order_this = f"未交订单数量_2025-{month}"
-            col_forecast_next = f"{forecast_months[idx + 1]}月预测"
-            col_order_next = f"未交订单数量_2025-{forecast_months[idx + 1]}"
-            col_target = f"{this_month}_成品投单计划"
-            col_actual_prod = f"{this_month}_成品实际投单"
-            col_target_prev = f"{prev_month}_成品投单计划" if prev_month else None
-            
-            if idx == 0:
-                # 第一个月：特殊算法
-                df_plan[col_target] = (
-                    safe_col(main_plan_df, "InvPart") +
-                    pd.DataFrame({
-                        "f": safe_col(main_plan_df, col_forecast_this),
-                        "o": safe_col(main_plan_df, col_order_this)
-                    }).max(axis=1) +
-                    pd.DataFrame({
-                        "f": safe_col(main_plan_df, col_forecast_next),
-                        "o": safe_col(main_plan_df, col_order_next)
-                    }).max(axis=1) -
-                    safe_col(main_plan_df, "数量_成品仓") -
-                    safe_col(main_plan_df, "成品在制")
-                )
-            else:
-                df_plan[col_target] = (
-                    pd.DataFrame({
-                        "f": safe_col(main_plan_df, col_forecast_next),
-                        "o": safe_col(main_plan_df, col_order_next)
-                    }).max(axis=1) +
-                    (safe_col(df_plan, col_target_prev) - safe_col(main_plan_df, col_actual_prod))
-                )
-
-
 
 
         
-        # ✅ 只选 summary 中的“成品投单计划”列（排除半成品）
-        plan_cols_in_summary = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
-        
-        # ✅ 数量校验
-        if len(plan_cols_in_summary) != df_plan.shape[1]:
-            st.error(f"❌ 写入失败：df_plan 有 {df_plan.shape[1]} 列，summary 中有 {len(plan_cols_in_summary)} 个 '成品投单计划' 列")
-        else:
-            # ✅ 将 df_plan 的列按顺序填入 main_plan_df
-            for i, col in enumerate(plan_cols_in_summary):
-                main_plan_df[col] = df_plan.iloc[:, i]
-
-    
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
