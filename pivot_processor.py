@@ -43,7 +43,7 @@ from production_plan import (
     generate_monthly_adjust_plan,
     generate_monthly_return_adjustment,
     generate_monthly_return_plan,
-    apply_monthly_grouped_headers
+    format_monthly_grouped_headers
 )
 
 class PivotProcessor:
@@ -226,7 +226,7 @@ class PivotProcessor:
             merge_inventory_header(ws)
             merge_product_in_progress_header(ws)
 
-            # apply_monthly_grouped_headers(ws)
+            format_monthly_grouped_headers(ws)
             
             adjust_column_width(ws)
 
