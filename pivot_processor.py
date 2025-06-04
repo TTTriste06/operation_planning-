@@ -163,6 +163,13 @@ class PivotProcessor:
             st.success("✅ 已合并成品在制数据")
 
         # === 投单计划 ===
+
+        HEADER_TEMPLATE = [
+                    "销售数量", "销售金额", "成品投单计划", "半成品投单计划", "投单计划调整",
+                    "成品可行投单", "半成品可行投单", "成品实际投单", "半成品实际投单",
+                    "回货计划", "回货计划调整", "PC回货计划", "回货实际"
+        ]
+        
         today_month = datetime.today().month
         month_pattern = re.compile(r"(\d{1,2})月预测")
         forecast_months = []
