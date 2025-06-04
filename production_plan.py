@@ -80,10 +80,10 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
         
         # 安全提取列，如果缺失则填 0
         def get(col):
-            return main_plan_df[col] if col in main_plan_df.columns else pd.Series(0, index=main_plan_df.index)
-
+            return pd.to_numeric(main_plan_df[col], errors="coerce").fillna(0) if col in main_plan_df.columns else pd.Series(0, index=main_plan_df.index)
+        
         def get_plan(col):
-            return df_plan[col] if col in df_plan.columns else pd.Series(111111, index=df_plan.index)
+            return pd.to_numeric(df_plan[col], errors="coerce").fillna(0) if col in df_plan.columns else pd.Series(0, index=main_plan_df.index)
 
         st.write(df_plan)
         if idx == 0:
