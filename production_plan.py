@@ -386,8 +386,7 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
             main_plan_df[col] = [build_formula(i) for i in range(len(main_plan_df))]
 
     return main_plan_df
-    
-from openpyxl.utils import get_column_letter
+
 
 def generate_monthly_adjust_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
