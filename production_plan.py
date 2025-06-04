@@ -343,46 +343,51 @@ def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd
     return main_plan_df
 
 
-from openpyxl.utils import get_column_letter
-
 def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
     """
-    自动生成每月的半成品投单计划，并直接写入 main_plan_df：
-    - 第一个月为：成品投单计划 - 半成品在制（数值填入）
-    - 后续月份为：上月半成品投单计划 + （上月成品投单计划 - 上月半成品实际投单）（写入 Excel 公式字符串）
+    自动生成每月半成品投单计划并回填到 main_plan_df。
+    第一个月为：当月成品投单计划 - 半成品在制（数值）
+    后续月份为：当月成品投单计划 - 半成品在制 + (上月半成品投单计划 - 上月半成品实际投单)（写入公式）
 
-    返回修改后的 main_plan_df
+    返回更新后的 main_plan_df。
     """
-    # 提取所有相关列
-    semi_plan_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
-    fg_plan_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
+    # 所有列名
+    semi_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
+    fg_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
     actual_semi_cols = [col for col in main_plan_df.columns if "半成品实际投单" in col]
 
-    if not semi_plan_cols or not fg_plan_cols:
-        raise ValueError("❌ 缺少必要的投单列")
+    if not semi_cols or not fg_cols:
+        raise ValueError("❌ 半成品投单计划或成品投单计划列不存在")
 
-    for i, col in enumerate(semi_plan_cols):
+    for i, col in enumerate(semi_cols):
+        # 当前对应的“成品投单计划”列
+        fg_col = fg_cols[i] if i < len(fg_cols) else None
+
         if i == 0:
-            # ✅ 第一个月：直接数值填入
+            # 第一个月：直接数值计算
             main_plan_df[col] = (
-                pd.to_numeric(main_plan_df[fg_plan_cols[0]], errors="coerce").fillna(0) -
+                pd.to_numeric(main_plan_df[fg_col], errors="coerce").fillna(0) -
                 pd.to_numeric(main_plan_df.get("半成品在制", 0), errors="coerce").fillna(0)
             )
         else:
-            prev_semi_col = semi_plan_cols[i - 1]
-            prev_fg_col = fg_plan_cols[i - 1]
-            prev_actual_col = actual_semi_cols[i - 1] if i - 1 < len(actual_semi_cols) else ""
+            # 后续月份：写公式字符串
+            prev_semi_col = semi_cols[i - 1]
+            prev_actual_semi_col = actual_semi_cols[i - 1] if i - 1 < len(actual_semi_cols) else ""
+
+            col_fg = get_column_letter(main_plan_df.columns.get_loc(fg_col) + 1)
+            col_half_in_progress = get_column_letter(main_plan_df.columns.get_loc("半成品在制") + 1)
+            col_prev_semi = get_column_letter(main_plan_df.columns.get_loc(prev_semi_col) + 1)
+            col_prev_actual = get_column_letter(main_plan_df.columns.get_loc(prev_actual_semi_col) + 1) if prev_actual_semi_col else "X"
 
             def build_formula(row_idx: int) -> str:
-                row_num = row_idx + 3  # 假设Excel从第3行开始是数据
-                col_prev_semi = get_column_letter(main_plan_df.columns.get_loc(prev_semi_col) + 1)
-                col_prev_fg = get_column_letter(main_plan_df.columns.get_loc(prev_fg_col) + 1)
-                col_prev_actual = get_column_letter(main_plan_df.columns.get_loc(prev_actual_col) + 1) if prev_actual_col else "X"
-                return f"={col_prev_semi}{row_num} + ({col_prev_fg}{row_num} - {col_prev_actual}{row_num})"
+                row_num = row_idx + 3  # 数据从第3行开始
+                return f"={col_fg}{row_num}-{col_half_in_progress}{row_num}+({col_prev_semi}{row_num}-{col_prev_actual}{row_num})"
 
             main_plan_df[col] = [build_formula(i) for i in range(len(main_plan_df))]
 
     return main_plan_df
+
+
 
 
 
