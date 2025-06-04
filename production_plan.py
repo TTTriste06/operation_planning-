@@ -130,6 +130,71 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
 
     return main_plan_df
 
+def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
+    """
+    从下单明细中抓取“成品实际投单”并写入 main_plan_df，每月写入“X月成品实际投单”列。
+    
+    参数：
+    - main_plan_df: 主计划表，需包含“品名”列
+    - df_order: 下单明细，含“下单日期”、“回货明细_回货品名”、“回货明细_回货数量”
+    - forecast_months: 月份列表，例如 [6, 7, 8]
+
+    返回：
+    - main_plan_df: 添加了成品实际投单列的 DataFrame
+    """
+    if df_order.empty or not forecast_months:
+        return main_plan_df
+
+    df_order = df_order.copy()
+    df_order = df_order[["下单日期", "回货明细_回货品名", "回货明细_回货数量"]].dropna()
+    df_order["回货明细_回货品名"] = df_order["回货明细_回货品名"].astype(str).str.strip()
+    df_order["下单月份"] = pd.to_datetime(df_order["下单日期"], errors="coerce").dt.month
+
+    # 筛选出主计划中存在的品名
+    valid_parts = set(main_plan_df["品名"].astype(str))
+    df_order = df_order[df_order["回货明细_回货品名"].isin(valid_parts)]
+
+    # 初始化结果表
+    order_summary = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
+    for m in forecast_months:
+        col = f"{m}月成品实际投单"
+        order_summary[col] = 0
+
+    # 累加每一行订单数量至对应月份列
+    for _, row in df_order.iterrows():
+        part = row["回货明细_回货品名"]
+        qty = row["回货明细_回货数量"]
+        month = row["下单月份"]
+        col_name = f"{month}月成品实际投单"
+        if month in forecast_months:
+            match_idx = order_summary[order_summary["品名"] == part].index
+            if not match_idx.empty:
+                order_summary.loc[match_idx[0], col_name] += qty
+
+    # 回填结果到主计划表
+    for col in order_summary.columns[1:]:
+        main_plan_df[col] = order_summary[col]
+
+    return main_plan_df
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
