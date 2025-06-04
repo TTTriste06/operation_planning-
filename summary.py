@@ -257,7 +257,7 @@ def merge_finished_inventory_with_warehouse_types(summary_df: pd.DataFrame, fini
 
         if warehouse in warehouse_cols and pname in summary_df["品名"].values:
             summary_df.loc[summary_df["品名"] == pname, warehouse] += qty
-    """
+            
     # === 处理半成品映射逻辑 ===
     mapping_df = mapping_df.copy()
     mapping_df["半成品"] = mapping_df["半成品"].astype(str).str.strip()
@@ -280,7 +280,7 @@ def merge_finished_inventory_with_warehouse_types(summary_df: pd.DataFrame, fini
                 qty = match["数量"].sum()
                 if new_name in summary_df["品名"].values:
                     summary_df.loc[summary_df["品名"] == new_name, "半成品仓"] += qty
-    """
+
     # === 返回未匹配品名（成品库存中存在但主计划中不存在）===
     unmatched = sorted(list(set(finished_df["品名"]) - set(summary_df["品名"])))
 
