@@ -41,7 +41,8 @@ from production_plan import (
     aggregate_sales_quantity_and_amount,
     generate_monthly_semi_plan,
     generate_monthly_adjust_plan,
-    generate_monthly_return_adjustment
+    generate_monthly_return_adjustment,
+    generate_monthly_return_plan
 )
 
 class PivotProcessor:
@@ -196,7 +197,7 @@ class PivotProcessor:
         main_plan_df = generate_monthly_adjust_plan(main_plan_df)
 
         # 回货计划
-        # main_plan_df = generate_monthly_return_plan(main_plan_df)
+        main_plan_df = generate_monthly_return_plan(main_plan_df)
 
         
         # 回货计划调整
