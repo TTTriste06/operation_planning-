@@ -32,7 +32,10 @@ from summary import (
     append_product_in_progress,
     merge_product_in_progress_header
 )
-from production_plan import init_monthly_fields
+from production_plan import (
+    init_monthly_fields,
+    generate_monthly_fg_plan
+)
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
