@@ -189,7 +189,8 @@ class PivotProcessor:
         main_plan_df = generate_monthly_fg_plan(main_plan_df, forecast_months)
 
         # 半成品投单计划
-        main_plan_df = generate_monthly_semi_plan(main_plan_df, forecast_months, ws)
+        main_plan_df = generate_monthly_semi_plan(main_plan_df, forecast_months)
+
 
 
 
