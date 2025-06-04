@@ -570,7 +570,7 @@ def highlight_production_plan_cells(ws, df):
 
     # 获取列位置
     plan_cols = [col for col in df.columns if "成品投单计划" in col and "半成品" not in col]
-    safety_col = "安全库存"
+    safety_col = "InvPart"
     if safety_col not in df.columns:
         raise ValueError("❌ 缺少“安全库存”列，无法对成品投单计划进行标色。")
 
