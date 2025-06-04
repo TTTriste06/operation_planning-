@@ -205,6 +205,8 @@ class PivotProcessor:
         # 回货计划调整
         main_plan_df = generate_monthly_return_adjustment(main_plan_df)
 
+        st.write(main_plan_df)
+        
         # 检查
         last_valid_month = forecast_months[-2]  # 倒数第一个月
         st.write(last_valid_month)
