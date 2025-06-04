@@ -431,7 +431,7 @@ def generate_monthly_return_adjustment(main_plan_df: pd.DataFrame) -> pd.DataFra
     - 后续月份：= 本月回货计划 + (上月成品实际投单 - 上月投单计划调整)
     """
     adjust_return_cols = [col for col in main_plan_df.columns if "回货计划调整" in col]
-    return_plan_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col]
+    return_plan_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col and "PC" not in col]
     actual_plan_cols = [col for col in main_plan_df.columns if "成品实际投单" in col and "半成品" not in col]
     adjust_plan_cols = [col for col in main_plan_df.columns if "投单计划调整" in col]
 
