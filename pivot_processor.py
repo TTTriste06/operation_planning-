@@ -44,9 +44,10 @@ from production_plan import (
     generate_monthly_return_adjustment,
     generate_monthly_return_plan,
     format_monthly_grouped_headers,
-    highlight_production_plan_cells
+    highlight_production_plan_cells,
+    drop_last_forecast_month_columns
 )
-from sheet_add import 
+from sheet_add import append_uploaded_sheets_to_excel_by_mapping
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -206,16 +207,9 @@ class PivotProcessor:
         # 回货计划调整
         main_plan_df = generate_monthly_return_adjustment(main_plan_df)
 
-        st.write(main_plan_df)
         
         # 检查
-        last_valid_month = forecast_months[-1]  # 倒数第一个月
-        st.write(last_valid_month)
-        for col in main_plan_df.columns:
-            if re.match(r"12月", col) and not re.match(f"{last_valid_month}月", col):
-                main_plan_df.drop(columns=[col], inplace=True)
-        
-
+        main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
 
 
         
@@ -238,6 +232,8 @@ class PivotProcessor:
 
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
+
+            append_uploaded_sheets_to_excel_by_mapping(writer, uploaded_files, FIELD_MAPPINGS)
 
             adjust_column_width(ws)
 
