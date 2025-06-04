@@ -494,11 +494,7 @@ def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
             main_plan_df[col] = f"={col_letter}" + (main_plan_df.index + 3).astype(str)
 
     return main_plan_df
-
-from openpyxl.utils import get_column_letter
-from openpyxl.styles import Alignment, Font, PatternFill
-import re
-
+    
 def format_monthly_grouped_headers(ws):
     """
     从AC列开始，每13列为一个月块：
@@ -559,3 +555,43 @@ def format_monthly_grouped_headers(ws):
 
         col += 13
         month_index += 1
+
+
+def highlight_production_plan_cells(ws, df):
+    """
+    根据规则给所有“成品投单计划”列标色：
+    - < 0：红色
+    - < 安全库存：黄色
+    - > 2 * 安全库存：橙色
+    """
+    red_fill = PatternFill(start_color="FF9999", end_color="FF9999", fill_type="solid")
+    yellow_fill = PatternFill(start_color="FFFF99", end_color="FFFF99", fill_type="solid")
+    orange_fill = PatternFill(start_color="FFD966", end_color="FFD966", fill_type="solid")
+
+    # 获取列位置
+    plan_cols = [col for col in df.columns if "成品投单计划" in col and "半成品" not in col]
+    safety_col = "安全库存"
+    if safety_col not in df.columns:
+        raise ValueError("❌ 缺少“安全库存”列，无法对成品投单计划进行标色。")
+
+    for col in plan_cols:
+        col_idx = df.columns.get_loc(col) + 1  # openpyxl是1-based
+        for i, val in enumerate(df[col]):
+            row_idx = i + 3  # 因为第1行是合并标题，第2行是字段名
+            safety = df.at[i, safety_col]
+
+            # 进行数值判断（确保为float）
+            try:
+                val = float(val)
+                safety = float(safety)
+            except:
+                continue
+
+            cell = ws.cell(row=row_idx, column=col_idx)
+
+            if val < 0:
+                cell.fill = red_fill
+            elif val < safety:
+                cell.fill = yellow_fill
+            elif val > 2 * safety:
+                cell.fill = orange_fill
