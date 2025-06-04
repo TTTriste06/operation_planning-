@@ -463,26 +463,38 @@ def generate_monthly_return_adjustment(main_plan_df: pd.DataFrame) -> pd.DataFra
 
     return main_plan_df
 
+import pandas as pd
+
 def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
-    填写回货计划：第一个月为空，从第二个月开始，回货计划列 = 第前18列对应列的值
+    回货计划填写逻辑：
+    - 第一个月为空；
+    - 从第二个月开始，等于同一行第当前列前18列的值（通过公式表示）。
     """
+    # 找出所有“回货计划”列（不含“调整”）
     return_plan_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col]
     
+    # 处理每一个回货计划列
     for i, col in enumerate(return_plan_cols):
         if i == 0:
+            # 第一个月为空
             main_plan_df[col] = ""
         else:
-            # 获取当前列索引
-            curr_idx = main_plan_df.columns.get_loc(col)
-            ref_idx = curr_idx - 18
-            if ref_idx >= 0:
-                ref_col = main_plan_df.columns[ref_idx]
-                main_plan_df[col] = pd.to_numeric(main_plan_df[ref_col], errors="coerce").fillna(0)
-            else:
-                main_plan_df[col] = 0  # 防止索引越界
+            # 获取该列在 DataFrame 中的位置
+            col_idx = main_plan_df.columns.get_loc(col)
+            prev_18_idx = col_idx - 18
+            if prev_18_idx < 0:
+                raise ValueError(f"❌ 第{i+1}月回货计划前18列不存在，列索引越界。")
+
+            # 获取引用的前18列名
+            ref_col = main_plan_df.columns[prev_18_idx]
+
+            # 构造 Excel 公式：=INDIRECT(ADDRESS(ROW(), col_index))
+            col_letter = get_column_letter(prev_18_idx + 1)  # Excel 列号从 1 开始
+            main_plan_df[col] = f"={col_letter}" + (main_plan_df.index + 3).astype(str)
 
     return main_plan_df
+
 
 
 
