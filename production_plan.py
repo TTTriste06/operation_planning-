@@ -502,7 +502,7 @@ def format_monthly_grouped_headers(ws):
     - 去掉第2行每列前缀的“x月”
     - 每月块用不同背景色填充前两行
     """
-    start_col = 29  # AC列 = 第29列
+    start_col = 28  # ABB列 = 第29列
     row_1 = 1
     row_2 = 2
     max_col = ws.max_column
