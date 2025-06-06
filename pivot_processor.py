@@ -225,20 +225,13 @@ class PivotProcessor:
             ws = writer.book["主计划"]
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
 
-            # 假设要在第1行第3列写入三种颜色块＋说明
             legend_cell = ws.cell(row=1, column=3)
-            # 使用 Emoji 方块：🟥(红) 🟨(黄) 🟧(橙)
             legend_cell.value = (
                 "🟥 < 0    "
                 "🟨 < 安全库存    "
                 "🟧 > 2 × 安全库存"
             )
-            
-            # 打开自动换行（如果想分行也可以用 '\n'）
-            legend_cell.alignment = Alignment(wrap_text=True, vertical="top", horizontal="left")
-            # 如果要分三行显示，可以这样写：
-            # legend_cell.value = "🟥 < 0\n🟨 < 安全库存\n🟧 > 2 × 安全库存"
-            # legend_cell.alignment = Alignment(wrap_text=True, vertical="top", horizontal="left")
+            legend_cell.alignment = Alignment(wrap_text=True, vertical="center", horizontal="left")
 
             merge_safety_header(ws, main_plan_df)
             merge_unfulfilled_order_header(ws)
