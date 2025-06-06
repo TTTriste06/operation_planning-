@@ -86,26 +86,40 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
     # 额外处理：“赛卓-新旧料号”表里，如果主计划中的“品名”匹配到“半成品”，
     # 就用对应行的“新规格”和“新晶圆品名”来覆盖
     nj_sheet_name = "赛卓-新旧料号"
-    source_nj = (
-        additional_sheets.get(nj_sheet_name)
-    )
+    source_nj = additional_sheets.get(nj_sheet_name)
     if source_nj is not None and not source_nj.empty:
-        tmp = source_nj[["半成品", "新规格", "新晶圆品名"]].copy()
-        st.write(tmp)
-        tmp.columns = ["半成品", "新规格", "新晶圆品名"]
+        # 取出“半成品”“新规格”“新晶圆品名”“旧规格”“旧晶圆品名”五列
+        tmp = source_nj[[
+            "半成品","新规格","新晶圆品名","旧规格","旧晶圆品名"
+        ]].copy()
+    
+        # 重命名为统一列名
+        tmp.columns = ["半成品", "新规格", "新晶圆品名", "旧规格", "旧晶圆品名"]
         tmp["半成品"] = tmp["半成品"].astype(str).str.strip()
+    
+        # 如果同一个“半成品”多行，只保留第一行
         tmp = tmp.drop_duplicates(subset=["半成品"])
-
-        st.write(tmp)
-
-        # 构造从“半成品”到“新规格”和“新晶圆品名”的映射字典
-        spec_map = dict(zip(tmp["半成品"], tmp["新规格"]))
-        wafer_map = dict(zip(tmp["半成品"], tmp["新晶圆品名"]))
-
-        # 找出 main_plan_df 中，品名正好等于某个“半成品”的行，进行覆盖
+    
+        # 构造映射：如果“新规格”非空则用“新规格”，否则用“旧规格”
+        spec_map = {}
+        wafer_map = {}
+        for _, row in tmp.iterrows():
+            key = row["半成品"]
+            # 检查“新规格”是否为空或 NaN
+            new_spec = row["新规格"]
+            old_spec = row["旧规格"]
+            spec_map[key] = new_spec if pd.notna(new_spec) and str(new_spec).strip() != "" else old_spec
+    
+            # 检查“新晶圆品名”是否为空或 NaN
+            new_wafer = row["新晶圆品名"]
+            old_wafer = row["旧晶圆品名"]
+            wafer_map[key] = new_wafer if pd.notna(new_wafer) and str(new_wafer).strip() != "" else old_wafer
+    
+        # 找出 main_plan_df 中，“品名”正好等于某个“半成品”的行
         mask = main_plan_df["品名"].astype(str).str.strip().isin(tmp["半成品"])
         if mask.any():
-            # 将“新晶圆品名”覆盖到主表的“晶圆品名”列
+            # 用映射值覆盖“规格”和“晶圆品名”
+            main_plan_df.loc[mask, "规格"] = main_plan_df.loc[mask, "品名"].map(spec_map)
             main_plan_df.loc[mask, "晶圆品名"] = main_plan_df.loc[mask, "品名"].map(wafer_map)
 
     return main_plan_df
