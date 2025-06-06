@@ -342,56 +342,69 @@ def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd
 
     return main_plan_df
 
-
 def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
                                forecast_months: list[int],
                                df_nj: pd.DataFrame) -> pd.DataFrame:
     """
     自动生成每月半成品投单计划并回填到 main_plan_df。
     仅对在“赛卓-新旧料号”表里出现为“半成品”的品名填入；其他行不填（保持空白）。
+    并且将对应的“新品名”一并写入 main_plan_df。
 
     参数：
       - main_plan_df: 包含“品名”、“成品投单计划”、“半成品在制”、“半成品实际投单”等列的主表
-      - forecast_months: 以整数表示的月份列表，例如 [2025-06, 2025-07, …]
-      - df_nj: “赛卓-新旧料号”表，必须包含“半成品”列
+      - forecast_months: 以整数表示的月份列表，例如 [202506, 202507, …]
+      - df_nj: “赛卓-新旧料号”表，必须包含“半成品”和“新品名”列
 
     返回：
-      更新后的 main_plan_df，其中“半成品投单计划”列只对“半成品”品名填入，其他行留空
+      更新后的 main_plan_df，其中“半成品投单计划”列只对“半成品”品名填入，其他行留空，
+      以及新增或填充了对应的“新品名”列。
     """
-    semi_names = set(
-        df_nj["半成品"]
-        .dropna()
-        .astype(str)
-        .str.strip()
-    )
+    # 1. 从 df_nj 提取“半成品”与“新品名”的对应关系字典
+    df_nj = df_nj.copy()
+    df_nj["半成品"] = df_nj["半成品"].astype(str).str.strip()
+    df_nj["新品名"] = df_nj["新品名"].astype(str).str.strip()
+    df_nj_unique = df_nj.drop_duplicates(subset=["半成品"])
 
+    semi_names = set(df_nj_unique["半成品"])
+    new_name_map = dict(zip(df_nj_unique["半成品"], df_nj_unique["新品名"]))
+
+    # 2. 准备半成品投单、成品投单、半成品实际投单这些列名列表
     semi_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
     fg_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
     actual_semi_cols = [col for col in main_plan_df.columns if "半成品实际投单" in col]
 
     if not semi_cols or not fg_cols:
         raise ValueError("❌ 找不到‘半成品投单计划’或‘成品投单计划’列。")
-        
+
+    # 3. 确保 main_plan_df 中有一列用于“新品名”
+    if "新品名" not in main_plan_df.columns:
+        main_plan_df["新品名"] = ""
+
+    # 4. 构造 mask：只保留 main_plan_df["品名"] 在半成品列表中的行
+    main_plan_df["品名"] = main_plan_df["品名"].astype(str).str.strip()
+    mask = main_plan_df["品名"].isin(semi_names)
+
+    # 5. 对 mask=True 的行，填充“新品名”
+    main_plan_df.loc[mask, "新品名"] = main_plan_df.loc[mask, "品名"].map(new_name_map)
+
+    # 6. 逐月生成“半成品投单计划”
     for i, semi_col in enumerate(semi_cols):
-        # 当前月对应的“成品投单计划”列
         fg_col = fg_cols[i] if i < len(fg_cols) else None
         if fg_col is None:
             continue
 
-        # 先把这一列初始化为空字符串
+        # 初始化整列为空字符串
         main_plan_df[semi_col] = ""
 
-        # 只对“品名”在 semi_names 中的行做填充
-        mask = main_plan_df["品名"].astype(str).str.strip().isin(semi_names)
-
+        # 仅对 mask=True 的行执行填充
         if i == 0:
             # 第一个月：数值 = 成品投单计划 – 半成品在制
-            # 先把两列转换为数值，空值视为 0
             fg_vals = pd.to_numeric(main_plan_df.loc[mask, fg_col], errors="coerce").fillna(0)
             inprog_vals = pd.to_numeric(main_plan_df.loc[mask, "半成品在制"], errors="coerce").fillna(0)
+            # 结果先转为整数，再转为字符串写回
             main_plan_df.loc[mask, semi_col] = (fg_vals - inprog_vals).astype(int).astype(str)
         else:
-            # 后续月份：使用公式
+            # 后续月份：写公式
             prev_semi_col = semi_cols[i - 1]
             prev_actual_semi_col = actual_semi_cols[i - 1] if (i - 1) < len(actual_semi_cols) else None
 
@@ -405,10 +418,9 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
             )
 
             def build_formula(r_idx: int) -> str:
-                excel_row = r_idx + 3  # 数据从 Excel 第3行开始
+                excel_row = r_idx + 3  # DataFrame 第 0 行对应 Excel 第 3 行
                 return f"={col_fg}{excel_row}-{col_half_inprog}{excel_row}+({col_prev_semi}{excel_row}-{col_prev_actual}{excel_row})"
 
-            # 只对 mask 为 True 的行写公式，其他行保持空
             for r in main_plan_df.index[mask]:
                 main_plan_df.at[r, semi_col] = build_formula(r)
 
