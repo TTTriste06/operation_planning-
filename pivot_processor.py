@@ -236,8 +236,33 @@ class PivotProcessor:
 
             append_all_standardized_sheets(writer, self.dataframes, self.additional_sheets)
 
-
             adjust_column_width(ws)
+
+
+            # 提交数据，让 openpyxl 加载这个工作簿
+            writer.save()
+        
+        
+            wb = load_workbook(output_path)
+            ws = wb["主计划"]
+        
+            # 3. 设置前两行（行号 1 和 2）字体为加粗，行高也调高一点
+            bold_font = Font(bold=True)
+            for row_idx in (1, 2):
+                # 3.1 调整行高为 30（你可以根据需要自行修改高度数值）
+                ws.row_dimensions[row_idx].height = 30
+        
+                # 3.2 遍历这一行所有已用到的列，对单元格字体加粗、居中、垂直居中
+                max_col = ws.max_column
+                for col_idx in range(1, max_col + 1):
+                    cell = ws.cell(row=row_idx, column=col_idx)
+                    cell.font = bold_font
+                    # 垂直水平居中（可选）
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+        
+            # 5. 保存修改
+            wb.save(output_path)
+
 
         output_buffer.seek(0)
 
