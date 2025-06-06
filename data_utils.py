@@ -87,9 +87,7 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
     # 就用对应行的“新规格”和“新晶圆品名”来覆盖
     nj_sheet_name = "赛卓-新旧料号"
     source_nj = (
-        dataframes.get(nj_sheet_name)
-        if nj_sheet_name in dataframes
-        else additional_sheets.get(nj_sheet_name)
+        additional_sheets.get(nj_sheet_name)
     )
     if source_nj is not None and not source_nj.empty and nj_sheet_name in field_mappings:
         mapping_nj = field_mappings[nj_sheet_name]
@@ -102,6 +100,8 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
             tmp["半成品"] = tmp["半成品"].astype(str).str.strip()
             tmp = tmp.drop_duplicates(subset=["半成品"])
 
+            st.write(tmp)
+
             # 构造从“半成品”到“新规格”和“新晶圆品名”的映射字典
             spec_map = dict(zip(tmp["半成品"], tmp["新规格"]))
             wafer_map = dict(zip(tmp["半成品"], tmp["新晶圆品名"]))
@@ -109,8 +109,6 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
             # 找出 main_plan_df 中，品名正好等于某个“半成品”的行，进行覆盖
             mask = main_plan_df["品名"].astype(str).str.strip().isin(tmp["半成品"])
             if mask.any():
-                # 直接将“新规格”覆盖到主表的“规格”列
-                main_plan_df.loc[mask, "规格"] = main_plan_df.loc[mask, "品名"].map(spec_map)
                 # 将“新晶圆品名”覆盖到主表的“晶圆品名”列
                 main_plan_df.loc[mask, "晶圆品名"] = main_plan_df.loc[mask, "品名"].map(wafer_map)
 
