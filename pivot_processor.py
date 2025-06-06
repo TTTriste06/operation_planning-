@@ -239,13 +239,6 @@ class PivotProcessor:
             adjust_column_width(ws)
 
 
-            # 提交数据，让 openpyxl 加载这个工作簿
-            writer.save()
-        
-        
-            wb = load_workbook(output_path)
-            ws = wb["主计划"]
-        
             # 3. 设置前两行（行号 1 和 2）字体为加粗，行高也调高一点
             bold_font = Font(bold=True)
             for row_idx in (1, 2):
@@ -261,7 +254,7 @@ class PivotProcessor:
                     cell.alignment = Alignment(horizontal="center", vertical="center")
         
             # 5. 保存修改
-            wb.save(output_path)
+            # wb.save(output_path)
 
 
         output_buffer.seek(0)
