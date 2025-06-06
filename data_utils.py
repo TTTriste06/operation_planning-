@@ -17,9 +17,14 @@ def extract_info(df, mapping, fields=("规格", "晶圆品名")):
         return pd.DataFrame(columns=["品名"] + list(fields))
 
 
-def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame, dataframes: dict, additional_sheets: dict, field_mappings: dict) -> pd.DataFrame:
+def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
+                              dataframes: dict,
+                              additional_sheets: dict,
+                              field_mappings: dict) -> pd.DataFrame:
     """
     为主计划 DataFrame 补全 规格 和 晶圆品名 字段，按优先级从多个数据源中逐步填充。
+    并且如果主计划中的“品名”正好匹配“赛卓-新旧料号”表里的“半成品”，
+    就用对应行的“新规格”和“新晶圆品名”来覆盖主计划中的值。
 
     参数：
         main_plan_df: 主计划表，含 '品名' 列
@@ -66,14 +71,51 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame, dataframes: dict, addit
             continue
 
         # 合并并优先填入主列
-        main_plan_df = main_plan_df.merge(extracted, on="品名", how="left", suffixes=("", f"_{sheet}"))
+        main_plan_df = main_plan_df.merge(
+            extracted,
+            on="品名",
+            how="left",
+            suffixes=("", f"_{sheet}")
+        )
         for f in fields:
             alt_col = f"{f}_{sheet}"
             if alt_col in main_plan_df.columns:
                 main_plan_df[f] = main_plan_df[f].combine_first(main_plan_df[alt_col])
                 main_plan_df.drop(columns=[alt_col], inplace=True)
 
+    # 额外处理：“赛卓-新旧料号”表里，如果主计划中的“品名”匹配到“半成品”，
+    # 就用对应行的“新规格”和“新晶圆品名”来覆盖
+    nj_sheet_name = "赛卓-新旧料号"
+    source_nj = (
+        dataframes.get(nj_sheet_name)
+        if nj_sheet_name in dataframes
+        else additional_sheets.get(nj_sheet_name)
+    )
+    if source_nj is not None and not source_nj.empty and nj_sheet_name in field_mappings:
+        mapping_nj = field_mappings[nj_sheet_name]
+        # 确保 mapping 中含有“半成品”、“新规格”、“新晶圆品名”三项
+        if all(k in mapping_nj for k in ["半成品", "新规格", "新晶圆品名"]):
+            tmp = source_nj[[mapping_nj["半成品"],
+                             mapping_nj["新规格"],
+                             mapping_nj["新晶圆品名"]]].copy()
+            tmp.columns = ["半成品", "新规格", "新晶圆品名"]
+            tmp["半成品"] = tmp["半成品"].astype(str).str.strip()
+            tmp = tmp.drop_duplicates(subset=["半成品"])
+
+            # 构造从“半成品”到“新规格”和“新晶圆品名”的映射字典
+            spec_map = dict(zip(tmp["半成品"], tmp["新规格"]))
+            wafer_map = dict(zip(tmp["半成品"], tmp["新晶圆品名"]))
+
+            # 找出 main_plan_df 中，品名正好等于某个“半成品”的行，进行覆盖
+            mask = main_plan_df["品名"].astype(str).str.strip().isin(tmp["半成品"])
+            if mask.any():
+                # 直接将“新规格”覆盖到主表的“规格”列
+                main_plan_df.loc[mask, "规格"] = main_plan_df.loc[mask, "品名"].map(spec_map)
+                # 将“新晶圆品名”覆盖到主表的“晶圆品名”列
+                main_plan_df.loc[mask, "晶圆品名"] = main_plan_df.loc[mask, "品名"].map(wafer_map)
+
     return main_plan_df
+
 
 
 def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict) -> pd.DataFrame:
