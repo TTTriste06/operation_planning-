@@ -163,7 +163,7 @@ def merge_unfulfilled_order_header(sheet):
     if not unfulfilled_cols:
         return  # 没有未交订单列，不处理
 
-    start_col = min(unfulfilled_cols)
+    start_col = min(unfulfilled_cols) - 1
     end_col = max(unfulfilled_cols)
 
     # 合并单元格范围
@@ -171,7 +171,7 @@ def merge_unfulfilled_order_header(sheet):
     sheet.merge_cells(merge_range)
 
     # 设置合并单元格的值与居中格式
-    cell = sheet.cell(row=1, column=start_col + 1)
+    cell = sheet.cell(row=1, column=start_col)
     cell.value = "未交订单"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
