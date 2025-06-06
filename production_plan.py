@@ -343,47 +343,74 @@ def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd
     return main_plan_df
 
 
-def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
+def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
+                               forecast_months: list[int],
+                               df_nj: pd.DataFrame) -> pd.DataFrame:
     """
     自动生成每月半成品投单计划并回填到 main_plan_df。
-    第一个月为：当月成品投单计划 - 半成品在制（数值）
-    后续月份为：当月成品投单计划 - 半成品在制 + (上月半成品投单计划 - 上月半成品实际投单)（写入公式）
+    仅对在“赛卓-新旧料号”表里出现为“半成品”的品名填入；其他行不填（保持空白）。
 
-    返回更新后的 main_plan_df。
+    参数：
+      - main_plan_df: 包含“品名”、“成品投单计划”、“半成品在制”、“半成品实际投单”等列的主表
+      - forecast_months: 以整数表示的月份列表，例如 [2025-06, 2025-07, …]
+      - df_nj: “赛卓-新旧料号”表，必须包含“半成品”列
+
+    返回：
+      更新后的 main_plan_df，其中“半成品投单计划”列只对“半成品”品名填入，其他行留空
     """
-    # 所有列名
+    semi_names = set(
+        df_nj["半成品"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+    )
+
     semi_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
     fg_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
     actual_semi_cols = [col for col in main_plan_df.columns if "半成品实际投单" in col]
 
     if not semi_cols or not fg_cols:
-        raise ValueError("❌ 半成品投单计划或成品投单计划列不存在")
-
-    for i, col in enumerate(semi_cols):
-        # 当前对应的“成品投单计划”列
+        raise ValueError("❌ 找不到‘半成品投单计划’或‘成品投单计划’列。")
+        
+    for i, semi_col in enumerate(semi_cols):
+        # 当前月对应的“成品投单计划”列
         fg_col = fg_cols[i] if i < len(fg_cols) else None
+        if fg_col is None:
+            continue
+
+        # 先把这一列初始化为空字符串
+        main_plan_df[semi_col] = ""
+
+        # 只对“品名”在 semi_names 中的行做填充
+        mask = main_plan_df["品名"].astype(str).str.strip().isin(semi_names)
 
         if i == 0:
-            # 第一个月：直接数值计算
-            main_plan_df[col] = (
-                pd.to_numeric(main_plan_df[fg_col], errors="coerce").fillna(0) -
-                pd.to_numeric(main_plan_df.get("半成品在制", 0), errors="coerce").fillna(0)
-            )
+            # 第一个月：数值 = 成品投单计划 – 半成品在制
+            # 先把两列转换为数值，空值视为 0
+            fg_vals = pd.to_numeric(main_plan_df.loc[mask, fg_col], errors="coerce").fillna(0)
+            inprog_vals = pd.to_numeric(main_plan_df.loc[mask, "半成品在制"], errors="coerce").fillna(0)
+            main_plan_df.loc[mask, semi_col] = (fg_vals - inprog_vals).astype(int).astype(str)
         else:
-            # 后续月份：写公式字符串
+            # 后续月份：使用公式
             prev_semi_col = semi_cols[i - 1]
-            prev_actual_semi_col = actual_semi_cols[i - 1] if i - 1 < len(actual_semi_cols) else ""
+            prev_actual_semi_col = actual_semi_cols[i - 1] if (i - 1) < len(actual_semi_cols) else None
 
+            # 计算这些列在 Excel 中的列字母
             col_fg = get_column_letter(main_plan_df.columns.get_loc(fg_col) + 1)
-            col_half_in_progress = get_column_letter(main_plan_df.columns.get_loc("半成品在制") + 1)
+            col_half_inprog = get_column_letter(main_plan_df.columns.get_loc("半成品在制") + 1)
             col_prev_semi = get_column_letter(main_plan_df.columns.get_loc(prev_semi_col) + 1)
-            col_prev_actual = get_column_letter(main_plan_df.columns.get_loc(prev_actual_semi_col) + 1) if prev_actual_semi_col else "X"
+            col_prev_actual = (
+                get_column_letter(main_plan_df.columns.get_loc(prev_actual_semi_col) + 1)
+                if prev_actual_semi_col else "X"
+            )
 
-            def build_formula(row_idx: int) -> str:
-                row_num = row_idx + 3  # 数据从第3行开始
-                return f"={col_fg}{row_num}-{col_half_in_progress}{row_num}+({col_prev_semi}{row_num}-{col_prev_actual}{row_num})"
+            def build_formula(r_idx: int) -> str:
+                excel_row = r_idx + 3  # 数据从 Excel 第3行开始
+                return f"={col_fg}{excel_row}-{col_half_inprog}{excel_row}+({col_prev_semi}{excel_row}-{col_prev_actual}{excel_row})"
 
-            main_plan_df[col] = [build_formula(i) for i in range(len(main_plan_df))]
+            # 只对 mask 为 True 的行写公式，其他行保持空
+            for r in main_plan_df.index[mask]:
+                main_plan_df.at[r, semi_col] = build_formula(r)
 
     return main_plan_df
 
