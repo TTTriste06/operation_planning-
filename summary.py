@@ -163,7 +163,7 @@ def merge_unfulfilled_order_header(sheet):
     if not unfulfilled_cols:
         return  # 没有未交订单列，不处理
 
-    start_col = min(unfulfilled_cols)
+    start_col = min(unfulfilled_cols) - 1
     end_col = max(unfulfilled_cols)
 
     # 合并单元格范围
