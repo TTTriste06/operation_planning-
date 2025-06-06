@@ -51,53 +51,93 @@ def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
     except Exception as e:
         st.error(f"⚠️ 安全库存表头合并失败: {e}")
 
-def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame, df_unfulfilled: pd.DataFrame) -> tuple[pd.DataFrame, list]:
+def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame,
+                                               df_unfulfilled: pd.DataFrame) -> tuple[pd.DataFrame, list]:
     """
-    将未交订单按预交货日分为历史与未来月份，并添加至主计划 DataFrame。
+    将未交订单按预交货日分为历史与未来月份，
+    并将“历史未交订单”合并到第一个月的未交订单中，添加至主计划 DataFrame。
     返回合并后的主计划表和未匹配品名列表（df_unfulfilled 中存在但主计划中没有的）。
     """
+    # 当月第一天，当作“本月”标识
     today = pd.Timestamp(datetime.today().replace(day=1))
     final_month = pd.Timestamp("2025-11-01")
+    # 枚举从本月到最终月的所有月份周期
     future_months = pd.period_range(today.to_period("M"), final_month.to_period("M"), freq="M")
+    # 构造未来列名列表，例如 ["未交订单 2025-06", "未交订单 2025-07", ...]
     future_cols = [f"未交订单 {str(p)}" for p in future_months]
 
+    # 复制一份未交订单，做清洗和预处理
     df = df_unfulfilled.copy()
     df["预交货日"] = pd.to_datetime(df["预交货日"], errors="coerce")
     df["未交订单数量"] = pd.to_numeric(df["未交订单数量"], errors="coerce").fillna(0)
     df["品名"] = df["品名"].astype(str).str.strip()
+    # 提取年月周期
     df["月份"] = df["预交货日"].dt.to_period("M")
 
-    # 合并重复品名+月份记录
+    # 按“品名”“月份”聚合未交订单数量
     df = df.groupby(["品名", "月份"], as_index=False)["未交订单数量"].sum()
+    # 标记哪些行属于历史(月份 < 本月)
     df["是否历史"] = df["月份"] < today.to_period("M")
 
-    df_hist = df[df["是否历史"]].groupby("品名", as_index=False)["未交订单数量"].sum()
-    df_hist = df_hist.rename(columns={"未交订单数量": "历史未交订单"})
+    # 统计每个品名的历史未交订单总量
+    df_hist = (
+        df[df["是否历史"]]
+        .groupby("品名", as_index=False)["未交订单数量"]
+        .sum()
+        .rename(columns={"未交订单数量": "历史未交订单"})
+    )
 
+    # 剩余都是当月及之后月份，作为“未来”
     df_future = df[~df["是否历史"]].copy()
+    # 将 Period 类型转为字符串，方便透视
     df_future["月份"] = df_future["月份"].astype(str)
-    df_pivot = df_future.pivot_table(index="品名", columns="月份", values="未交订单数量", aggfunc="sum").fillna(0)
+    # 透视表：每个“品名”在每个月对应的未交订单数量
+    df_pivot = (
+        df_future
+        .pivot_table(index="品名",
+                     columns="月份",
+                     values="未交订单数量",
+                     aggfunc="sum")
+        .fillna(0)
+    )
+    # 重命名列为“未交订单 YYYY-MM”
     df_pivot.columns = [f"未交订单 {col}" for col in df_pivot.columns]
     df_pivot = df_pivot.reset_index()
 
+    # 确保所有 future_cols 都存在于透视结果中，缺失的列补 0
     for col in future_cols:
         if col not in df_pivot.columns:
             df_pivot[col] = 0
 
+    # 将历史表和未来表合并在一起（outer 合并，方便计算哪些品名只有历史或只有未来）
     df_merged = pd.merge(df_hist, df_pivot, on="品名", how="outer").fillna(0)
-    df_merged["总未交订单"] = df_merged["历史未交订单"] + df_merged[future_cols].sum(axis=1)
 
-    ordered_cols = ["品名", "总未交订单", "历史未交订单"] + future_cols
+    # 将“历史未交订单”合并到第一个月对应的“未交订单”列中
+    first_col = future_cols[0]
+    # 如果某品名既有历史也有未来，则把历史累加到当月
+    df_merged[first_col] = df_merged[first_col] + df_merged["历史未交订单"]
+
+    # 现在不再保留单独的“历史未交订单”列了
+    df_merged = df_merged.drop(columns=["历史未交订单"])
+
+    # 重新计算“总未交订单” = 所有 future_cols 之和
+    df_merged["总未交订单"] = df_merged[future_cols].sum(axis=1)
+
+    # 按顺序排列列: “品名”“总未交订单” + future_cols
+    ordered_cols = ["品名", "总未交订单"] + future_cols
     df_merged = df_merged[ordered_cols]
 
+    # 清洗主计划表的“品名”格式
     main_plan_df["品名"] = main_plan_df["品名"].astype(str).str.strip()
+    # 将合并结果和主计划表对齐（左连接）
     result = pd.merge(main_plan_df, df_merged, on="品名", how="left")
 
+    # 将新加入的列空值填 0
     for col in ordered_cols[1:]:
         if col in result.columns:
             result[col] = result[col].fillna(0)
 
-    # ✅ 未匹配品名（df_unfulfilled 中有，但 main_plan_df 中没有）
+    # 计算未匹配品名：df_unfulfilled 有，但主计划中没有
     all_unfulfilled_names = set(df_unfulfilled["品名"].dropna().astype(str).str.strip())
     all_main_names = set(main_plan_df["品名"].dropna().astype(str).str.strip())
     unmatched = sorted(list(all_unfulfilled_names - all_main_names))
