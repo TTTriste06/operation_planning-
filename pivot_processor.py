@@ -241,7 +241,7 @@ class PivotProcessor:
 
             # 设置前两行（行号 1 和 2）字体为加粗，行高也调高一点
             bold_font = Font(bold=True)
-            ws.row_dimensions[2].height = 30
+            ws.row_dimensions[2].height = 35
     
             # 遍历这一行所有已用到的列，对单元格字体加粗、居中、垂直居中
             max_col = ws.max_column
@@ -250,6 +250,20 @@ class PivotProcessor:
                 cell.font = bold_font
                 # 垂直水平居中（可选）
                 cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            # 自动筛选的范围一般写成：从 A2 开始，到最后一列的某一行结束
+            last_col_letter = get_column_letter(ws.max_column)
+            last_row = ws.max_row
+            # 把筛选范围定为从 A2 到 最后一列的 最后一行
+            #ws.auto_filter.ref = f"A2:{last_col_letter}{last_row}"
+            # 如果你只想在第二行显示筛选按钮，可以把 ref 限定到 A2:最后列的 2，比如：
+            ws.auto_filter.ref = f"A2:{last_col_letter}2"
+        
+            # 冻结前六列，只要把 freeze_panes 定到第七列第 1 行即可
+            # 因为 freeze_panes 指向的单元格的左上区域都会被固定：
+            # 例如，如果写成 “G1”，那么列 A–F 均被冻结，而没有冻结行。
+            ws.freeze_panes = "G1"
+
 
 
         output_buffer.seek(0)
