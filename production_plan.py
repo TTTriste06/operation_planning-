@@ -403,7 +403,7 @@ def generate_monthly_adjust_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     for i, col in enumerate(adjust_cols):
         if i == 0:
             # 第一个月为空字符串
-            main_plan_df[col] = ""
+            main_plan_df[col] = 0
         else:
             # 后续月：写入公式
             curr_plan_col = fg_plan_cols[i] if i < len(fg_plan_cols) else None
