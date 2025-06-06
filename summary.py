@@ -157,13 +157,13 @@ def merge_unfulfilled_order_header(sheet):
     # 找出所有“未交订单 yyyy-mm”列的索引
     unfulfilled_cols = [
         idx for idx, col in enumerate(header_row, start=1)
-        if isinstance(col, str) and col.startswith("未交订单 ")
+        if isinstance(col, str) and col.startswith("未交订单 ") and col.startswith("总未交订单")
     ]
 
     if not unfulfilled_cols:
         return  # 没有未交订单列，不处理
 
-    start_col = min(unfulfilled_cols) - 1
+    start_col = min(unfulfilled_cols)
     end_col = max(unfulfilled_cols)
 
     # 合并单元格范围
