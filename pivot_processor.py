@@ -246,7 +246,7 @@ class PivotProcessor:
             # 遍历这一行所有已用到的列，对单元格字体加粗、居中、垂直居中
             max_col = ws.max_column
             for col_idx in range(1, max_col + 1):
-                cell = ws.cell(row=row_idx, column=col_idx)
+                cell = ws.cell(row=2, column=col_idx)
                 cell.font = bold_font
                 # 垂直水平居中（可选）
                 cell.alignment = Alignment(horizontal="center", vertical="center")
