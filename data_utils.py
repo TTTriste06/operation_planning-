@@ -91,7 +91,8 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
     )
     if source_nj is not None and not source_nj.empty:
         mapping_nj = field_mappings[nj_sheet_name]
-
+        st.write(mapping_nj)
+        st.write(mapping_nj["半成品"])
         tmp = source_nj[[mapping_nj["半成品"],
                          mapping_nj["新规格"],
                          mapping_nj["新晶圆品名"]]].copy()
