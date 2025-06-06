@@ -157,7 +157,7 @@ def merge_unfulfilled_order_header(sheet):
     # 找出所有“未交订单 yyyy-mm”列的索引
     unfulfilled_cols = [
         idx for idx, col in enumerate(header_row, start=1)
-        if isinstance(col, str) and col.startswith("未交订单 ") and col.startswith("总未交订单")
+        if isinstance(col, str) and col.startswith("未交订单 ")
     ]
 
     if not unfulfilled_cols:
@@ -171,7 +171,7 @@ def merge_unfulfilled_order_header(sheet):
     sheet.merge_cells(merge_range)
 
     # 设置合并单元格的值与居中格式
-    cell = sheet.cell(row=1, column=start_col)
+    cell = sheet.cell(row=1, column=start_col + 1)
     cell.value = "未交订单"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
