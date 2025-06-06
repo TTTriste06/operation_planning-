@@ -463,8 +463,6 @@ def generate_monthly_return_adjustment(main_plan_df: pd.DataFrame) -> pd.DataFra
 
     return main_plan_df
 
-import pandas as pd
-
 def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
     回货计划填写逻辑：
@@ -472,7 +470,7 @@ def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     - 从第二个月开始，等于同一行第当前列前18列的值（通过公式表示）。
     """
     # 找出所有“回货计划”列（不含“调整”）
-    return_plan_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col]
+    return_plan_cols = [col for col in main_plan_df.columns if "回货计划" in col and "调整" not in col and "PC" not in col]
     
     # 处理每一个回货计划列
     for i, col in enumerate(return_plan_cols):
