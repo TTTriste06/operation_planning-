@@ -594,6 +594,35 @@ def highlight_production_plan_cells(ws, df):
             elif val > 2 * safety:
                 cell.fill = orange_fill
 
+    last_data_row = ws.max_row
+    legend_start_row = last_data_row + 2  # 留一行空行，再写图例
+
+    # 5. 定义颜色对应含义列表：(中文标签, 十六进制颜色码)
+    color_meanings = [
+        ("< 0",      "FF9999"),  # 红色，代表小于 0
+        ("< 安全库存", "FFFF99"),  # 黄色，代表小于安全库存
+        ("> 2×安全库存", "FFD966"),  # 橙色，代表大于 2 倍安全库存
+    ]
+
+    # 6. 写“图例：”标题并加粗
+    title_cell = ws.cell(row=legend_start_row, column=1, value="图例：")
+    title_cell.font = Font(bold=True)
+    title_cell.alignment = Alignment(vertical="center", horizontal="left")
+
+    # 7. 逐行写每个图例项：彩色方块 + 说明文字
+    for idx, (label, hex_color) in enumerate(color_meanings):
+        row = legend_start_row + idx + 1
+        # 彩色方块：第一列，只填充背景
+        cf = ws.cell(row=row, column=1, value="")
+        cf.fill = PatternFill(start_color=hex_color, end_color=hex_color, fill_type="solid")
+        # 说明文字：第二列
+        tf = ws.cell(row=row, column=2, value=label)
+        tf.alignment = Alignment(vertical="center", horizontal="left")
+
+    # 8. 调整图例列宽
+    ws.column_dimensions[get_column_letter(1)].width = 3
+    ws.column_dimensions[get_column_letter(2)].width = 12
+
 def drop_last_forecast_month_columns(main_plan_df: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
     """
     删除 AC列（第29列）后所有含有最后一个预测月份的字段列，如 '12月销售数量' 等。
