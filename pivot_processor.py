@@ -224,6 +224,14 @@ class PivotProcessor:
 
             ws = writer.book["主计划"]
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
+            legend_text = (
+                "红色：< 0\n"
+                "黄色：< 安全库存\n"
+                "橙色：> 2 × 安全库存"
+            )
+            cell = ws.cell(row=1, column=3, value=legend_text)
+            
+            cell.alignment = Alignment(wrap_text=True, vertical="center", horizontal="left")
 
             merge_safety_header(ws, main_plan_df)
             merge_unfulfilled_order_header(ws)
