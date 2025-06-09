@@ -363,11 +363,15 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
     """    
     tmp = mapping_df[["新品名","半成品"]].copy()
     tmp = clean_df(tmp)                               
-    # 删除“半成品”为 NaN 或 空字符串 的行
     tmp = tmp[tmp["半成品"].notna() & (tmp["半成品"].astype(str).str.strip() != "")]
-                               
+    # 将“新品名”和“半成品”两列合并为一个列表
+    combined_names = pd.Series(
+        tmp["新品名"].astype(str).str.strip().tolist() +
+        tmp["半成品"].astype(str).str.strip().tolist()
+    ).dropna().unique().tolist()
+                         
     st.write("tmp")
-    st.write(tmp)                                
+    st.write(combined_names)                                
     
     # ✅ 提取目标列
     semi_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
@@ -378,7 +382,7 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
         raise ValueError("❌ 半成品投单计划或成品投单计划列不存在")
 
     # ✅ 仅对这些品名行进行写入
-    mask = main_plan_df["品名"].astype(str).str.strip().isin(valid_semi_names)
+    mask = main_plan_df["品名"].astype(str).str.strip().isin(combined_names)
 
     for i, col in enumerate(semi_cols):
         fg_col = fg_cols[i] if i < len(fg_cols) else None
