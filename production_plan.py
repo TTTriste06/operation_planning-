@@ -361,9 +361,8 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
     返回：
         更新后的 main_plan_df
     """    
-    
     mapping_df = additional_sheets.get("赛卓-新旧料号")            
-
+    mapping_df = mapping_df.fillna("")
     # 删除“半成品”列为空的行（彻底过滤）
     mapping_df = mapping_df[mapping_df["半成品"].notna()].copy()
     
