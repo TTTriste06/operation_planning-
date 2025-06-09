@@ -37,7 +37,19 @@ def append_all_standardized_sheets(writer: pd.ExcelWriter,
                                    uploaded_files: dict, 
                                    additional_sheets: dict):
     all_files = {**uploaded_files, **additional_sheets}
+    rename_map = {
+        "未交订单": "赛卓-未交订单",
+        "成品在制": "赛卓-成品在制",
+        "成品库存": "赛卓-成品库存",
+        "CP在制": "赛卓-CP在制",
+        "晶圆库存": "赛卓-晶圆库存",
+        "到货明细": "赛卓-到货明细",
+        "下单明细": "赛卓-下单明细",
+        "销货明细": "赛卓-销货明细"
+    }
 
+    st.write(rename_map.keys())
+                                       
     for filename, file_obj in all_files.items():
         try:
             if isinstance(file_obj, pd.DataFrame):
