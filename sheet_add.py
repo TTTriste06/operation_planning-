@@ -51,12 +51,15 @@ def append_all_standardized_sheets(writer: pd.ExcelWriter,
 
     for filename, file_obj in all_files.items():
         try:
-            # 如果 filename 在重命名表中，就替换为新名字
-            sheet_base_name = rename_map.get(filename, filename)
+            # 遍历 rename_map 的 key，看是否被包含在 filename 中
+            for key, new_name in rename_map.items():
+                if key in filename:
+                    filename = new_name
+                    break  # 命中后退出
 
             if isinstance(file_obj, pd.DataFrame):
                 cleaned_df = clean_df(file_obj)
-                sheet_name = sheet_base_name[:31]
+                sheet_name = filename[:31]
                 cleaned_df.to_excel(writer, sheet_name=sheet_name, index=False)
                 adjust_column_width(writer, sheet_name, cleaned_df)
             else:
@@ -65,7 +68,7 @@ def append_all_standardized_sheets(writer: pd.ExcelWriter,
                     df = xls.parse(sheet)
                     if isinstance(df, pd.DataFrame) and not df.empty:
                         cleaned_df = clean_df(df)
-                        safe_sheet_name = sheet_base_name[:31]
+                        safe_sheet_name = f"{filename[:15]}-{sheet[:15]}"[:31]
                         cleaned_df.to_excel(writer, sheet_name=safe_sheet_name, index=False)
                         adjust_column_width(writer, safe_sheet_name, cleaned_df)
         except Exception as e:
