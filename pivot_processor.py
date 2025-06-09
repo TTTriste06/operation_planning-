@@ -222,11 +222,6 @@ class PivotProcessor:
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
-
-            # 生成并写入透视表
-            pivot_tables = generate_all_pivots(self.dataframes)
-            for sheet_name, df in pivot_tables.items():
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
                 
             # 写完后手动调整所有透视表 sheet 的列宽
             for sheet_name in pivot_tables:
