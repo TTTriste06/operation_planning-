@@ -366,14 +366,10 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
     tmp = mapping_df[["新品名","半成品"]].copy()
     tmp = clean_df(tmp)                               
     tmp = tmp[tmp["半成品"].notna() & (tmp["半成品"].astype(str).str.strip() != "")]
-    # 将“新品名”和“半成品”两列合并为一个列表
     combined_names = pd.Series(
         tmp["新品名"].astype(str).str.strip().tolist() +
         tmp["半成品"].astype(str).str.strip().tolist()
-    ).dropna().unique().tolist()
-                         
-    st.write("tmp")
-    st.write(combined_names)                                
+    ).dropna().unique().tolist()                           
     
     # ✅ 提取目标列
     semi_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
