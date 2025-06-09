@@ -83,8 +83,8 @@ def adjust_column_width(writer, sheet_name, df):
     for idx, col in enumerate(df.columns, 1):
         max_content_len = df[col].astype(str).str.len().max()
         header_len = len(str(col))
-        column_width = max(max_content_len, header_len) * 1.2 + 10
-        worksheet.column_dimensions[get_column_letter(idx)].width = min(column_width, 50)
+        column_width = max(max_content_len, header_len) * 1.2 + 15
+        worksheet.column_dimensions[get_column_letter(idx)].width = min(column_width, 100)
 
 # 批量透视
 def generate_all_pivots(source_dataframes: dict, writer=None) -> dict:
