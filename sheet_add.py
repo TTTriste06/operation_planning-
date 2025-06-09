@@ -37,15 +37,11 @@ def append_all_standardized_sheets(writer: pd.ExcelWriter,
                                    uploaded_files: dict, 
                                    additional_sheets: dict):
     """
-    将 uploaded_files 和 additional_sheets 中所有内容写入 Excel：
-    - 若是原始 Excel 文件：提取全部 sheet 写入；
-    - 若是 DataFrame：直接写入；
-    - sheet 命名支持自动识别并重命名；
-    - 自动执行 NaN 清洗和列宽调整。
+    从 uploaded_files 和 additional_sheets 中读取 Excel 内容，清洗 + 自动列宽 + 重命名 Sheet。
     """
     all_files = {**uploaded_files, **additional_sheets}
 
-    # 🔁 自动重命名规则
+    # ✅ sheet名关键字 -> 目标标准名
     rename_map = {
         "未交订单": "赛卓-未交订单",
         "成品在制": "赛卓-成品在制",
@@ -59,31 +55,35 @@ def append_all_standardized_sheets(writer: pd.ExcelWriter,
 
     for filename, file_obj in all_files.items():
         try:
-            # ✅ Case 1: file_obj 是 DataFrame
+            # ✅ Case 1: 是 DataFrame，直接写
             if isinstance(file_obj, pd.DataFrame):
                 cleaned_df = clean_df(file_obj)
                 sheet_name = filename[:31]
-                for keyword, std_name in rename_map.items():
-                    if keyword in sheet_name:
-                        sheet_name = std_name
+                for key, new_name in rename_map.items():
+                    if key in sheet_name:
+                        sheet_name = new_name
                         break
                 cleaned_df.to_excel(writer, sheet_name=sheet_name, index=False)
                 adjust_column_width(writer, sheet_name, cleaned_df)
 
-            # ✅ Case 2: file_obj 是 Excel 文件对象，遍历其所有 sheet
+            # ✅ Case 2: 是 Excel 文件对象，解析内部多个 sheet
             else:
                 xls = pd.ExcelFile(file_obj)
                 for sheet in xls.sheet_names:
                     df = xls.parse(sheet)
                     if isinstance(df, pd.DataFrame) and not df.empty:
                         cleaned_df = clean_df(df)
-                        base_name = f"{filename[:15]}-{sheet[:15]}"
-                        sheet_name = base_name
-                        for keyword, std_name in rename_map.items():
-                            if keyword in sheet:
-                                sheet_name = std_name
+
+                        # ⛳ 使用 sheet 名判断是否命中重命名规则
+                        sheet_name = sheet
+                        for key, new_name in rename_map.items():
+                            if key in sheet:
+                                sheet_name = new_name
                                 break
+
+                        # ✅ 防止超过 Excel 限制
                         sheet_name = sheet_name[:31]
+
                         cleaned_df.to_excel(writer, sheet_name=sheet_name, index=False)
                         adjust_column_width(writer, sheet_name, cleaned_df)
 
