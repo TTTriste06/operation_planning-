@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime, timedelta
 from openpyxl.utils import get_column_letter
+from excel_utils import adjust_column_width
 
 # 配置透视表字段
 PIVOT_CONFIG = {
@@ -76,15 +77,6 @@ def create_pivot_table(df, config):
         for col in pivot.columns
     ]
     return pivot.reset_index()
-
-# 自动调整列宽
-def adjust_column_width(writer, sheet_name, df):
-    worksheet = writer.sheets[sheet_name]
-    for idx, col in enumerate(df.columns, 1):
-        max_content_len = df[col].astype(str).str.len().max()
-        header_len = len(str(col))
-        column_width = max(max_content_len, header_len) * 1.2 + 15
-        worksheet.column_dimensions[get_column_letter(idx)].width = min(column_width, 100)
 
 # 批量透视
 def generate_all_pivots(source_dataframes: dict, writer=None) -> dict:
