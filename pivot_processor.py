@@ -260,7 +260,13 @@ class PivotProcessor:
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
 
-            append_all_standardized_sheets(writer, uploaded_files, additional_sheets)
+            append_all_standardized_sheets(writer, uploaded_files, {
+                "赛卓-预测": forecast_file,
+                "赛卓-安全库存": safety_file,
+                "赛卓-新旧料号": mapping_file,
+                "赛卓-供应商-PC": pc_file,
+            })
+
 
             adjust_column_width(ws)
 
