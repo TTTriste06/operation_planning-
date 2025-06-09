@@ -364,20 +364,13 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
     mapping_df = mapping_df.fillna("")
     # 删除“半成品”列为空的行（彻底过滤）
     mapping_df = mapping_df[mapping_df["半成品"].notna()].copy()
-    
-    # 然后再提取半成品品名展示
-    semi_names = mapping_df["半成品"].astype(str).str.strip().unique()
-    
-    st.write("🔍 以下为新旧料号中“半成品”字段非空的品名：")
-    for name in semi_names:
-        st.write(f"- {name}")
 
-    
-
+    st.write(mapping_df)
     semi_part_names = mapping_df["半成品"].astype(str).str.strip()
     new_part_names = mapping_df["新品名"].astype(str).str.strip()
     valid_semi_names = pd.Series(list(semi_part_names) + list(new_part_names)).dropna().unique().tolist()
 
+    st.write(valid_semi_names)
     # ✅ 提取目标列
     semi_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
     fg_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
