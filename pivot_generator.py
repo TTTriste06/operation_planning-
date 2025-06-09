@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import datetime, timedelta
+from openpyxl.utils import get_column_letter
 
 # 配置透视表字段
 PIVOT_CONFIG = {
@@ -76,16 +77,30 @@ def create_pivot_table(df, config):
     ]
     return pivot.reset_index()
 
-# 批量透视
+# 自动调整列宽
+def adjust_column_width(writer, sheet_name, df):
+    worksheet = writer.sheets[sheet_name]
+    for idx, col in enumerate(df.columns, 1):
+        max_content_len = df[col].astype(str).str.len().max()
+        header_len = len(str(col))
+        column_width = max(max_content_len, header_len) * 1.2 + 10
+        worksheet.column_dimensions[get_column_letter(idx)].width = min(column_width, 50)
 
-def generate_all_pivots(source_dataframes: dict) -> dict:
+# 批量透视
+def generate_all_pivots(source_dataframes: dict, writer=None) -> dict:
     pivot_tables = {}
     for sheet_name, config in PIVOT_CONFIG.items():
         if sheet_name in source_dataframes:
             try:
                 df = source_dataframes[sheet_name]
                 pivot_df = create_pivot_table(df, config)
-                pivot_tables[f"{sheet_name}-汇总"] = pivot_df
+                summary_sheet = f"{sheet_name}-汇总"
+                pivot_tables[summary_sheet] = pivot_df
+
+                if writer is not None:
+                    pivot_df.to_excel(writer, sheet_name=summary_sheet, index=False)
+                    adjust_column_width(writer, summary_sheet, pivot_df)
+
             except Exception as e:
                 pivot_tables[f"{sheet_name}-汇总"] = pd.DataFrame([{"错误": str(e)}])
     return pivot_tables
