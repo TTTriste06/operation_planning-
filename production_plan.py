@@ -364,7 +364,6 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
     """    
     # ✅ 筛选半成品列非空的行后再提取品名
     filtered_mapping_df = mapping_df.copy()
-    filtered_mapping_df = clean_df(filtered_mapping_df)
     filtered_mapping_df = filtered_mapping_df[filtered_mapping_df["半成品"].notna()]
     st.write(filtered_mapping_df)
 
