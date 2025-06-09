@@ -33,7 +33,7 @@ def adjust_column_width(writer, sheet_name: str, df):
         col_letter = get_column_letter(i)
         ws.column_dimensions[col_letter].width = max_len + 2  # 适度留白
 
-def append_all_standardized_sheets_from_raw(writer: pd.ExcelWriter, 
+def append_all_standardized_sheets(writer: pd.ExcelWriter, 
                                             uploaded_files: dict, 
                                             additional_sheets: dict):
     """
