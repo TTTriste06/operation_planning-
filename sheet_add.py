@@ -65,7 +65,7 @@ def append_all_standardized_sheets(writer: pd.ExcelWriter,
                     df = xls.parse(sheet)
                     if isinstance(df, pd.DataFrame) and not df.empty:
                         cleaned_df = clean_df(df)
-                        safe_sheet_name = f"{sheet_base_name[:15]}-{sheet[:15]}"[:31]
+                        safe_sheet_name = sheet_base_name[:31]
                         cleaned_df.to_excel(writer, sheet_name=safe_sheet_name, index=False)
                         adjust_column_width(writer, safe_sheet_name, cleaned_df)
         except Exception as e:
