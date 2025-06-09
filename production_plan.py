@@ -348,26 +348,28 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
                                 mapping_df: pd.DataFrame) -> pd.DataFrame:
     """
     自动生成每月半成品投单计划并回填到 main_plan_df。
-    仅对“新旧料号”表中半成品列非空的相关品名（含“半成品”字段和“新品名”字段）写入。
+    仅对新旧料号中“半成品列非空”的那一行提取的“半成品”与“新品名”才写入，其余清空。
 
-    第一个月为：当月成品投单计划 - 半成品在制（数值）
-    后续月份为：当月成品投单计划 - 半成品在制 + (上月半成品投单计划 - 上月半成品实际投单)（写入公式）
+    第一个月为：成品投单计划 - 半成品在制
+    后续月份为：成品投单计划 - 半成品在制 + (上月半成品投单计划 - 上月半成品实际投单)（写入公式）
 
     参数：
-        main_plan_df: 主计划 DataFrame，包含“品名”等字段
-        forecast_months: 月份列表，用于定位成品/半成品计划列
-        mapping_df: 从“新旧料号对照统计表”读取的 DataFrame，含“半成品”和“新品名”列
+        main_plan_df: 主计划 DataFrame
+        forecast_months: 月份整数列表
+        mapping_df: 新旧料号 DataFrame，需含“半成品”和“新品名”列
 
     返回：
-        已更新半成品投单计划的 main_plan_df
+        更新后的 main_plan_df
     """
-    # 提取半成品列非空的行，对应的品名集合
-    semi_rows = mapping_df[mapping_df["半成品"].notna()]
-    semi_part_names = semi_rows["半成品"].astype(str).str.strip()
-    new_part_names = semi_rows["新品名"].astype(str).str.strip()
+    # ✅ 筛选半成品列非空的行后再提取品名
+    filtered_mapping_df = mapping_df.copy()
+    filtered_mapping_df = filtered_mapping_df[filtered_mapping_df["半成品"].notna()]
+
+    semi_part_names = filtered_mapping_df["半成品"].astype(str).str.strip()
+    new_part_names = filtered_mapping_df["新品名"].astype(str).str.strip()
     valid_semi_names = pd.Series(list(semi_part_names) + list(new_part_names)).dropna().unique().tolist()
 
-    # 半成品投单计划、成品投单计划、半成品实际投单列
+    # ✅ 提取目标列
     semi_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
     fg_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
     actual_semi_cols = [col for col in main_plan_df.columns if "半成品实际投单" in col]
@@ -375,18 +377,20 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
     if not semi_cols or not fg_cols:
         raise ValueError("❌ 半成品投单计划或成品投单计划列不存在")
 
-    # 只处理品名在 valid_semi_names 中的行
+    # ✅ 仅对这些品名行进行写入
     mask = main_plan_df["品名"].astype(str).str.strip().isin(valid_semi_names)
 
     for i, col in enumerate(semi_cols):
         fg_col = fg_cols[i] if i < len(fg_cols) else None
 
         if i == 0:
+            # 第一个月：直接计算
             main_plan_df.loc[mask, col] = (
                 pd.to_numeric(main_plan_df.loc[mask, fg_col], errors="coerce").fillna(0) -
                 pd.to_numeric(main_plan_df.loc[mask, "半成品在制"], errors="coerce").fillna(0)
             )
         else:
+            # 后续月份：写公式
             prev_semi_col = semi_cols[i - 1]
             prev_actual_semi_col = actual_semi_cols[i - 1] if i - 1 < len(actual_semi_cols) else ""
 
@@ -405,10 +409,11 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
             for row_idx in main_plan_df.index[mask]:
                 main_plan_df.at[row_idx, col] = build_formula(row_idx)
 
-        # 对不满足条件的行置空
+        # ❌ 其他行必须清空
         main_plan_df.loc[~mask, col] = ""
 
     return main_plan_df
+
 
 
 def generate_monthly_adjust_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
