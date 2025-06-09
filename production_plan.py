@@ -362,6 +362,7 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
         更新后的 main_plan_df
     """    
     tmp = mapping_df[["新品名","半成品"]].copy()
+    tmp = clean_df(tmp)                               
     # 删除“半成品”为 NaN 或 空字符串 的行
     tmp = tmp[tmp["半成品"].notna() & (tmp["半成品"].astype(str).str.strip() != "")]
                                
