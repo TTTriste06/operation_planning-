@@ -361,6 +361,17 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
     返回：
         更新后的 main_plan_df
     """
+    # 过滤“半成品”列不为空的行
+    semi_rows = mapping_df[mapping_df["半成品"].notna()]
+    
+    # 逐行输出“半成品”品名
+    st.write("🔍 以下为新旧料号中“半成品”字段非空的品名：")
+    for idx, row in semi_rows.iterrows():
+        semi_name = str(row["半成品"]).strip()
+        st.write(f"- {semi_name}")
+
+    st.write(semi_rows)
+    
     # ✅ 筛选半成品列非空的行后再提取品名
     filtered_mapping_df = mapping_df.copy()
     filtered_mapping_df = filtered_mapping_df[filtered_mapping_df["半成品"].notna()]
