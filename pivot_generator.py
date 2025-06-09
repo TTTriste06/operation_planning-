@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime, timedelta
 from openpyxl.utils import get_column_letter
-from excel_utils import adjust_column_width
+from openpyxl import load_workbook
 
 # 配置透视表字段
 PIVOT_CONFIG = {
@@ -78,6 +78,21 @@ def create_pivot_table(df, config):
     ]
     return pivot.reset_index()
 
+# 自动调整列宽
+def adjust_column_width(writer, sheet_name):
+    worksheet = writer.book[sheet_name] if hasattr(writer, 'book') else writer.sheets[sheet_name]
+    for col_cells in worksheet.columns:
+        max_length = 0
+        col = col_cells[0].column_letter
+        for cell in col_cells:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+        adjusted_width = max_length * 1.2 + 20
+        worksheet.column_dimensions[col].width = min(adjusted_width, 100)
+
 # 批量透视
 def generate_all_pivots(source_dataframes: dict, writer=None) -> dict:
     pivot_tables = {}
@@ -91,7 +106,8 @@ def generate_all_pivots(source_dataframes: dict, writer=None) -> dict:
 
                 if writer is not None:
                     pivot_df.to_excel(writer, sheet_name=summary_sheet, index=False)
-                    adjust_column_width(writer, summary_sheet, pivot_df)
+                    writer.sheets = {ws.title: ws for ws in writer.book.worksheets}  # sync
+                    adjust_column_width(writer, summary_sheet)
 
             except Exception as e:
                 pivot_tables[f"{sheet_name}-汇总"] = pd.DataFrame([{"错误": str(e)}])
