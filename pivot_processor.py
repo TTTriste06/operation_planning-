@@ -227,6 +227,22 @@ class PivotProcessor:
             pivot_tables = generate_all_pivots(self.dataframes)
             for sheet_name, df in pivot_tables.items():
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
+                
+            # 写完后手动调整所有透视表 sheet 的列宽
+            for sheet_name in pivot_tables:
+                ws = writer.book[sheet_name]
+                for col_cells in ws.columns:
+                    max_length = 0
+                    col_letter = col_cells[0].column_letter
+                    for cell in col_cells:
+                        try:
+                            if cell.value:
+                                max_length = max(max_length, len(str(cell.value)))
+                        except:
+                            pass
+                    adjusted_width = max_length * 1.2 + 10
+                    ws.column_dimensions[col_letter].width = min(adjusted_width, 50)
+
 
             ws = writer.book["主计划"]
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
