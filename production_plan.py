@@ -374,8 +374,8 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
 
     
 
-    semi_part_names = filtered_mapping_df["半成品"].astype(str).str.strip()
-    new_part_names = filtered_mapping_df["新品名"].astype(str).str.strip()
+    semi_part_names = mapping_df["半成品"].astype(str).str.strip()
+    new_part_names = mapping_df["新品名"].astype(str).str.strip()
     valid_semi_names = pd.Series(list(semi_part_names) + list(new_part_names)).dropna().unique().tolist()
 
     # ✅ 提取目标列
