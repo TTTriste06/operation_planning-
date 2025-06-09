@@ -222,7 +222,8 @@ class PivotProcessor:
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
-                
+
+            """
             # 写完后手动调整所有透视表 sheet 的列宽
             for sheet_name in pivot_tables:
                 ws = writer.book[sheet_name]
@@ -237,7 +238,7 @@ class PivotProcessor:
                             pass
                     adjusted_width = max_length * 1.2 + 10
                     ws.column_dimensions[col_letter].width = min(adjusted_width, 50)
-
+            """
 
             ws = writer.book["主计划"]
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
