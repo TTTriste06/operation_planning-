@@ -48,12 +48,10 @@ def append_all_standardized_sheets(writer: pd.ExcelWriter,
             xls = pd.ExcelFile(file_obj)
             for sheet in xls.sheet_names:
                 df = xls.parse(sheet)
-                """
                 if isinstance(df, pd.DataFrame) and not df.empty:
-                    cleaned_df = clean_df(df)
-                    safe_sheet_name = f"{filename[:15]}-{sheet[:15]}"[:31]  # 避免超过限制
+                    # cleaned_df = clean_df(df)
+                    # safe_sheet_name = f"{filename[:15]}-{sheet[:15]}"[:31]  # 避免超过限制
                     cleaned_df.to_excel(writer, sheet_name=safe_sheet_name, index=False)
                     adjust_column_width(writer, safe_sheet_name, cleaned_df)
-                """
         except Exception as e:
             print(f"❌ 读取或写入文件 [{filename}] 的 sheet 失败：{e}")
