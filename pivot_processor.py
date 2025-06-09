@@ -48,6 +48,7 @@ from production_plan import (
     drop_last_forecast_month_columns
 )
 from sheet_add import clean_df, append_all_standardized_sheets
+from pivot_generator import generate_all_pivots
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -221,6 +222,11 @@ class PivotProcessor:
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
+
+            # 生成并写入透视表
+            pivot_tables = generate_all_pivots(self.dataframes)
+            for sheet_name, df in pivot_tables.items():
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
 
             ws = writer.book["主计划"]
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
