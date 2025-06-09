@@ -344,8 +344,7 @@ def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd
     return main_plan_df
     
 
-def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
-                                forecast_months: list[int],
+def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[int],
                                 mapping_df: pd.DataFrame) -> pd.DataFrame:
     """
     自动生成每月半成品投单计划并回填到 main_plan_df。
@@ -362,16 +361,20 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
     返回：
         更新后的 main_plan_df
     """    
-    # ✅ 筛选半成品列非空的行后再提取品名
-    filtered_mapping_df = mapping_df.copy()
-    filtered_mapping_df = filtered_mapping_df[filtered_mapping_df["半成品"].notna()]
-    st.write(filtered_mapping_df)
+    
+    mapping_df = additional_sheets.get("赛卓-新旧料号")            
 
-    # 逐行输出“半成品”品名
+    # 删除“半成品”列为空的行（彻底过滤）
+    mapping_df = mapping_df[mapping_df["半成品"].notna()].copy()
+    
+    # 然后再提取半成品品名展示
+    semi_names = mapping_df["半成品"].astype(str).str.strip().unique()
+    
     st.write("🔍 以下为新旧料号中“半成品”字段非空的品名：")
-    for idx, row in filtered_mapping_df.iterrows():
-        semi_name = str(row["半成品"]).strip()
-        st.write(f"- {semi_name}")
+    for name in semi_names:
+        st.write(f"- {name}")
+
+    
 
     semi_part_names = filtered_mapping_df["半成品"].astype(str).str.strip()
     new_part_names = filtered_mapping_df["新品名"].astype(str).str.strip()
