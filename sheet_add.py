@@ -50,10 +50,11 @@ def append_all_standardized_sheets(writer: pd.ExcelWriter,
                 # 是 Excel 文件对象，读取所有 Sheet
                 xls = pd.ExcelFile(file_obj)
                 for sheet in xls.sheet_names:
+                    st.write(sheet)
                     df = xls.parse(sheet)
                     if isinstance(df, pd.DataFrame) and not df.empty:
                         cleaned_df = clean_df(df)
-                        safe_sheet_name = f"{filename[:15]}-{sheet[:15]}"[:31]
+                        safe_sheet_name = rename_sheet_name(sheet)
                         cleaned_df.to_excel(writer, sheet_name=safe_sheet_name, index=False)
                         adjust_column_width(writer, safe_sheet_name, cleaned_df)
         except Exception as e:
