@@ -361,27 +361,12 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
     返回：
         更新后的 main_plan_df
     """    
-    # 从“半成品”列中筛选出非空且非空字符串的行
-    valid_semi_rows = mapping_df[mapping_df["半成品"].notna() & (mapping_df["半成品"].astype(str).str.strip() != "")]
-    st.write("valid_semi_rows")
-    st.write(valid_semi_rows)
-                                    
-    # 提取“半成品”品名列表
-    semi_part_names = valid_semi_rows["半成品"].astype(str).str.strip().unique().tolist()
-
-    st.write("semi_part_names")
-    st.write(semi_part_names)                                
+    tmp = mapping_df[[
+            "新品名","半成品"
+        ]].copy()
+    st.write("tmp")
+    st.write(tmp)                                
     
-    # 提取这些行的“新品名”列表
-    new_part_names = valid_semi_rows["新品名"].astype(str).str.strip().unique().tolist()
-
-    st.write("new_part_names")
-    st.write(new_part_names)                               
-    # 合并为最终有效品名列表
-    combined_valid_names = pd.Series(semi_part_names + new_part_names).dropna().unique().tolist()
-    st.write("combined_valid_names")
-    st.write(combined_valid_names)
-
     # ✅ 提取目标列
     semi_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
     fg_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
