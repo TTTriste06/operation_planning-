@@ -33,19 +33,25 @@ def adjust_column_width(writer, sheet_name: str, df):
         col_letter = get_column_letter(i)
         ws.column_dimensions[col_letter].width = max_len + 2  # 适度留白
 
-
-def append_all_standardized_sheets(writer: pd.ExcelWriter, main_tables: dict, additional_tables: dict):
+def append_all_standardized_sheets_from_raw(writer: pd.ExcelWriter, 
+                                            uploaded_files: dict, 
+                                            additional_sheets: dict):
     """
-    将 main_tables 和 additional_tables 中的所有标准化命名的 DataFrame 写入 Excel Sheet，
-    并对每个 Sheet 自动执行 NaN 清洗 + 列宽调整。
+    从原始上传文件（uploaded_files 和 additional_sheets）中直接读取未被更改的 Excel 内容，
+    并写入每个 Sheet（NaN 清洗 + 自动列宽）。
     """
-    combined_tables = {**main_tables, **additional_tables}
+    all_files = {**uploaded_files, **additional_sheets}
 
-    for sheet_name, df in combined_tables.items():
+    for filename, file_obj in all_files.items():
         try:
-            if isinstance(df, pd.DataFrame) and not df.empty:
-                cleaned_df = clean_df(df)
-                cleaned_df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
-                adjust_column_width(writer, sheet_name, cleaned_df)
+            # 尝试读取该文件中的所有 sheet
+            xls = pd.ExcelFile(file_obj)
+            for sheet in xls.sheet_names:
+                df = xls.parse(sheet)
+                if isinstance(df, pd.DataFrame) and not df.empty:
+                    cleaned_df = clean_df(df)
+                    safe_sheet_name = f"{filename[:15]}-{sheet[:15]}"[:31]  # 避免超过限制
+                    cleaned_df.to_excel(writer, sheet_name=safe_sheet_name, index=False)
+                    adjust_column_width(writer, safe_sheet_name, cleaned_df)
         except Exception as e:
-            print(f"❌ 写入 sheet [{sheet_name}] 失败：{e}")
+            print(f"❌ 读取或写入文件 [{filename}] 的 sheet 失败：{e}")
