@@ -222,7 +222,7 @@ class PivotProcessor:
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
-
+            append_all_standardized_sheets(writer, uploaded_files, additional_sheets)
             """
             # 写完后手动调整所有透视表 sheet 的列宽
             for sheet_name in pivot_tables:
@@ -242,6 +242,7 @@ class PivotProcessor:
 
             ws = writer.book["主计划"]
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
+            
 
             legend_cell = ws.cell(row=1, column=3)
             legend_cell.value = (
@@ -259,8 +260,6 @@ class PivotProcessor:
 
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
-
-            append_all_standardized_sheets(writer, uploaded_files, additional_sheets)
 
 
             adjust_column_width(ws)
