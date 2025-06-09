@@ -264,7 +264,7 @@ class PivotProcessor:
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
 
-            append_all_standardized_sheets(writer, self.dataframes, self.additional_sheets)
+            append_all_standardized_sheets(writer, uploaded_files, additional_sheets)
 
             adjust_column_width(ws)
 
