@@ -368,6 +368,12 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
     filtered_mapping_df = filtered_mapping_df[filtered_mapping_df["半成品"].notna()]
     st.write(filtered_mapping_df)
 
+    # 逐行输出“半成品”品名
+    st.write("🔍 以下为新旧料号中“半成品”字段非空的品名：")
+    for idx, row in filtered_mapping_df.iterrows():
+        semi_name = str(row["半成品"]).strip()
+        st.write(f"- {semi_name}")
+
     semi_part_names = filtered_mapping_df["半成品"].astype(str).str.strip()
     new_part_names = filtered_mapping_df["新品名"].astype(str).str.strip()
     valid_semi_names = pd.Series(list(semi_part_names) + list(new_part_names)).dropna().unique().tolist()
