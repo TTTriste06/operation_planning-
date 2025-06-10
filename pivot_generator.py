@@ -82,7 +82,7 @@ def generate_all_pivots(dataframes: dict) -> dict:
     pivot_tables = {}
     st.write(value_cols_by_sheet.keys())
     for sheet_name, mapping in field_mappings.items():
-        if sheet_name in list(value_cols_by_sheet.keys()):
+        if sheet_name in value_cols_by_sheet.keys():
             df = dataframes.get(sheet_name)
             st.write(df)
             if df is not None and not df.empty:
