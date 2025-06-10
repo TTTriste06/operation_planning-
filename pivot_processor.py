@@ -48,7 +48,7 @@ from production_plan import (
     drop_last_forecast_month_columns
 )
 from sheet_add import clean_df, append_all_standardized_sheets
-from pivot_generator import generate_all_pivots
+from pivot_generator import generate_all_pivots, standardize_dataframes
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -223,10 +223,10 @@ class PivotProcessor:
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
             append_all_standardized_sheets(writer, uploaded_files, additional_sheets)
-
+            standardized_dataframes = standardize_dataframes(uploaded_files)
             st.write("📋 已加载的表：", list(uploaded_files.keys()))
 
-            pivot_tables = generate_all_pivots(uploaded_files)
+            pivot_tables = generate_all_pivots(standardized_dataframes)
 
             for sheet_name, df in pivot_tables.items():
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
