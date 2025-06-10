@@ -94,10 +94,10 @@ FIELD_MAPPINGS = {
         "晶圆品名": "WAFER品名"
     }
 }
-# "规格", "晶圆品名", 
+
 pivot_config = {
     "赛卓-未交订单.xlsx": {
-        "index": ["品名"],
+        "index": ["规格", "晶圆品名", "品名"],
         "columns": "预交货日",
         "values": ["订单数量", "未交订单数量"],
         "aggfunc": "sum",
