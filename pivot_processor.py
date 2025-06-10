@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment
 
-from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX, FIELD_MAPPINGS, pivot_config
+from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX, FIELD_MAPPINGS, pivot_config, RENAME_MAP
 from excel_utils import adjust_column_width
 from mapping_utils import (
     clean_mapping_headers, 
@@ -48,7 +48,7 @@ from production_plan import (
     drop_last_forecast_month_columns
 )
 from sheet_add import clean_df, append_all_standardized_sheets
-from pivot_generator import generate_monthly_pivots
+from pivot_generator import generate_monthly_pivots, standardize_uploaded_keys
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -223,41 +223,24 @@ class PivotProcessor:
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
             append_all_standardized_sheets(writer, uploaded_files, additional_sheets)
-            RENAME_MAP = {
-                "成品在制": "赛卓-成品在制",
-                "CP在制": "赛卓-CP在制",
-                "成品库存": "赛卓-成品库存",
-                "晶圆库存": "赛卓-晶圆库存",
-                "未交订单": "赛卓-未交订单"
-            }
-            st.write(uploaded_files)
-            """
-            df = pd.read_excel("赛卓-成品在制.xlsx")
-            df["预计完工日期"] = pd.to_datetime(df["预计完工日期"], errors="coerce")
-            df = df.dropna(subset=["预计完工日期"])
-            df["月份"] = df["预计完工日期"].dt.to_period("M").astype(str)
             
-            pivot = pd.pivot_table(
-                df,
-                index=["工作中心", "封装形式", "晶圆型号", "产品规格", "产品品名"],
-                columns="月份",
-                values="未交",
-                aggfunc="sum",
-                fill_value=0
-            )
-            """
+            # 替换上传文件 key 为标准名
+            standardized_files = standardize_uploaded_keys(uploaded_files, RENAME_MAP)
+            
+            # 将 UploadedFile 读取为 DataFrame
             parsed_dataframes = {
-                filename: pd.read_excel(file)  # 或提前 parse 完成的 DataFrame dict
-                for filename, file in uploaded_files.items()
+                filename: pd.read_excel(file)
+                for filename, file in standardized_files.items()
             }
-            st.write(parsed_dataframes)
+            
+            # 自动生成透视表
             pivot_tables = generate_monthly_pivots(parsed_dataframes, pivot_config)
             
+            # 写入 Excel
             for sheet_name, df in pivot_tables.items():
                 df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
-                adjust_column_width(writer, sheet_name[:31], df)
-            
 
+            
             """
             # 写完后手动调整所有透视表 sheet 的列宽
             for sheet_name in pivot_tables:
