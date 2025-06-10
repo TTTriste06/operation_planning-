@@ -1,113 +1,60 @@
 import pandas as pd
-import streamlit as st
 
-def parse_uploaded_files(uploaded_files: dict, rename_map: dict = None) -> dict:
+def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
     """
-    将 Streamlit 上传的文件对象（UploadedFile）读取为 DataFrame 并标准化 sheet 名
+    根据配置为多个 DataFrame 生成透视表
+
+    参数：
+        dataframes: dict[str, pd.DataFrame]，key 为文件名或表名
+        pivot_config: dict，包含每个表的 index, columns, values, aggfunc, date_format 等
+
+    返回：
+        dict[str, pd.DataFrame]，key 为新 sheet 名（加 -汇总）
     """
-    dfs = {}
-
-    for filename, file_obj in uploaded_files.items():
-        # 尝试打开 Excel 文件
-        try:
-            xls = pd.ExcelFile(file_obj)
-            for sheet_name in xls.sheet_names:
-                df = xls.parse(sheet_name)
-                if isinstance(df, pd.DataFrame) and not df.empty:
-                    # 重命名为标准 sheet 名
-                    new_key = filename
-                    if rename_map:
-                        for key, value in rename_map.items():
-                            if key in filename:
-                                new_key = value
-                                break
-                    dfs[new_key] = df
-        except Exception as e:
-            print(f"❌ 读取失败: {filename}: {e}")
-
-    return dfs
-
-def standardize_dataframes(uploaded_files: dict) -> dict:
-    standardized = {}
-    for filename, df in uploaded_files.items():
-        for key, new_name in RENAME_MAP.items():
-            if key in filename:
-                standardized[new_name] = df
-                break
-        else:
-            standardized[filename] = df  # 不匹配则保留原名
-    return standardized
-    
-def generate_pivot_table(df: pd.DataFrame, group_cols: list, value_col: str = "数量") -> pd.DataFrame:
-    """
-    生成按指定字段分组的透视汇总表
-    """
-    missing_cols = [col for col in group_cols + [value_col] if col not in df.columns]
-    if missing_cols:
-        print(f"❌ 缺少字段: {missing_cols}")
-        return pd.DataFrame()
-    
-    pivot = df.groupby(group_cols, as_index=False)[value_col].sum()
-    pivot = pivot.rename(columns={value_col: f"{value_col}汇总"})
-    return pivot
-
-
-def generate_all_pivots(dataframes: dict) -> dict:
-    """
-    为指定表生成透视表，返回 sheet_name -> DataFrame 的字典
-    """
-    field_mappings = {
-        "赛卓-未交订单": {
-            "规格": "规格",
-            "品名": "品名",
-            "晶圆品名": "晶圆品名"
-        },
-        "赛卓-成品在制": {
-            "规格": "产品规格",
-            "品名": "产品品名",
-            "晶圆品名": "晶圆型号",
-            "封装形式": "封装形式",
-            "供应商": "工作中心",
-            "PC": "PC"
-        },
-        "赛卓-CP在制": {
-            "规格": "产品规格",
-            "品名": "产品品名",
-            "晶圆品名": "晶圆型号",
-            "供应商": "工作中心",
-            "PC": "生管人员"
-        },
-        "赛卓-成品库存": {
-            "规格": "规格",
-            "品名": "品名",
-            "晶圆品名": "WAFER品名"
-        },
-        "赛卓-晶圆库存": {
-            "规格": "规格",
-            "品名": "品名",
-            "晶圆品名": "WAFER品名"
-        }
-    }
-
-    value_cols_by_sheet = {
-        "赛卓-未交订单": "未交订单数量",
-        "赛卓-成品在制": "数量",
-        "赛卓-CP在制": "数量",
-        "赛卓-成品库存": "数量",
-        "赛卓-晶圆库存": "数量"
-    }
-
     pivot_tables = {}
-    st.write(value_cols_by_sheet.keys())
-    for sheet_name, mapping in field_mappings.items():
-        if sheet_name in value_cols_by_sheet.keys():
-            df = dataframes.get(sheet_name)
-            st.write(df)
-            if df is not None:
-                group_cols = [mapping[k] for k in mapping if mapping[k] in df.columns]
-                value_col = value_cols_by_sheet.get(sheet_name, "数量")
-                pivot_df = generate_pivot_table(df, group_cols, value_col)
-                if not pivot_df.empty:
-                    pivot_tables[f"{sheet_name}-汇总"] = pivot_df
+
+    for filename, df in dataframes.items():
+        if filename not in pivot_config:
+            print(f"⚠️ 未找到 {filename} 的透视配置，跳过")
+            continue
+
+        config = pivot_config[filename]
+        index = config["index"]
+        columns = config["columns"]
+        values = config["values"]
+        aggfunc = config.get("aggfunc", "sum")
+        date_format = config.get("date_format")
+
+        df = df.copy()
+
+        # 若列是日期，则格式化为月份
+        if date_format:
+            try:
+                df[columns] = pd.to_datetime(df[columns], errors='coerce')
+                df = df.dropna(subset=[columns])
+                df[columns] = df[columns].dt.to_period("M").astype(str)
+            except Exception as e:
+                print(f"❌ 日期格式处理失败 [{filename}]：{e}")
+                continue
+
+        try:
+            pivot = pd.pivot_table(
+                df,
+                index=index,
+                columns=columns,
+                values=values,
+                aggfunc=aggfunc,
+                fill_value=0
+            )
+
+            # 扁平化列名（适配多值透视）
+            if isinstance(pivot.columns, pd.MultiIndex):
+                pivot.columns = ['_'.join(map(str, col)).strip() for col in pivot.columns]
+
+            pivot = pivot.reset_index()
+            pivot_tables[f"{filename.replace('.xlsx', '')}-汇总"] = pivot
+
+        except Exception as e:
+            print(f"❌ 生成透视失败 [{filename}]：{e}")
 
     return pivot_tables
