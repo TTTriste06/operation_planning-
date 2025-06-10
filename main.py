@@ -33,8 +33,6 @@ def main():
             "赛卓-新旧料号": df_mapping,
             "赛卓-供应商-PC": df_pc
         }
-        st.write("additional_sheets")
-        st.write(additional_sheets)
 
         # 初始化处理器
         buffer = BytesIO()
