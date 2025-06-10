@@ -33,7 +33,20 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
             continue
 
         config = pivot_config[filename]
-        index = config["index"]
+        
+        required_index = config.get("index", [])
+        optional_index = config.get("optional_index", [])
+        available_optional = [col for col in optional_index if col in df.columns]
+        index = [col for col in required_index if col in df.columns] + available_optional
+        
+        # 强制加入“品名”作为最后一道保险（即使没配）
+        if "品名" in df.columns and "品名" not in index:
+            index.append("品名")
+        
+        if not index:
+            print(f"⚠️ {filename} 无有效分组字段（index），跳过")
+            continue
+
         columns = config["columns"]
         values = config["values"]
         aggfunc = config.get("aggfunc", "sum")
