@@ -50,10 +50,6 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
         if not all(col in df.columns for col in index):
             st.warning(f"⚠️ {filename} 缺少部分 index 字段，跳过")
             continue
-
-        for col in index:
-            df[col] = df[col].astype(str).fillna("").replace("nan", "").str.strip()
-
         try:
             pivot = pd.pivot_table(
                 df,
