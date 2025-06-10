@@ -15,8 +15,6 @@ def standardize_uploaded_keys(uploaded_files: dict, rename_map: dict) -> dict:
             standardized[filename] = file_obj  # 保留未匹配的
     return standardized
 
-import pandas as pd
-
 def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
     """
     为多个 DataFrame 根据配置生成透视表。
