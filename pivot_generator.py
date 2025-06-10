@@ -28,11 +28,12 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
     返回:
         dict[sheet_name -> pd.DataFrame]
     """
+    st.write("AAA")
     pivot_tables = {}
 
     for filename, df in dataframes.items():
         if filename not in pivot_config:
-            print(f"⚠️ 未找到 {filename} 的透视配置，跳过")
+            st.write(f"⚠️ 未找到 {filename} 的透视配置，跳过")
             continue
 
         config = pivot_config[filename]
@@ -51,12 +52,12 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
                 df = df.dropna(subset=[columns])
                 df[columns] = df[columns].dt.to_period("M").astype(str)
             except Exception as e:
-                print(f"❌ 日期字段格式化失败 [{filename}]：{e}")
+                st.write(f"❌ 日期字段格式化失败 [{filename}]：{e}")
                 continue
 
         # 检查 index 字段是否都存在
         if not all(col in df.columns for col in index):
-            print(f"⚠️ {filename} 缺少部分 index 字段，跳过")
+            st.write(f"⚠️ {filename} 缺少部分 index 字段，跳过")
             continue
 
         # 填空，确保 index 字段不会因为 NaN 而被排除
@@ -82,6 +83,6 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
             pivot_tables[sheet_name] = pivot
 
         except Exception as e:
-            print(f"❌ [{filename}] 生成透视失败: {e}")
+            st.write(f"❌ [{filename}] 生成透视失败: {e}")
 
     return pivot_tables
