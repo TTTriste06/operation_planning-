@@ -66,11 +66,11 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
         if not index:
             print(f"⚠️ {filename} 缺少分组字段，跳过")
             continue
-
-        # 填空，防止 NaN 过滤掉行
+            
+       # 确保透视前，所有 index 字段均非 NaN
         for col in index:
-            df[col] = df[col].fillna("").astype(str).str.strip()
-
+            if col in df.columns:
+                df[col] = df[col].fillna("").astype(str).str.strip()
         try:
             pivot = pd.pivot_table(
                 df,
