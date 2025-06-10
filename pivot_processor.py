@@ -72,8 +72,6 @@ class PivotProcessor:
         if mapping_df is None or mapping_df.empty:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
 
-        st.write("2")
-        st.write(additional_sheets)
         # === 构建主计划 ===
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
         main_plan_df = pd.DataFrame(columns=headers)
@@ -115,8 +113,7 @@ class PivotProcessor:
             dataframes=self.dataframes,
             additional_sheets=self.additional_sheets
         )
-        st.write("2")
-        st.write(additional_sheets)
+
         ## == 替换新旧料号、替代料号 ==
         for sheet_name, df in {
             **self.dataframes,
@@ -135,9 +132,12 @@ class PivotProcessor:
             if actual_name_col not in df.columns:
                 st.warning(f"⚠️ {sheet_name} 中找不到列：{actual_name_col}，跳过")
                 continue
-        
+            st.write("1")
+            st.write(additional_sheets)
             try:
                 df, _ = apply_mapping_and_merge(df, mapping_df, field_map={"品名": actual_name_col})
+                st.write("2")
+                st.write(additional_sheets)
                 df, _ = apply_extended_substitute_mapping(df, mapping_df, field_map={"品名": actual_name_col})
         
                 if sheet_name in self.dataframes:
