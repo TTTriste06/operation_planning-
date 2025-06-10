@@ -55,8 +55,6 @@ class PivotProcessor:
         """
         替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
         """
-        st.write("1")
-        st.write(additional_sheets)
         # === 标准化上传文件名 ===
         self.dataframes = {}
         for filename, file_obj in uploaded_files.items():
@@ -117,7 +115,8 @@ class PivotProcessor:
             dataframes=self.dataframes,
             additional_sheets=self.additional_sheets
         )
-
+        st.write("2")
+        st.write(additional_sheets)
         ## == 替换新旧料号、替代料号 ==
         for sheet_name, df in {
             **self.dataframes,
