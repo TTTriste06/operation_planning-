@@ -15,12 +15,14 @@ def standardize_uploaded_keys(uploaded_files: dict, rename_map: dict) -> dict:
             standardized[filename] = file_obj  # 保留未匹配的
     return standardized
 
+import pandas as pd
+
 def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
     """
     为多个 DataFrame 根据配置生成透视表。
 
     支持:
-    - 可选 index 字段（optional_index）: 有则参与分组，无则略过；
+    - 固定 index 字段：必须全部存在；
     - 日期字段格式化为 %Y-%m；
     - 多 value 列聚合；
     - 缺失字段自动填空。
@@ -36,8 +38,7 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
             continue
 
         config = pivot_config[filename]
-        required_index = config.get("index", [])
-        optional_index = config.get("optional_index", [])
+        index = config.get("index", [])
         columns = config["columns"]
         values = config["values"]
         aggfunc = config.get("aggfunc", "sum")
@@ -55,23 +56,14 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
                 print(f"❌ 日期字段格式化失败 [{filename}]：{e}")
                 continue
 
-        # 动态 index 组装
-        index = [col for col in required_index if col in df.columns]
-        available_optional = [col for col in optional_index if col in df.columns]
-        index += available_optional
-
-        # 确保至少含“品名”
-        if "品名" in df.columns and "品名" not in index:
-            index.append("品名")
-
-        if not index:
-            print(f"⚠️ {filename} 缺少分组字段，跳过")
+        # 检查 index 字段是否都存在
+        if not all(col in df.columns for col in index):
+            print(f"⚠️ {filename} 缺少部分 index 字段，跳过")
             continue
 
         # 填空，确保 index 字段不会因为 NaN 而被排除
         for col in index:
-            if col in df.columns:
-                df[col] = df[col].astype(str).fillna("").replace("nan", "").str.strip()
+            df[col] = df[col].astype(str).fillna("").replace("nan", "").str.strip()
 
         try:
             pivot = pd.pivot_table(
@@ -81,10 +73,9 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
                 values=values,
                 aggfunc=aggfunc,
                 fill_value=0,
-                dropna=False  # 保留所有组合
+                dropna=False
             )
 
-            # 展平多级列名（多 values 时）
             if isinstance(pivot.columns, pd.MultiIndex):
                 pivot.columns = ['_'.join(map(str, col)).strip() for col in pivot.columns]
 
