@@ -250,7 +250,7 @@ class PivotProcessor:
                 filename: pd.read_excel(file)  # 或提前 parse 完成的 DataFrame dict
                 for filename, file in uploaded_files.items()
             }
-            
+            st.write(parsed_dataframes)
             pivot_tables = generate_monthly_pivots(parsed_dataframes, pivot_config)
             
             for sheet_name, df in pivot_tables.items():
