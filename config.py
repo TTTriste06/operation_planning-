@@ -10,6 +10,14 @@ FILE_KEYWORDS = {
     "销货明细": "赛卓-销货明细"
 }
 
+RENAME_MAP = {
+                "成品在制": "赛卓-成品在制.xlsx",
+                "CP在制": "赛卓-CP在制.xlsx",
+                "成品库存": "赛卓-成品库存.xlsx",
+                "晶圆库存": "赛卓-晶圆库存.xlsx",
+                "未交订单": "赛卓-未交订单.xlsx"
+            }
+
 # ✅ 输出 Excel 文件的命名前缀
 OUTPUT_FILENAME_PREFIX = "运营主计划"
 
