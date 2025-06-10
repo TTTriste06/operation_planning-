@@ -234,11 +234,11 @@ class PivotProcessor:
             }
             
             # 自动生成透视表
-            pivot_tables = generate_monthly_pivots(parsed_dataframes, pivot_config)
+            # pivot_tables = generate_monthly_pivots(parsed_dataframes, pivot_config)
             
             # 写入 Excel
-            for sheet_name, df in pivot_tables.items():
-                df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
+            #for sheet_name, df in pivot_tables.items():
+            #    df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
 
             """
             # 写完后手动调整所有透视表 sheet 的列宽
