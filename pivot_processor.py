@@ -237,7 +237,7 @@ class PivotProcessor:
             
             for sheet_name, df in pivot_tables.items():
                 df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
-                adjust_column_width(writer, sheet_name[:31], df)
+                
             """
             # 写完后手动调整所有透视表 sheet 的列宽
             for sheet_name, df in pivot_tables.items():
