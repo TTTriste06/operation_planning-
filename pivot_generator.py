@@ -70,7 +70,7 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
        # 确保透视前，所有 index 字段均非 NaN
         for col in index:
             if col in df.columns:
-                df[col] = df[col].fillna("").astype(str).str.strip()
+                df[col] = df[col].fillna("    ").astype(str).str.strip()
         try:
             pivot = pd.pivot_table(
                 df,
