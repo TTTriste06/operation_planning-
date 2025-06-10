@@ -82,7 +82,8 @@ def generate_all_pivots(dataframes: dict) -> dict:
 
     for sheet_name, mapping in field_mappings.items():
         df = dataframes.get(sheet_name)
-        if df is not None:
+        st.write(df)
+        if df is not None and not df.empty:
             group_cols = [mapping[k] for k in mapping if mapping[k] in df.columns]
             value_col = value_cols_by_sheet.get(sheet_name, "数量")
             pivot_df = generate_pivot_table(df, group_cols, value_col)
