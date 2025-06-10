@@ -55,7 +55,8 @@ class PivotProcessor:
         """
         替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
         """
-        
+        st.write("1")
+        st.write(additional_sheets)
         # === 标准化上传文件名 ===
         self.dataframes = {}
         for filename, file_obj in uploaded_files.items():
@@ -72,7 +73,9 @@ class PivotProcessor:
         mapping_df = additional_sheets.get("赛卓-新旧料号")
         if mapping_df is None or mapping_df.empty:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
-            
+
+        st.write("2")
+        st.write(additional_sheets)
         # === 构建主计划 ===
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
         main_plan_df = pd.DataFrame(columns=headers)
@@ -145,6 +148,9 @@ class PivotProcessor:
             except Exception as e:
                 st.error(f"❌ 替换 {sheet_name} 中的品名失败：{e}")
 
+        st.write("3")
+        st.write(additional_sheets)
+        
         ## == 安全库存 ==
         safety_df = additional_sheets.get("赛卓-安全库存")
         if safety_df is not None and not safety_df.empty:
