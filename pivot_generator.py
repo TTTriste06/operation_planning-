@@ -1,13 +1,31 @@
 import pandas as pd
 import streamlit as st
 
-RENAME_MAP = {
-    "成品在制": "赛卓-成品在制",
-    "CP在制": "赛卓-CP在制",
-    "成品库存": "赛卓-成品库存",
-    "晶圆库存": "赛卓-晶圆库存",
-    "未交订单": "赛卓-未交订单"
-}
+def parse_uploaded_files(uploaded_files: dict, rename_map: dict = None) -> dict:
+    """
+    将 Streamlit 上传的文件对象（UploadedFile）读取为 DataFrame 并标准化 sheet 名
+    """
+    dfs = {}
+
+    for filename, file_obj in uploaded_files.items():
+        # 尝试打开 Excel 文件
+        try:
+            xls = pd.ExcelFile(file_obj)
+            for sheet_name in xls.sheet_names:
+                df = xls.parse(sheet_name)
+                if isinstance(df, pd.DataFrame) and not df.empty:
+                    # 重命名为标准 sheet 名
+                    new_key = filename
+                    if rename_map:
+                        for key, value in rename_map.items():
+                            if key in filename:
+                                new_key = value
+                                break
+                    dfs[new_key] = df
+        except Exception as e:
+            print(f"❌ 读取失败: {filename}: {e}")
+
+    return dfs
 
 def standardize_dataframes(uploaded_files: dict) -> dict:
     standardized = {}
