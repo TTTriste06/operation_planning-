@@ -15,6 +15,8 @@ def standardize_uploaded_keys(uploaded_files: dict, rename_map: dict) -> dict:
             standardized[filename] = file_obj  # 保留未匹配的
     return standardized
 
+import pandas as pd
+
 def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
     """
     为多个 DataFrame 根据配置生成透视表。
@@ -23,12 +25,12 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
     - 可选 index 字段（optional_index）: 有则参与分组，无则略过；
     - 日期字段格式化为 %Y-%m；
     - 多 value 列聚合；
-    - 缺失字段自动跳过。
+    - 缺失字段自动填空；
+    - 缺失 index 字段使用 ""（空字符串）代替 NaN，确保行不被丢弃。
 
     返回:
         dict[sheet_name -> pd.DataFrame]
     """
-    st.write("hahahahha")
     pivot_tables = {}
 
     for filename, df in dataframes.items():
@@ -68,11 +70,12 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
         if not index:
             print(f"⚠️ {filename} 缺少分组字段，跳过")
             continue
-            
-       # 确保透视前，所有 index 字段均非 NaN
+
+        # 填空，确保 index 字段不会因为 NaN 而被排除
         for col in index:
             if col in df.columns:
-                df[col] = df[col].fillna("空").astype(str).str.strip()
+                df[col] = df[col].astype(str).fillna("").replace("nan", "").str.strip()
+
         try:
             pivot = pd.pivot_table(
                 df,
@@ -80,7 +83,8 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
                 columns=columns,
                 values=values,
                 aggfunc=aggfunc,
-                fill_value=0
+                fill_value=0,
+                dropna=False  # 保留所有组合
             )
 
             # 展平多级列名（多 values 时）
