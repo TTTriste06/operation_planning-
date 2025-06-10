@@ -97,9 +97,9 @@ FIELD_MAPPINGS = {
 
 pivot_config = {
     "赛卓-未交订单.xlsx": {
-        "index": ["晶圆品名", "规格", "品名"],
+        "index": ["品名"],
         "columns": "预交货日",
-        "values": ["订单数量", "未交订单数量"],
+        "values": ["晶圆品名", "规格", "订单数量", "未交订单数量"],
         "aggfunc": "sum",
         "date_format": "%Y-%m"
     },
