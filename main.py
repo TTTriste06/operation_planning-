@@ -21,17 +21,11 @@ def main():
             st.error("❌ 请上传 8 个核心文件（未交订单/成品在制/成品库存/CP在制/晶圆库存/下单明细/销货明细/到货明细）！")
             return
 
-        st.write("safety_file")
-        st.write(safety_file)
-
         # 加载辅助表
         df_forecast = load_file_with_github_fallback("forecast", forecast_file, sheet_name="Sheet1")
         df_safety = load_file_with_github_fallback("safety", safety_file)
         df_mapping = load_file_with_github_fallback("mapping", mapping_file)
         df_pc = load_file_with_github_fallback("pc", pc_file)
-
-        st.write("df_safety")
-        st.write(df_safety)
         
         additional_sheets = {
             "赛卓-预测": df_forecast,
@@ -39,6 +33,8 @@ def main():
             "赛卓-新旧料号": df_mapping,
             "赛卓-供应商-PC": df_pc
         }
+        st.write("additional_sheets")
+        st.write(additional_sheets)
 
         # 初始化处理器
         buffer = BytesIO()
