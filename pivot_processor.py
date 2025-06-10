@@ -234,7 +234,7 @@ class PivotProcessor:
             }
             
             # 自动生成透视表
-            # pivot_tables = generate_monthly_pivots(parsed_dataframes, pivot_config)
+            pivot_tables = generate_monthly_pivots(parsed_dataframes, pivot_config)
             
             # 写入 Excel
             #for sheet_name, df in pivot_tables.items():
