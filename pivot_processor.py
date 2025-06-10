@@ -224,6 +224,8 @@ class PivotProcessor:
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
             append_all_standardized_sheets(writer, uploaded_files, additional_sheets)
 
+            print("📋 已加载的表：", list(uploaded_files.keys()))
+
             pivot_tables = generate_all_pivots(uploaded_files)
 
             for sheet_name, df in pivot_tables.items():
