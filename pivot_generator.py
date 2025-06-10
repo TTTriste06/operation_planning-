@@ -1,5 +1,19 @@
 import pandas as pd
 
+def standardize_uploaded_keys(uploaded_files: dict, rename_map: dict) -> dict:
+    standardized = {}
+
+    for filename, file_obj in uploaded_files.items():
+        matched = False
+        for key, standard_name in rename_map.items():
+            if key in filename:
+                standardized[standard_name] = file_obj
+                matched = True
+                break
+        if not matched:
+            standardized[filename] = file_obj  # 保留未匹配的
+    return standardized
+
 def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
     """
     根据配置为多个 DataFrame 生成透视表
