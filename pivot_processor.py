@@ -230,7 +230,22 @@ class PivotProcessor:
                 "晶圆库存": "赛卓-晶圆库存",
                 "未交订单": "赛卓-未交订单"
             }
+            st.write(uploaded_files)
+            """
+            df = pd.read_excel("赛卓-成品在制.xlsx")
+            df["预计完工日期"] = pd.to_datetime(df["预计完工日期"], errors="coerce")
+            df = df.dropna(subset=["预计完工日期"])
+            df["月份"] = df["预计完工日期"].dt.to_period("M").astype(str)
             
+            pivot = pd.pivot_table(
+                df,
+                index=["工作中心", "封装形式", "晶圆型号", "产品规格", "产品品名"],
+                columns="月份",
+                values="未交",
+                aggfunc="sum",
+                fill_value=0
+            )
+            """
             parsed_dataframes = {
                 filename: pd.read_excel(file)  # 或提前 parse 完成的 DataFrame dict
                 for filename, file in uploaded_files.items()
