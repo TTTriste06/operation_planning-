@@ -1,5 +1,24 @@
 import pandas as pd
 
+RENAME_MAP = {
+    "成品在制": "赛卓-成品在制",
+    "CP在制": "赛卓-CP在制",
+    "成品库存": "赛卓-成品库存",
+    "晶圆库存": "赛卓-晶圆库存",
+    "未交订单": "赛卓-未交订单"
+}
+
+def standardize_dataframes(uploaded_files: dict) -> dict:
+    standardized = {}
+    for filename, df in uploaded_files.items():
+        for key, new_name in RENAME_MAP.items():
+            if key in filename:
+                standardized[new_name] = df
+                break
+        else:
+            standardized[filename] = df  # 不匹配则保留原名
+    return standardized
+    
 def generate_pivot_table(df: pd.DataFrame, group_cols: list, value_col: str = "数量") -> pd.DataFrame:
     """
     生成按指定字段分组的透视汇总表
