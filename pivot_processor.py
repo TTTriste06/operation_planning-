@@ -212,10 +212,6 @@ class PivotProcessor:
         # 检查
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
 
-
-        
-
-
         
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
