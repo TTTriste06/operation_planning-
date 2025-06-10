@@ -224,7 +224,7 @@ class PivotProcessor:
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
             append_all_standardized_sheets(writer, uploaded_files, additional_sheets)
 
-            pivot_tables = generate_all_pivots(all_dataframes_dict)
+            pivot_tables = generate_all_pivots(uploaded_files)
 
             for sheet_name, df in pivot_tables.items():
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
