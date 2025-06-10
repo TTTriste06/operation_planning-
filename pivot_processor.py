@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment
 
-from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX, FIELD_MAPPINGS
+from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX, FIELD_MAPPINGS, pivot_config
 from excel_utils import adjust_column_width
 from mapping_utils import (
     clean_mapping_headers, 
@@ -48,7 +48,7 @@ from production_plan import (
     drop_last_forecast_month_columns
 )
 from sheet_add import clean_df, append_all_standardized_sheets
-from pivot_generator import generate_all_pivots, standardize_dataframes, parse_uploaded_files
+from pivot_generator import generate_monthly_pivots
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
@@ -231,12 +231,17 @@ class PivotProcessor:
                 "未交订单": "赛卓-未交订单"
             }
             
-            parsed_dataframes = parse_uploaded_files(uploaded_files, rename_map=RENAME_MAP)
-            pivot_tables = generate_all_pivots(parsed_dataframes)
-
-
+            parsed_dataframes = {
+                filename: pd.read_excel(file)  # 或提前 parse 完成的 DataFrame dict
+                for filename, file in uploaded_files.items()
+            }
+            
+            pivot_tables = generate_monthly_pivots(parsed_dataframes, pivot_config)
+            
             for sheet_name, df in pivot_tables.items():
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
+                adjust_column_width(writer, sheet_name[:31], df)
+            
 
             """
             # 写完后手动调整所有透视表 sheet 的列宽
