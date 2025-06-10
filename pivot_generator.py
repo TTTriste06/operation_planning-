@@ -33,7 +33,15 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
             continue
 
         config = pivot_config[filename]
-        index = config["index"]
+        # 自动过滤掉不存在的 index 字段
+        all_index_fields = config["index"]
+        index = [col for col in all_index_fields if col in df.columns]
+        
+        # 如果连品名也没有，就跳过这个表
+        if "品名" not in index:
+            print(f"⚠️ {filename} 无品名字段，跳过")
+            continue
+
         columns = config["columns"]
         values = config["values"]
         aggfunc = config.get("aggfunc", "sum")
