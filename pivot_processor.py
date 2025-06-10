@@ -241,7 +241,7 @@ class PivotProcessor:
                 df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
 
             # 写完后手动调整所有透视表 sheet 的列宽
-            for sheet_name in pivot_tables:
+            for sheet_name, df in pivot_tables.items():
                 ws = writer.book[sheet_name]
                 for col_cells in ws.columns:
                     max_length = 0
