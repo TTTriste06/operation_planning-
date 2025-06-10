@@ -223,6 +223,13 @@ class PivotProcessor:
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
             append_all_standardized_sheets(writer, uploaded_files, additional_sheets)
+
+            pivot_tables = generate_all_pivots(all_dataframes_dict)
+
+            for sheet_name, df in pivot_tables.items():
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                adjust_column_width(writer, sheet_name, df)
+
             """
             # 写完后手动调整所有透视表 sheet 的列宽
             for sheet_name in pivot_tables:
