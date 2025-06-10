@@ -16,14 +16,16 @@ def standardize_uploaded_keys(uploaded_files: dict, rename_map: dict) -> dict:
 
 def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
     """
-    根据配置为多个 DataFrame 生成透视表
+    为多个 DataFrame 根据配置生成透视表。
 
-    参数：
-        dataframes: dict[str, pd.DataFrame]，key 为文件名或表名
-        pivot_config: dict，包含每个表的 index, columns, values, aggfunc, date_format 等
+    支持:
+    - 可选 index 字段（optional_index）: 有则参与分组，无则略过；
+    - 日期字段格式化为 %Y-%m；
+    - 多 value 列聚合；
+    - 缺失字段自动跳过。
 
-    返回：
-        dict[str, pd.DataFrame]，key 为新 sheet 名（加 -汇总）
+    返回:
+        dict[sheet_name -> pd.DataFrame]
     """
     pivot_tables = {}
 
@@ -33,20 +35,8 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
             continue
 
         config = pivot_config[filename]
-        
         required_index = config.get("index", [])
         optional_index = config.get("optional_index", [])
-        available_optional = [col for col in optional_index if col in df.columns]
-        index = [col for col in required_index if col in df.columns] + available_optional
-        
-        # 强制加入“品名”作为最后一道保险（即使没配）
-        if "品名" in df.columns and "品名" not in index:
-            index.append("品名")
-        
-        if not index:
-            print(f"⚠️ {filename} 无有效分组字段（index），跳过")
-            continue
-
         columns = config["columns"]
         values = config["values"]
         aggfunc = config.get("aggfunc", "sum")
@@ -54,15 +44,32 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
 
         df = df.copy()
 
-        # 若列是日期，则格式化为月份
+        # 日期字段格式化
         if date_format:
             try:
                 df[columns] = pd.to_datetime(df[columns], errors='coerce')
                 df = df.dropna(subset=[columns])
                 df[columns] = df[columns].dt.to_period("M").astype(str)
             except Exception as e:
-                print(f"❌ 日期格式处理失败 [{filename}]：{e}")
+                print(f"❌ 日期字段格式化失败 [{filename}]：{e}")
                 continue
+
+        # 动态 index 组装
+        index = [col for col in required_index if col in df.columns]
+        available_optional = [col for col in optional_index if col in df.columns]
+        index += available_optional
+
+        # 确保至少含“品名”
+        if "品名" in df.columns and "品名" not in index:
+            index.append("品名")
+
+        if not index:
+            print(f"⚠️ {filename} 缺少分组字段，跳过")
+            continue
+
+        # 填空，防止 NaN 过滤掉行
+        for col in index:
+            df[col] = df[col].fillna("").astype(str).str.strip()
 
         try:
             pivot = pd.pivot_table(
@@ -74,14 +81,15 @@ def generate_monthly_pivots(dataframes: dict, pivot_config: dict) -> dict:
                 fill_value=0
             )
 
-            # 扁平化列名（适配多值透视）
+            # 展平多级列名（多 values 时）
             if isinstance(pivot.columns, pd.MultiIndex):
                 pivot.columns = ['_'.join(map(str, col)).strip() for col in pivot.columns]
 
             pivot = pivot.reset_index()
-            pivot_tables[f"{filename.replace('.xlsx', '')}-汇总"] = pivot
+            sheet_name = filename.replace(".xlsx", "-汇总")
+            pivot_tables[sheet_name] = pivot
 
         except Exception as e:
-            print(f"❌ 生成透视失败 [{filename}]：{e}")
+            print(f"❌ [{filename}] 生成透视失败: {e}")
 
     return pivot_tables
