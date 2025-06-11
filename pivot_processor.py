@@ -130,12 +130,9 @@ class PivotProcessor:
         ## == 替换新旧料号、替代料号 ==
         st.write(self.additional_sheets["赛卓-安全库存"])
         df_new = self.additional_sheets["赛卓-安全库存"]
-        st.write(df_new)
         df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-安全库存"])
-        st.write(df_new)
         # df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-安全库存"])
         self.additional_sheets["赛卓-安全库存"] = df_new
-        st.write(df_new)
         
         df_new = self.additional_sheets["赛卓-预测"]
         df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-预测"])
@@ -188,6 +185,7 @@ class PivotProcessor:
 
         ## == 成品库存 ==
         finished_df = self.dataframes.get("赛卓-成品库存")
+        st.write(finished_df)
         if finished_df is not None and not finished_df.empty:
             main_plan_df, unmatched_finished = merge_finished_inventory_with_warehouse_types(main_plan_df, finished_df, mapping_semi)
             st.success("✅ 已合并成品库存数据")
