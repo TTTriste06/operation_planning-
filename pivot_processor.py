@@ -69,7 +69,7 @@ class PivotProcessor:
                 st.warning(f"⚠️ 上传文件 `{filename}` 未识别关键词，跳过")
         
         self.additional_sheets = additional_sheets
-        mapping_df = additional_sheets.get("赛卓-新旧料号")
+        mapping_df = self.additional_sheets.get("赛卓-新旧料号")
         if mapping_df is None or mapping_df.empty:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
 
@@ -125,7 +125,7 @@ class PivotProcessor:
         st.write(self.dataframes)
         all_sheets_to_process = {
             **self.dataframes,
-            **{k: v for k, v in additional_sheets.items() if k not in ["赛卓-新旧料号", "赛卓-供应商-PC"]}
+            **{k: v for k, v in self.additional_sheets.items() if k not in ["赛卓-新旧料号", "赛卓-供应商-PC"]}
         }.copy()
         
         # ✅ 开始替换流程
@@ -164,7 +164,7 @@ class PivotProcessor:
         
         # ✅ 替换原始容器
         self.dataframes = new_dataframes
-        additional_sheets = new_additional_sheets
+        self.additional_sheets = new_additional_sheets
 
             
 
@@ -204,7 +204,7 @@ class PivotProcessor:
                 st.error(f"❌ 替换 {sheet_name} 中的品名失败：{e}")
         """
         ## == 安全库存 ==
-        safety_df = additional_sheets.get("赛卓-安全库存")
+        safety_df = self.additional_sheets.get("赛卓-安全库存")
         if safety_df is not None and not safety_df.empty:
             main_plan_df, unmatched_safety = merge_safety_inventory(main_plan_df, safety_df)
             st.success("✅ 已合并安全库存数据")
@@ -217,7 +217,7 @@ class PivotProcessor:
 
 
         ## == 预测 ==
-        forecast_df = additional_sheets.get("赛卓-预测")
+        forecast_df = self.additional_sheets.get("赛卓-预测")
         if forecast_df is not None and not forecast_df.empty:
             main_plan_df, unmatched_forecast = append_forecast_to_summary(main_plan_df, forecast_df)
             st.success("✅ 已合并预测数据")
@@ -276,7 +276,7 @@ class PivotProcessor:
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
-            append_all_standardized_sheets(writer, uploaded_files, additional_sheets)
+            append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
             
             # 替换上传文件 key 为标准名
             standardized_files = standardize_uploaded_keys(uploaded_files, RENAME_MAP)
