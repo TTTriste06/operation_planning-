@@ -125,6 +125,8 @@ def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
     mapping_df["旧品名"] = mapping_df["旧品名"].astype(str).str.strip()
     mapping_df["新品名"] = mapping_df["新品名"].astype(str).str.strip()
 
+    df = df[df[name_col] != ""].copy()
+
     df = df.copy()
     merged = df.merge(mapping_df[["旧品名", "新品名"]], how="left", left_on=name_col, right_on="旧品名")
     mask = merged["新品名"].notna() & (merged["新品名"] != "")
@@ -149,6 +151,8 @@ def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=True):
     name_col = field_map["品名"]
     df = df.copy()
     df[name_col] = df[name_col].astype(str).str.strip().str.replace("\n", "").str.replace("\r", "")
+
+    df = df[df[name_col] != ""].copy()
 
     # 清洗映射表中所有替代品名及新品名
     substitute_records = []
