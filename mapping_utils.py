@@ -101,13 +101,26 @@ def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
 
 def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=True):
     """
-    替代料号品名替换（仅品名字段替换，无聚合合并）
+    替代料号品名替换（仅品名字段替换，无聚合合并），避免重复替换并自动去重。
+
+    参数：
+        df: 原始 DataFrame（如安全库存、预测等）
+        mapping_df: 新旧料号映射表
+        field_map: 对应字段映射配置，如 {"品名": "品名"}
+        verbose: 是否打印替换信息（可配合 Streamlit）
+
+    返回：
+        df: 替换后的 DataFrame，已去重
+        matched_keys: 成功替换的新品名集合
     """
     name_col = field_map["品名"]
     df = df.copy()
+
+    # 清洗品名列
     df[name_col] = df[name_col].astype(str).str.strip().str.replace("\n", "").str.replace("\r", "")
 
     matched_keys = set()
+    already_replaced = set()
 
     for i in range(1, 5):
         sub_col = f"替代品名{i}"
@@ -124,14 +137,24 @@ def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=True):
         ]
 
         for _, row in valid_sub.iterrows():
-            mask = df[name_col] == row[sub_col]
-            if mask.any():
-                df.loc[mask, name_col] = row["新品名"]
-                matched_keys.update([row["新品名"]])
+            old_name = row[sub_col]
+            new_name = row["新品名"]
 
+            # 只替换还未替换过的品名，防止重复替换
+            mask = (df[name_col] == old_name) & (~df[name_col].isin(already_replaced))
+            if mask.any():
+                df.loc[mask, name_col] = new_name
+                matched_keys.add(new_name)
+                already_replaced.add(new_name)
+
+    # 替换完成后按关键字段去重（根据你实际字段选择）
+    key_fields = [col for col in ["晶圆品名", "规格", "品名"] if col in df.columns]
+    if key_fields:
+        df = df.drop_duplicates(subset=key_fields)
+    else:
+        df = df.drop_duplicates()
     """
     if verbose:
-        st.success(f"✅ 替代品名替换完成，共替换: {len(matched_keys)} 种")
+        print(f"✅ 替代品名替换完成，共替换 {len(matched_keys)} 种")
     """
-
     return df, matched_keys
