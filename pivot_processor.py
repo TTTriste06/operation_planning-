@@ -130,21 +130,28 @@ class PivotProcessor:
                 continue
         
             try:
-                updated_df, _ = apply_mapping_and_merge(df, mapping_df, field_map={"品名": name_col})
-                updated_df, _ = apply_extended_substitute_mapping(df, mapping_df, field_map={"品名": name_col})
-        
-                # 可选去重：对安全库存等特定表名启用
-                if sheet_name == "赛卓-安全库存":
-                    updated_df = updated_df.drop_duplicates(subset=["晶圆品名", "规格", "品名"])
-        
+                st.write(f"🔍 正在处理 {sheet_name}，当前列名：{df.columns.tolist()}")
+                
+                updated_df, _ = apply_mapping_and_merge(df.copy(), mapping_df, {"品名": name_col})
+                updated_df, _ = apply_extended_substitute_mapping(updated_df, mapping_df, {"品名": name_col})
+            
+                # ✅ 安全去重（检查字段存在）
+                key_fields = [col for col in ["晶圆品名", "规格", "品名"] if col in updated_df.columns]
+                if key_fields:
+                    updated_df = updated_df.drop_duplicates(subset=key_fields)
+                else:
+                    st.warning(f"⚠️ {sheet_name} 中缺少用于去重的列，跳过去重")
+            
+                # ✅ 回写
                 if sheet_name in self.dataframes:
                     self.dataframes[sheet_name] = updated_df
                 else:
                     additional_sheets = additional_sheets.copy()
                     additional_sheets[sheet_name] = updated_df
-        
+            
             except Exception as e:
                 st.error(f"❌ 替换 {sheet_name} 中的品名失败：{e}")
+            
 
 
         """
