@@ -121,6 +121,8 @@ class PivotProcessor:
         new_additional_sheets = {}
         
         # ✅ 合并全部待处理的 Sheet（排除映射文件）
+        st.write(additional_sheets)
+        st.write(dataframes)
         all_sheets_to_process = {
             **self.dataframes,
             **{k: v for k, v in additional_sheets.items() if k not in ["赛卓-新旧料号", "赛卓-供应商-PC"]}
