@@ -71,7 +71,6 @@ class PivotProcessor:
         # === 标准化新旧料号表 ===
         self.additional_sheets = additional_sheets
         mapping_df = self.additional_sheets.get("赛卓-新旧料号")
-        st.write(mapping_df)
         if mapping_df is None or mapping_df.empty:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
 
@@ -84,12 +83,12 @@ class PivotProcessor:
 
         # 去除“替代品名”为空的行（空字符串或 NaN 都删掉）
         mapping_sub = mapping_df[~mapping_df["替代品名1"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_sub.loc[mapping_sub["替代品名2"] == "", "替代品名2"] = "（空）"
+        mapping_sub.loc[mapping_sub["替代品名2"] == "", "替代品名2"] = "11111"
         mapping_sub.loc[mapping_sub["替代品名3"] == "", "替代品名3"] = "（空）"
         mapping_sub.loc[mapping_sub["替代品名4"] == "", "替代品名4"] = "（空）"
     
         st.write(mapping_semi)
-        st.write(mapping_df)
+        st.write(mapping_new)
         st.write(mapping_sub)
 
         # === 构建主计划 ===
