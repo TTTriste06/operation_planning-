@@ -306,7 +306,7 @@ class PivotProcessor:
             ws.auto_filter.ref = f"A2:{last_col_letter}2"
         
             # 冻结
-            ws.freeze_panes = "D1"
+            ws.freeze_panes = "D3"
 
         output_buffer.seek(0)
 
