@@ -94,7 +94,7 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
             df_plan[col_target] = result
         else:
             result = (
-                get(col_actual_prod) - get_plan(col_target_prev) -
+                get(col_actual_prod) - get_plan(col_target_prev) +
                 pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
             )
             df_plan[col_target] = result
