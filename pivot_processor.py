@@ -274,7 +274,7 @@ class PivotProcessor:
                 "Yellow < 安全库存    "
                 "Orange > 2 × 安全库存"
             )
-            legend_cell.alignment = Alignment(wrap_text=True, vertical="center", horizontal="left")
+            legend_cell.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center")
 
             merge_safety_header(ws, main_plan_df)
             merge_unfulfilled_order_header(ws)
