@@ -142,7 +142,7 @@ class PivotProcessor:
                     st.write("4")
                     st.write(additional_sheets)
                 else:
-                    self.additional_sheets[sheet_name] = df
+                    additional_sheets[sheet_name] = df
                     st.write("5")
                     st.write(additional_sheets)
             except Exception as e:
