@@ -1,6 +1,48 @@
 import pandas as pd
 import streamlit as st
 
+def apply_all_name_replacements(df, mapping_df, sheet_name, field_mappings, verbose=True):
+    """
+    对任意 DataFrame 表执行“新旧料号替换 + 替代料号替换”流程。
+    会自动识别 FIELD_MAPPINGS 中定义的品名字段。
+
+    参数：
+        df: 要处理的 DataFrame（如预测、安全库存等）
+        mapping_df: 新旧料号映射表，包含 '旧品名'、'新品名'、'替代品名1~4'
+        sheet_name: 当前表名（必须出现在 field_mappings 中）
+        field_mappings: 全局字段映射字典
+        verbose: 是否输出替换信息
+
+    返回：
+        df: 替换后的 DataFrame
+        all_mapped_keys: 所有被替换的新料号集合（主+替代）
+    """
+    if sheet_name not in field_mappings:
+        raise ValueError(f"❌ FIELD_MAPPINGS 中未定义 {sheet_name} 的字段映射")
+
+    field_map = field_mappings[sheet_name]
+
+    if "品名" not in field_map:
+        raise ValueError(f"❌ {sheet_name} 的字段映射中未指定 '品名'")
+
+    actual_name_col = field_map["品名"]
+
+    if actual_name_col not in df.columns:
+        raise ValueError(f"❌ {sheet_name} 中未找到列：{actual_name_col}")
+
+    # Step 1️⃣ 新旧料号替换
+    df, mapped_main = apply_mapping_and_merge(df.copy(), mapping_df, {"品名": actual_name_col}, verbose=verbose)
+
+    # Step 2️⃣ 替代品名替换
+    df, mapped_sub = apply_extended_substitute_mapping(df, mapping_df, {"品名": actual_name_col}, verbose=verbose)
+
+    all_mapped_keys = mapped_main.union(mapped_sub)
+
+    if verbose:
+        print(f"✅ [{sheet_name}] 共完成替换: {len(all_mapped_keys)} 种新料号")
+
+    return df, all_mapped_keys
+
 def clean_mapping_headers(mapping_df):
     """
     将新旧料号表的列名重命名为标准字段，按列数自动对齐；若列数超限则报错。
