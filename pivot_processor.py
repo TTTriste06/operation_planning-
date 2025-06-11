@@ -116,7 +116,7 @@ class PivotProcessor:
             main_plan_df,
             self.dataframes,
             self.additional_sheets,
-            mapping_semi
+            mapping_semi, 
             FIELD_MAPPINGS
         )
 
