@@ -115,6 +115,11 @@ class PivotProcessor:
         )
 
         ## == 替换新旧料号、替代料号 ==
+        all_sheets_to_process = {
+            **self.dataframes,
+            **{k: v for k, v in additional_sheets.items() if k not in ["赛卓-新旧料号", "赛卓-供应商-PC"]}
+        }.copy()
+        
         for sheet_name, df in all_sheets_to_process.items():
             if sheet_name not in FIELD_MAPPINGS:
                 continue
