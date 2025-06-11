@@ -132,23 +132,19 @@ class PivotProcessor:
             if actual_name_col not in df.columns:
                 st.warning(f"⚠️ {sheet_name} 中找不到列：{actual_name_col}，跳过")
                 continue
-            st.write("1")
-            st.write(additional_sheets)
             try:
                 df, _ = apply_mapping_and_merge(df, mapping_df, field_map={"品名": actual_name_col})
                 st.write("2")
                 st.write(additional_sheets)
                 df, _ = apply_extended_substitute_mapping(df, mapping_df, field_map={"品名": actual_name_col})
-        
+                st.write("3")
+                st.write(additional_sheets)
                 if sheet_name in self.dataframes:
                     self.dataframes[sheet_name] = df
                 else:
                     self.additional_sheets[sheet_name] = df
             except Exception as e:
                 st.error(f"❌ 替换 {sheet_name} 中的品名失败：{e}")
-
-        st.write("3")
-        st.write(additional_sheets)
         
         ## == 安全库存 ==
         safety_df = additional_sheets.get("赛卓-安全库存")
