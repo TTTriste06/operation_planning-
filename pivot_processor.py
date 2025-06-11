@@ -78,11 +78,19 @@ class PivotProcessor:
         # 创建新的 mapping_semi：仅保留“半成品”字段非空的行
         mapping_semi = mapping_df[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         
-        # 去除“新品名”为空的行（空字符串或 NaN 都删掉）
-        mapping_df = mapping_df[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        # 去除“品名”为空的行（空字符串或 NaN 都删掉）
+        mapping_new = mapping_df[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_new = mapping_new[~mapping_df["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
 
+        # 去除“替代品名”为空的行（空字符串或 NaN 都删掉）
+        mapping_sub = mapping_df[~mapping_df["替代品名1"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_sub.loc[mapping_sub["替代品名2"] == "", "替代品名2"] = "（空）"
+        mapping_sub.loc[mapping_sub["替代品名3"] == "", "替代品名3"] = "（空）"
+        mapping_sub.loc[mapping_sub["替代品名4"] == "", "替代品名4"] = "（空）"
+    
         st.write(mapping_semi)
         st.write(mapping_df)
+        st.write(mapping_sub)
 
         # === 构建主计划 ===
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
