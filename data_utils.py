@@ -20,7 +20,7 @@ def extract_info(df, mapping, fields=("规格", "晶圆品名")):
 def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
                               dataframes: dict,
                               additional_sheets: dict,
-                              source_nj: pd.DataFrame
+                              source_nj: pd.DataFrame,
                               field_mappings: dict) -> pd.DataFrame:
     """
     为主计划 DataFrame 补全 规格 和 晶圆品名 字段，按优先级从多个数据源中逐步填充。
