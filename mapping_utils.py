@@ -67,52 +67,66 @@ def clean_mapping_headers(mapping_df):
     return mapping_df[required_headers[:mapping_df.shape[1]]]
 
 
-def replace_all_names_with_mapping(all_names: pd.Series, mapping_df: pd.DataFrame) -> pd.Series:
+def replace_all_names_with_mapping(all_names: pd.Series, mapping_new: pd.DataFrame, mapping_sub: pd.DataFrame) -> pd.Series:
     """
     对品名列表 all_names 应用新旧料号 + 替代料号替换，返回去重后的替换结果。
 
     参数：
         all_names: 原始品名列表（pd.Series）
-        mapping_df: 新旧料号映射表，必须包含 '旧品名', '新品名', '替代品名1~4'
+        mapping_new: 新旧料号映射表，包含 '旧品名', '新品名'
+        mapping_sub: 替代料号映射表，包含 '替代品名1~4', '新品名'
 
     返回：
         替换后的品名列表（pd.Series），已去重排序
     """
-    if not isinstance(all_names, pd.Series) or mapping_df is None or mapping_df.empty:
-        return all_names.dropna().drop_duplicates().sort_values().reset_index(drop=True)
+    if not isinstance(all_names, pd.Series):
+        return all_names
 
-    # 清洗新旧品名列
-    mapping_df["旧品名"] = mapping_df["旧品名"].astype(str).str.strip()
-    mapping_df["新品名"] = mapping_df["新品名"].astype(str).str.strip()
+    all_names = all_names.dropna().astype(str).str.strip()
 
-    # 新旧料号替换
-    df_names = all_names.dropna().astype(str).str.strip().to_frame(name="品名")
-    merged = df_names.merge(mapping_df[["旧品名", "新品名"]], how="left", left_on="品名", right_on="旧品名")
-    merged["最终品名"] = merged["新品名"].where(
-        merged["新品名"].notna() & (merged["新品名"].str.strip() != ""), merged["品名"]
-    )
-    all_names = merged["最终品名"]
+    # 1️⃣ 新旧料号替换
+    if mapping_new is not None and not mapping_new.empty:
+        mapping_new = mapping_new.copy()
+        mapping_new["旧品名"] = mapping_new["旧品名"].astype(str).str.strip()
+        mapping_new["新品名"] = mapping_new["新品名"].astype(str).str.strip()
 
-    # 替代料号替换（替换前判断新品名是否为空）
-    for i in range(1, 5):
-        sub_col = f"替代品名{i}"
-        if sub_col not in mapping_df.columns:
-            continue
+        df_names = all_names.to_frame(name="品名")
+        merged = df_names.merge(
+            mapping_new[["旧品名", "新品名"]],
+            how="left",
+            left_on="品名",
+            right_on="旧品名"
+        )
+        merged["最终品名"] = merged["新品名"].where(
+            merged["新品名"].notna() & (merged["新品名"].str.strip() != ""),
+            merged["品名"]
+        )
+        all_names = merged["最终品名"]
 
-        mapping_df[sub_col] = mapping_df[sub_col].astype(str).str.strip()
-        mapping_df["新品名"] = mapping_df["新品名"].astype(str).str.strip()
+    # 2️⃣ 替代料号替换
+    if mapping_sub is not None and not mapping_sub.empty:
+        mapping_sub = mapping_sub.copy()
+        mapping_sub["新品名"] = mapping_sub["新品名"].astype(str).str.strip()
 
-        valid_subs = mapping_df[
-            mapping_df[sub_col].notna() &
-            (mapping_df[sub_col] != "") &
-            mapping_df["新品名"].notna() &
-            (mapping_df["新品名"] != "")
-        ]
+        for i in range(1, 5):
+            sub_col = f"替代品名{i}"
+            if sub_col not in mapping_sub.columns:
+                continue
 
-        if not valid_subs.empty:
-            sub_map = valid_subs.set_index(sub_col)["新品名"]
-            all_names = all_names.replace(sub_map)
+            mapping_sub[sub_col] = mapping_sub[sub_col].astype(str).str.strip()
 
+            valid_subs = mapping_sub[
+                mapping_sub[sub_col].notna() &
+                (mapping_sub[sub_col] != "") &
+                mapping_sub["新品名"].notna() &
+                (mapping_sub["新品名"] != "")
+            ]
+
+            if not valid_subs.empty:
+                sub_map = valid_subs.set_index(sub_col)["新品名"]
+                all_names = all_names.replace(sub_map)
+
+    # 去重排序后返回
     return all_names.dropna().drop_duplicates().sort_values().reset_index(drop=True)
 
 
