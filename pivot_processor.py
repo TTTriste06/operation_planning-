@@ -83,9 +83,11 @@ class PivotProcessor:
 
         # 去除“替代品名”为空的行（空字符串或 NaN 都删掉）
         mapping_sub = mapping_df[~mapping_df["替代品名1"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_sub.loc[mapping_sub["替代品名2"] == "", "替代品名2"] = "11111"
-        mapping_sub.loc[mapping_sub["替代品名3"] == "", "替代品名3"] = "11111"
-        mapping_sub.loc[mapping_sub["替代品名4"] == "", "替代品名4"] = "11111"
+        # 将 NaN、空字符串、"nan" 替换为 "（空）"
+        mapping_df.loc[
+            mapping_df["旧品名"].isin(["", "nan", "None", "NaN"]), "替代品名2"
+        ] = "（空）"
+
     
         st.write(mapping_semi)
         st.write(mapping_new)
