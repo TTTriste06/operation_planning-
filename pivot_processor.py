@@ -116,6 +116,7 @@ class PivotProcessor:
             main_plan_df,
             self.dataframes,
             self.additional_sheets,
+            mapping_semi
             FIELD_MAPPINGS
         )
 
@@ -316,3 +317,20 @@ class PivotProcessor:
             ws.freeze_panes = "D1"
 
         output_buffer.seek(0)
+
+       
+    def set_additional_data(self, sheets_dict):
+        """
+        设置辅助数据表，如 预测、安全库存、新旧料号 等
+        """
+        self.additional_sheets = sheets_dict or {}
+    
+        # ✅ 对新旧料号进行列名清洗
+        mapping_df = self.additional_sheets.get("赛卓-新旧料号")
+        if mapping_df is not None and not mapping_df.empty:
+            try:
+                cleaned = clean_mapping_headers(mapping_df)
+                self.additional_sheets["赛卓-新旧料号"] = cleaned
+            except Exception as e:
+                raise ValueError(f"❌ 新旧料号表清洗失败：{e}")
+
