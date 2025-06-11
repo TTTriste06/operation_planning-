@@ -116,55 +116,42 @@ class PivotProcessor:
         )
 
         ## == 替换新旧料号、替代料号 ==
-        # ✅ 初始化全新容器，避免污染原始对象
-        new_dataframes = {}
-        new_additional_sheets = {}
-        
-        # ✅ 合并全部待处理的 Sheet（排除映射文件）
-        st.write(self.additional_sheets)
-        st.write(self.dataframes)
-        all_sheets_to_process = {
-            **self.dataframes,
-            **{k: v for k, v in self.additional_sheets.items() if k not in ["赛卓-新旧料号", "赛卓-供应商-PC"]}
-        }.copy()
-        
-        # ✅ 开始替换流程
-        for sheet_name, df in all_sheets_to_process.items():
-            if sheet_name not in FIELD_MAPPINGS:
-                st.warning(f"⚠️ {sheet_name} 未在 FIELD_MAPPINGS 注册，跳过")
-                continue
-        
-            try:
-                st.write(f"🔍 正在处理 {sheet_name}，当前列名：{df.columns.tolist()}")
-        
-                # ✅ 新旧料号 + 替代品名替换（自动识别品名字段）
-                updated_df, _ = apply_all_name_replacements(
-                    df=df,
-                    mapping_df=mapping_df,
-                    sheet_name=sheet_name,
-                    field_mappings=FIELD_MAPPINGS,
-                    verbose=False
-                )
-        
-                # ✅ 去重（只在有关键字段时）
-                key_fields = [col for col in ["晶圆品名", "规格", "品名"] if col in updated_df.columns]
-                if key_fields:
-                    updated_df = updated_df.drop_duplicates(subset=key_fields)
-                else:
-                    st.warning(f"⚠️ {sheet_name} 缺少可用于去重的字段，已跳过去重")
-        
-                # ✅ 写入对应的新容器
-                if sheet_name in self.dataframes:
-                    new_dataframes[sheet_name] = updated_df
-                else:
-                    new_additional_sheets[sheet_name] = updated_df
-        
-            except Exception as e:
-                st.error(f"❌ 替换 {sheet_name} 中的品名失败：{e}")
-        
-        # ✅ 替换原始容器
-        self.dataframes = new_dataframes
-        self.additional_sheets = new_additional_sheets
+        df_new = self.additional_sheets["赛卓-安全库存"]
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-安全库存"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-安全库存"])
+        additional_sheets["赛卓-安全库存"] = df_new
+
+        df_new = self.additional_sheets["赛卓-预测"]
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-预测"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-预测"])
+        additional_sheets["赛卓-预测"] = df_new
+
+        df_new = self.dataframes["赛卓-未交订单"]
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-未交订单"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-未交订单"])
+        additional_sheets["赛卓-未交订单"] = df_new
+
+        df_new = self.dataframes["赛卓-成品库存"]
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-成品库存"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-成品库存"])
+        additional_sheets["赛卓-成品库存"] = df_new
+
+        df_new = self.dataframes["赛卓-成品在制"]
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-成品在制"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-成品在制"])
+        additional_sheets["赛卓-成品在制"] = df_new
+
+        df_new = self.dataframes["赛卓-CP在制"]
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-CP在制"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-CP在制"])
+        additional_sheets["赛卓-CP在制"] = df_new
+
+        df_new = self.dataframes["赛卓-晶圆库存"]
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-晶圆库存"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-晶圆库存"])
+        additional_sheets["赛卓-晶圆库存"] = df_new
+
+
 
             
 
