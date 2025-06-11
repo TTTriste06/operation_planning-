@@ -91,10 +91,10 @@ def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
     mask = merged["新品名"].notna() & (merged["新品名"].str.strip() != "")
     merged.loc[mask, name_col] = merged.loc[mask, "新品名"]
 
-    """
+    
     if verbose:
         st.success(f"✅ 新旧料号替换完成，共替换: {mask.sum()} 行")
-    """
+    
 
     mapped_keys = set(merged.loc[mask, name_col])
     return merged.drop(columns=["旧品名", "新品名"], errors="ignore"), mapped_keys
@@ -153,8 +153,8 @@ def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=True):
         df = df.drop_duplicates(subset=key_fields)
     else:
         df = df.drop_duplicates()
-    """
+    
     if verbose:
         print(f"✅ 替代品名替换完成，共替换 {len(matched_keys)} 种")
-    """
+    
     return df, matched_keys
