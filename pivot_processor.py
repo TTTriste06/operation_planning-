@@ -267,7 +267,13 @@ class PivotProcessor:
             #写入主计划
             ws = writer.book["主计划"]
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
+
+            # 方块字符：■ 是 Unicode U+25A0
+            cell = ws["B2"]
+            cell.value = "■"
             
+            # 设置字体颜色（比如红色）
+            cell.font = Font(color="FF0000")  # 红色
 
             legend_cell = ws.cell(row=1, column=3)
             legend_cell.value = (
