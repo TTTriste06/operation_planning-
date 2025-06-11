@@ -20,6 +20,7 @@ def extract_info(df, mapping, fields=("规格", "晶圆品名")):
 def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
                               dataframes: dict,
                               additional_sheets: dict,
+                              source_nj: pd.DataFrame
                               field_mappings: dict) -> pd.DataFrame:
     """
     为主计划 DataFrame 补全 规格 和 晶圆品名 字段，按优先级从多个数据源中逐步填充。
@@ -85,8 +86,6 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
 
     # 额外处理：“赛卓-新旧料号”表里，如果主计划中的“品名”匹配到“半成品”，
     # 就用对应行的“新规格”和“新晶圆品名”来覆盖
-    nj_sheet_name = "赛卓-新旧料号"
-    source_nj = self.additional_sheets.get(nj_sheet_name)
     if source_nj is not None and not source_nj.empty:
         # 取出“半成品”“新规格”“新晶圆品名”“旧规格”“旧晶圆品名”五列
         tmp = source_nj[[
