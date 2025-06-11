@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-def apply_all_name_replacements(df, mapping_df, sheet_name, field_mappings, verbose=True):
+def apply_all_name_replacements(df, mapping_new, mapping_sub, sheet_name, field_mappings, verbose=True):
     """
     对任意 DataFrame 表执行“新旧料号替换 + 替代料号替换”流程。
     会自动识别 FIELD_MAPPINGS 中定义的品名字段。
@@ -31,10 +31,10 @@ def apply_all_name_replacements(df, mapping_df, sheet_name, field_mappings, verb
         raise ValueError(f"❌ {sheet_name} 中未找到列：{actual_name_col}")
 
     # Step 1️⃣ 新旧料号替换
-    df, mapped_main = apply_mapping_and_merge(df.copy(), mapping_df, {"品名": actual_name_col}, verbose=verbose)
+    df, mapped_main = apply_mapping_and_merge(df.copy(), mapping_new, {"品名": actual_name_col}, verbose=verbose)
 
     # Step 2️⃣ 替代品名替换
-    df, mapped_sub = apply_extended_substitute_mapping(df, mapping_df, {"品名": actual_name_col}, verbose=verbose)
+    df, mapped_sub = apply_extended_substitute_mapping(df, mapping_sub, {"品名": actual_name_col}, verbose=verbose)
 
     all_mapped_keys = mapped_main.union(mapped_sub)
 
