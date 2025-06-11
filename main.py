@@ -37,7 +37,6 @@ def main():
         # 初始化处理器
         buffer = BytesIO()
         processor = PivotProcessor()
-        processor.set_additional_data(additional_sheets)
         processor.process(uploaded_files, buffer, additional_sheets)  # ✅ 不再需要 classify_files()
 
         # 下载文件按钮
