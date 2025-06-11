@@ -122,81 +122,69 @@ def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
     """
     name_col = field_map["品名"]
     df[name_col] = df[name_col].astype(str).str.strip()
-
     mapping_df["旧品名"] = mapping_df["旧品名"].astype(str).str.strip()
     mapping_df["新品名"] = mapping_df["新品名"].astype(str).str.strip()
 
     df = df.copy()
     merged = df.merge(mapping_df[["旧品名", "新品名"]], how="left", left_on=name_col, right_on="旧品名")
+    mask = merged["新品名"].notna() & (merged["新品名"] != "")
+    merged["_由新旧料号映射"] = mask
 
-    # ✅ 只替换有值的新品名
-    mask = merged["新品名"].notna() & (merged["新品名"].str.strip() != "")
-    merged.loc[mask, name_col] = merged.loc[mask, "新品名"]
-
-    
+    """
     if verbose:
-        st.success(f"✅ 新旧料号替换完成，共替换: {mask.sum()} 行")
-    
+        st.write(f"✅ 新旧料号替换成功: {mask.sum()}，未匹配: {(~mask).sum()}")
+    """
+
+    merged.loc[mask, name_col] = merged.loc[mask, "新品名"]
+    merged = merged.drop(columns=["旧品名", "新品名"], errors="ignore")
 
     mapped_keys = set(merged.loc[mask, name_col])
-    return merged.drop(columns=["旧品名", "新品名"], errors="ignore"), mapped_keys
+
+    return merged.drop(columns=["_由新旧料号映射"], errors="ignore"), mapped_keys
 
 def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=True):
     """
-    替代料号品名替换（仅品名字段替换，无聚合合并），避免重复替换并自动去重。
-
-    参数：
-        df: 原始 DataFrame（如安全库存、预测等）
-        mapping_df: 新旧料号映射表
-        field_map: 对应字段映射配置，如 {"品名": "品名"}
-        verbose: 是否打印替换信息（可配合 Streamlit）
-
-    返回：
-        df: 替换后的 DataFrame，已去重
-        matched_keys: 成功替换的新品名集合
+    替代料号品名替换（仅品名字段替换，无聚合合并）
     """
     name_col = field_map["品名"]
     df = df.copy()
-
-    # 清洗品名列
     df[name_col] = df[name_col].astype(str).str.strip().str.replace("\n", "").str.replace("\r", "")
 
-    matched_keys = set()
-    already_replaced = set()
-
+    # 清洗映射表中所有替代品名及新品名
+    substitute_records = []
     for i in range(1, 5):
-        sub_col = f"替代品名{i}"
-        if sub_col not in mapping_df.columns or "新品名" not in mapping_df.columns:
-            continue
+        sub_name = f"替代品名{i}"
+        for col in [sub_name, "新品名"]:
+            if col not in mapping_df.columns:
+                mapping_df[col] = ""
+            mapping_df[col] = mapping_df[col].astype(str).str.strip().str.replace("\n", "").str.replace("\r", "")
 
-        sub_df = mapping_df[[sub_col, "新品名"]].dropna()
-        sub_df[sub_col] = sub_df[sub_col].astype(str).str.strip()
-        sub_df["新品名"] = sub_df["新品名"].astype(str).str.strip()
-
-        valid_sub = sub_df[
-            (sub_df[sub_col] != "") &
-            (sub_df["新品名"] != "")
+        valid_rows = mapping_df[
+            mapping_df[[sub_name, "新品名"]].notna().all(axis=1) &
+            (mapping_df[sub_name] != "") &
+            (mapping_df["新品名"] != "")
         ]
 
-        for _, row in valid_sub.iterrows():
-            old_name = row[sub_col]
-            new_name = row["新品名"]
+        for _, row in valid_rows.iterrows():
+            substitute_records.append({
+                "旧品名": row[sub_name],
+                "新品名": row["新品名"]
+            })
 
-            # 只替换还未替换过的品名，防止重复替换
-            mask = (df[name_col] == old_name) & (~df[name_col].isin(already_replaced))
-            if mask.any():
-                df.loc[mask, name_col] = new_name
-                matched_keys.add(new_name)
-                already_replaced.add(new_name)
+    # 替换品名
+    matched_keys = set()
+    for sub in substitute_records:
+        mask = (df[name_col] == sub["旧品名"])
+        if mask.any():
+            """
+            if verbose:
+                st.write(f"🔁 替代品名: {sub['旧品名']} → {sub['新品名']}，行数: {mask.sum()}")
+            """
+            df.loc[mask, name_col] = sub["新品名"]
+            matched_keys.update(df.loc[mask, name_col])
 
-    # 替换完成后按关键字段去重（根据你实际字段选择）
-    key_fields = [col for col in ["晶圆品名", "规格", "品名"] if col in df.columns]
-    if key_fields:
-        df = df.drop_duplicates(subset=key_fields)
-    else:
-        df = df.drop_duplicates()
-    
     if verbose:
-        print(f"✅ 替代品名替换完成，共替换 {len(matched_keys)} 种")
-    
+        st.success(f"✅ 替代品名替换完成，共替换: {len(matched_keys)} 种")
+
     return df, matched_keys
+    
