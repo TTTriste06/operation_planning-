@@ -275,6 +275,9 @@ class PivotProcessor:
                 "Orange > 2 × 安全库存"
             )
             legend_cell.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center")
+            fill = PatternFill(start_color="pink", end_color="pink", fill_type="solid")
+            legend_cell.fill = fill
+
 
             merge_safety_header(ws, main_plan_df)
             merge_unfulfilled_order_header(ws)
