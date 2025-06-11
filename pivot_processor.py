@@ -83,12 +83,16 @@ class PivotProcessor:
 
         # 去除“替代品名”为空的行
         mapping_sub = mapping_df[~mapping_df["替代品名1"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        
+
+        # 将 NaN、空字符串、"nan" 替换为 "（空）"
+        mapping_sub.loc[
+            mapping_sub["替代品名2"].isin(["", "nan", "None", "NaN"]), "替代品名2"
+        ] = "（空）"
     
         st.write(mapping_semi)
         st.write(mapping_new)
         st.write(mapping_sub)
-        st.write(mapping_sub["替代品名2"].unique()）
+        #st.write(mapping_sub["替代品名2"].unique()）
 
         # === 构建主计划 ===
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
