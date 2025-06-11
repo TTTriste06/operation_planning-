@@ -67,11 +67,13 @@ class PivotProcessor:
                     break
             if not matched:
                 st.warning(f"⚠️ 上传文件 `{filename}` 未识别关键词，跳过")
-        
+
+        # === 标准化新旧料号表 ===
         self.additional_sheets = additional_sheets
         mapping_df = self.additional_sheets.get("赛卓-新旧料号")
         if mapping_df is None or mapping_df.empty:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
+        st.write(mapping_df)
 
         # === 构建主计划 ===
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
