@@ -130,10 +130,10 @@ def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
     mask = merged["新品名"].notna() & (merged["新品名"] != "")
     merged["_由新旧料号映射"] = mask
 
-    """
+    
     if verbose:
         st.write(f"✅ 新旧料号替换成功: {mask.sum()}，未匹配: {(~mask).sum()}")
-    """
+    
 
     merged.loc[mask, name_col] = merged.loc[mask, "新品名"]
     merged = merged.drop(columns=["旧品名", "新品名"], errors="ignore")
