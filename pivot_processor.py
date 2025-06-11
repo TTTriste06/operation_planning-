@@ -128,7 +128,6 @@ class PivotProcessor:
         )
 
         ## == 替换新旧料号、替代料号 ==
-        st.write(self.additional_sheets["赛卓-安全库存"])
         df_new = self.additional_sheets["赛卓-安全库存"]
         df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-安全库存"])
         df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-安全库存"])
@@ -137,32 +136,32 @@ class PivotProcessor:
         df_new = self.additional_sheets["赛卓-预测"]
         df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-预测"])
         df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-预测"])
-        additional_sheets["赛卓-预测"] = df_new
+        self.additional_sheets["赛卓-预测"] = df_new
 
         df_new = self.dataframes["赛卓-未交订单"]
         df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-未交订单"])
         df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-未交订单"])
-        additional_sheets["赛卓-未交订单"] = df_new
+        self.dataframes["赛卓-未交订单"] = df_new
 
         df_new = self.dataframes["赛卓-成品库存"]
         df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品库存"])
         df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-成品库存"])
-        additional_sheets["赛卓-成品库存"] = df_new
+        self.dataframes["赛卓-成品库存"] = df_new
 
         df_new = self.dataframes["赛卓-成品在制"]
         df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品在制"])
         df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-成品在制"])
-        additional_sheets["赛卓-成品在制"] = df_new
+        self.dataframes["赛卓-成品在制"] = df_new
 
         df_new = self.dataframes["赛卓-CP在制"]
         df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-CP在制"])
         df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-CP在制"])
-        additional_sheets["赛卓-CP在制"] = df_new
+        self.dataframes["赛卓-CP在制"] = df_new
 
         df_new = self.dataframes["赛卓-晶圆库存"]
         df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-晶圆库存"])
         df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-晶圆库存"])
-        additional_sheets["赛卓-晶圆库存"] = df_new
+        self.dataframes["赛卓-晶圆库存"] = df_new
 
         ## == 安全库存 ==
         safety_df = self.additional_sheets.get("赛卓-安全库存")
