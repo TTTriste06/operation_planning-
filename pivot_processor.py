@@ -239,21 +239,16 @@ class PivotProcessor:
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
             append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
             
-            # 替换上传文件 key 为标准名
+            # 透视表
             standardized_files = standardize_uploaded_keys(uploaded_files, RENAME_MAP)
-            
-            # 将 UploadedFile 读取为 DataFrame
             parsed_dataframes = {
                 filename: pd.read_excel(file)  # 或提前 parse 完成的 DataFrame dict
                 for filename, file in standardized_files.items()
             }
-            
             pivot_tables = generate_monthly_pivots(parsed_dataframes, pivot_config)
-            
             for sheet_name, df in pivot_tables.items():
                 df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
                 
-            
             # 写完后手动调整所有透视表 sheet 的列宽
             for sheet_name, df in pivot_tables.items():
                 ws = writer.book[sheet_name]
@@ -268,7 +263,8 @@ class PivotProcessor:
                             pass
                     adjusted_width = max_length * 1.2 + 10
                     ws.column_dimensions[col_letter].width = min(adjusted_width, 50)
-            
+
+            #写入主计划
             ws = writer.book["主计划"]
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
             
@@ -289,7 +285,6 @@ class PivotProcessor:
 
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
-
 
             adjust_column_width(ws)
 
