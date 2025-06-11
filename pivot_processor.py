@@ -84,15 +84,6 @@ class PivotProcessor:
         # 去除“替代品名”为空的行
         mapping_sub = mapping_df[~mapping_df["替代品名1"].astype(str).str.strip().replace("nan", "").eq("")].copy()
 
-        # 将 NaN、空字符串、"nan" 替换为 "（空）"
-        mapping_sub.loc[
-            mapping_sub["替代品名2"].isin(["", "nan", "None", "NaN"]), "替代品名2"
-        ] = "（空）"
-    
-        st.write(mapping_semi)
-        st.write(mapping_new)
-        st.write(mapping_sub)
-
         # === 构建主计划 ===
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
         main_plan_df = pd.DataFrame(columns=headers)
@@ -113,7 +104,7 @@ class PivotProcessor:
             name_forecast = df_forecast[col_name].astype(str).str.strip().tolist()
 
         all_names = pd.Series(name_unfulfilled + name_forecast)
-        all_names = replace_all_names_with_mapping(all_names, mapping_df)
+        all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_new)
 
 
         main_plan_df = main_plan_df.reindex(index=range(len(all_names)))
@@ -139,81 +130,42 @@ class PivotProcessor:
         st.write(self.additional_sheets["赛卓-安全库存"])
         df_new = self.additional_sheets["赛卓-安全库存"]
         st.write(df_new)
-        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-安全库存"])
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-安全库存"])
         st.write(df_new)
-        # df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-安全库存"])
+        # df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-安全库存"])
         self.additional_sheets["赛卓-安全库存"] = df_new
         st.write(df_new)
         
         df_new = self.additional_sheets["赛卓-预测"]
-        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-预测"])
-        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-预测"])
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-预测"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-预测"])
         additional_sheets["赛卓-预测"] = df_new
 
         df_new = self.dataframes["赛卓-未交订单"]
-        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-未交订单"])
-        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-未交订单"])
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-未交订单"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-未交订单"])
         additional_sheets["赛卓-未交订单"] = df_new
 
         df_new = self.dataframes["赛卓-成品库存"]
-        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-成品库存"])
-        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-成品库存"])
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品库存"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-成品库存"])
         additional_sheets["赛卓-成品库存"] = df_new
 
         df_new = self.dataframes["赛卓-成品在制"]
-        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-成品在制"])
-        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-成品在制"])
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品在制"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-成品在制"])
         additional_sheets["赛卓-成品在制"] = df_new
 
         df_new = self.dataframes["赛卓-CP在制"]
-        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-CP在制"])
-        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-CP在制"])
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-CP在制"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-CP在制"])
         additional_sheets["赛卓-CP在制"] = df_new
 
         df_new = self.dataframes["赛卓-晶圆库存"]
-        df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-晶圆库存"])
-        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-晶圆库存"])
+        df_new, _ = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-晶圆库存"])
+        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-晶圆库存"])
         additional_sheets["赛卓-晶圆库存"] = df_new
 
-
-
-            
-
-
-        """
-        for sheet_name, df in {
-            **self.dataframes,
-            **{k: v for k, v in additional_sheets.items() if k not in ["赛卓-新旧料号", "赛卓-供应商-PC"]}
-        }.items():
-            if sheet_name not in FIELD_MAPPINGS:
-                st.warning(f"⚠️ {sheet_name} 未在 FIELD_MAPPINGS 注册，跳过替换")
-                continue
-        
-            field_map = FIELD_MAPPINGS[sheet_name]
-            if "品名" not in field_map:
-                st.warning(f"⚠️ {sheet_name} 的 FIELD_MAPPINGS 中未定义 '品名'，跳过")
-                continue
-        
-            actual_name_col = field_map["品名"]
-            if actual_name_col not in df.columns:
-                st.warning(f"⚠️ {sheet_name} 中找不到列：{actual_name_col}，跳过")
-                continue
-            try:
-                df, _ = apply_mapping_and_merge(df, mapping_df, field_map={"品名": actual_name_col})
-                df, _ = apply_extended_substitute_mapping(df, mapping_df, field_map={"品名": actual_name_col})
-                st.write("3")
-                st.write(additional_sheets)
-                if sheet_name in self.dataframes:
-                    self.dataframes[sheet_name] = df
-                    st.write("4")
-                    st.write(additional_sheets)
-                else:
-                    additional_sheets[sheet_name] = df
-                    st.write("5")
-                    st.write(additional_sheets)
-            except Exception as e:
-                st.error(f"❌ 替换 {sheet_name} 中的品名失败：{e}")
-        """
         ## == 安全库存 ==
         safety_df = self.additional_sheets.get("赛卓-安全库存")
         if safety_df is not None and not safety_df.empty:
@@ -236,13 +188,13 @@ class PivotProcessor:
         ## == 成品库存 ==
         finished_df = self.dataframes.get("赛卓-成品库存")
         if finished_df is not None and not finished_df.empty:
-            main_plan_df, unmatched_finished = merge_finished_inventory_with_warehouse_types(main_plan_df, finished_df, mapping_df)
+            main_plan_df, unmatched_finished = merge_finished_inventory_with_warehouse_types(main_plan_df, finished_df, mapping_semi)
             st.success("✅ 已合并成品库存数据")
 
         ## == 成品在制 ==
         product_in_progress_df = self.dataframes.get("赛卓-成品在制")
         if product_in_progress_df is not None and not product_in_progress_df.empty:
-            main_plan_df, unmatched_in_progress = append_product_in_progress(main_plan_df, product_in_progress_df, mapping_df)
+            main_plan_df, unmatched_in_progress = append_product_in_progress(main_plan_df, product_in_progress_df, mapping_semi)
             st.success("✅ 已合并成品在制数据")
 
         # === 投单计划 ===
@@ -251,7 +203,7 @@ class PivotProcessor:
         # 成品&半成品实际投单
         df_order = self.dataframes.get("赛卓-下单明细", pd.DataFrame())
         main_plan_df = aggregate_actual_fg_orders(main_plan_df, df_order, forecast_months)
-        main_plan_df = aggregate_actual_sfg_orders(main_plan_df, df_order, mapping_df, forecast_months)
+        main_plan_df = aggregate_actual_sfg_orders(main_plan_df, df_order, mapping_semi, forecast_months)
 
         # 回货实际
         df_arrival = self.dataframes.get("赛卓-到货明细", pd.DataFrame())
@@ -265,7 +217,7 @@ class PivotProcessor:
         main_plan_df = generate_monthly_fg_plan(main_plan_df, forecast_months)
 
         # 半成品投单计划
-        main_plan_df = generate_monthly_semi_plan(main_plan_df, forecast_months, mapping_df)
+        main_plan_df = generate_monthly_semi_plan(main_plan_df, forecast_months, mapping_semi)
 
         # 投单计划调整
         main_plan_df = generate_monthly_adjust_plan(main_plan_df)
@@ -363,22 +315,4 @@ class PivotProcessor:
             # 冻结
             ws.freeze_panes = "D1"
 
-
-
         output_buffer.seek(0)
-
-        
-    def set_additional_data(self, sheets_dict):
-        """
-        设置辅助数据表，如 预测、安全库存、新旧料号 等
-        """
-        self.additional_sheets = sheets_dict or {}
-    
-        # ✅ 对新旧料号进行列名清洗
-        mapping_df = self.additional_sheets.get("赛卓-新旧料号")
-        if mapping_df is not None and not mapping_df.empty:
-            try:
-                cleaned = clean_mapping_headers(mapping_df)
-                self.additional_sheets["赛卓-新旧料号"] = cleaned
-            except Exception as e:
-                raise ValueError(f"❌ 新旧料号表清洗失败：{e}")
