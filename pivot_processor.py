@@ -121,8 +121,8 @@ class PivotProcessor:
         st.write(df_new)
         df_new, _ = apply_mapping_and_merge(df_new, mapping_df, FIELD_MAPPINGS["赛卓-安全库存"])
         st.write(self.additional_sheets["赛卓-安全库存"])
-        df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-安全库存"])
-        additional_sheets["赛卓-安全库存"] = df_new
+        # df_new, _ = apply_extended_substitute_mapping(df_new, mapping_df, FIELD_MAPPINGS["赛卓-安全库存"])
+        self.additional_sheets["赛卓-安全库存"] = df_new
 
         st.write(self.additional_sheets["赛卓-安全库存"])
 
