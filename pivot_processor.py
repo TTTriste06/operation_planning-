@@ -92,7 +92,6 @@ class PivotProcessor:
         st.write(mapping_semi)
         st.write(mapping_new)
         st.write(mapping_sub)
-        #st.write(mapping_sub["替代品名2"].unique()）
 
         # === 构建主计划 ===
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
