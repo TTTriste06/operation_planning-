@@ -130,8 +130,8 @@ class PivotProcessor:
                 continue
         
             try:
-                updated_df, _ = apply_mapping_and_merge(df, mapping_df, field_map={"品名": actual_name_col})
-                updated_df, _ = apply_extended_substitute_mapping(df, mapping_df, field_map={"品名": actual_name_col})
+                updated_df, _ = apply_mapping_and_merge(df, mapping_df, field_map={"品名": name_col})
+                updated_df, _ = apply_extended_substitute_mapping(df, mapping_df, field_map={"品名": name_col})
         
                 # 可选去重：对安全库存等特定表名启用
                 if sheet_name == "赛卓-安全库存":
