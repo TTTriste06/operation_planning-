@@ -115,6 +115,34 @@ class PivotProcessor:
         )
 
         ## == 替换新旧料号、替代料号 ==
+        for sheet_name, df in all_sheets_to_process.items():
+            if sheet_name not in FIELD_MAPPINGS:
+                continue
+        
+            field_map = FIELD_MAPPINGS[sheet_name]
+            name_col = field_map.get("品名")
+            if not name_col or name_col not in df.columns:
+                continue
+        
+            try:
+                updated_df, _ = apply_mapping_and_merge(df.copy(), mapping_df, {"品名": name_col})
+                updated_df, _ = apply_extended_substitute_mapping(updated_df, mapping_df, {"品名": name_col})
+        
+                # 可选去重：对安全库存等特定表名启用
+                if sheet_name == "赛卓-安全库存":
+                    updated_df = updated_df.drop_duplicates(subset=["晶圆品名", "规格", "品名"])
+        
+                if sheet_name in self.dataframes:
+                    self.dataframes[sheet_name] = updated_df
+                else:
+                    additional_sheets = additional_sheets.copy()
+                    additional_sheets[sheet_name] = updated_df
+        
+            except Exception as e:
+                st.error(f"❌ 替换 {sheet_name} 中的品名失败：{e}")
+
+
+        """
         for sheet_name, df in {
             **self.dataframes,
             **{k: v for k, v in additional_sheets.items() if k not in ["赛卓-新旧料号", "赛卓-供应商-PC"]}
@@ -147,7 +175,7 @@ class PivotProcessor:
                     st.write(additional_sheets)
             except Exception as e:
                 st.error(f"❌ 替换 {sheet_name} 中的品名失败：{e}")
-        
+        """
         ## == 安全库存 ==
         safety_df = additional_sheets.get("赛卓-安全库存")
         if safety_df is not None and not safety_df.empty:
