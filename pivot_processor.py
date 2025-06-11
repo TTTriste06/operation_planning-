@@ -275,7 +275,7 @@ class PivotProcessor:
                 "Orange > 2 × 安全库存"
             )
             legend_cell.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center")
-            fill = PatternFill(start_color="#FFC0CB", end_color="#FFC0CB", fill_type="solid")
+            fill = PatternFill(start_color="FFFFC0CB", end_color="FFFFC0CB", fill_type="solid")
             legend_cell.fill = fill
 
 
