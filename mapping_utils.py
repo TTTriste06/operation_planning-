@@ -119,30 +119,34 @@ def replace_all_names_with_mapping(all_names: pd.Series, mapping_df: pd.DataFram
 def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
     """
     按品名字段替换主料号（新旧料号映射）
+    对 df 中的品名列进行逐行检查：
+        若该品名在 mapping_df 中的“旧品名”列中存在，且对应“新品名”非空，
+        则将其替换为该新品名。
+    返回修改后的 DataFrame 和所有成功替换的新品名集合。
     """
     name_col = field_map["品名"]
+    df = df.copy()
     df[name_col] = df[name_col].astype(str).str.strip()
+    mapping_df = mapping_df.copy()
     mapping_df["旧品名"] = mapping_df["旧品名"].astype(str).str.strip()
     mapping_df["新品名"] = mapping_df["新品名"].astype(str).str.strip()
 
-    df = df[df[name_col] != ""].copy()
+    # 构造旧 -> 新 的映射字典，排除新品名为空的行
+    mapping_dict = dict(
+        mapping_df[mapping_df["新品名"] != ""][["旧品名", "新品名"]].values
+    )
 
-    df = df.copy()
-    merged = df.merge(mapping_df[["旧品名", "新品名"]], how="left", left_on=name_col, right_on="旧品名")
-    mask = merged["新品名"].notna() & (merged["新品名"] != "")
-    merged["_由新旧料号映射"] = mask
+    replaced_names = set()
+    # 逐行替换
+    df[name_col] = df[name_col].apply(lambda x: mapping_dict[x] if x in mapping_dict else x)
 
-    
+    # 记录被替换的新品名（即原品名 != 映射后的品名）
+    replaced_names = set(mapping_dict.values()).intersection(set(df[name_col]))
+
     if verbose:
-        st.write(f"✅ 新旧料号替换成功: {mask.sum()}，未匹配: {(~mask).sum()}")
-    
+        st.write(f"✅ 新旧料号替换成功: {len(replaced_names)} 项")
 
-    merged.loc[mask, name_col] = merged.loc[mask, "新品名"]
-    merged = merged.drop(columns=["旧品名", "新品名"], errors="ignore")
-
-    mapped_keys = set(merged.loc[mask, name_col])
-
-    return merged.drop(columns=["_由新旧料号映射"], errors="ignore"), mapped_keys
+    return df, replaced_names
 
 def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=True):
     """
