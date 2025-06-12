@@ -27,7 +27,6 @@ def highlight_replaced_names_in_main_sheet(ws, replaced_names: list[str], name_c
         replaced_names: 所有被替换的新名字列表
         name_col_header: 品名列的列名（默认为 "品名"）
     """
-    ws = workbook[sheet_name]
     red_fill = PatternFill(start_color="FFFF6666", end_color="FFFF6666", fill_type="solid")
 
     # 找到“品名”列的列索引
