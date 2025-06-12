@@ -170,6 +170,8 @@ class PivotProcessor:
         self.dataframes["赛卓-晶圆库存"] = df_new
         all_replaced_names = sorted(set(replaced_main) | set(replaced_sub))
 
+        st.write(all_replaced_names)
+        
         ## == 安全库存 ==
         safety_df = self.additional_sheets.get("赛卓-安全库存")
         if safety_df is not None and not safety_df.empty:
