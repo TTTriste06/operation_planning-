@@ -146,9 +146,11 @@ class PivotProcessor:
         all_replaced_names.update(replaced_sub)
 
         df_new = self.dataframes["赛卓-未交订单"]
+        st.write(df_new)
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-未交订单"])
         df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-未交订单"], replaced_main)
         self.dataframes["赛卓-未交订单"] = df_new
+        st.write(df_new)
         all_replaced_names.update(replaced_main)
         all_replaced_names.update(replaced_sub)
 
