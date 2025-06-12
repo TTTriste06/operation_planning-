@@ -175,7 +175,7 @@ def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=True):
     # 清洗映射表中所有替代品名及新品名
     substitute_records = []
     for i in range(1, 5):
-        sub_name = f"替代品名{i}"
+        sub_name = f"替代品名"
         for col in [sub_name, "新品名"]:
             if col not in mapping_df.columns:
                 mapping_df[col] = ""
