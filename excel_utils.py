@@ -1,3 +1,4 @@
+import pandas as pd
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import PatternFill
 
@@ -42,3 +43,33 @@ def highlight_replaced_names_in_main_sheet(ws, replaced_names: list[str], name_c
         if cell_value in replaced_names:
             for cell in row:
                 cell.fill = red_fill
+
+
+def reorder_main_plan_by_unfulfilled_sheet(main_plan_df: pd.DataFrame, unfulfilled_df: pd.DataFrame, name_col: str = "品名") -> pd.DataFrame:
+    """
+    根据“未交订单汇总”中的品名顺序对主计划进行排序，优先将这些品名排在前面。
+
+    参数：
+        main_plan_df: 主计划 DataFrame
+        unfulfilled_df: 未交订单汇总 DataFrame
+        name_col: 品名列名，默认“品名”
+
+    返回：
+        排序后的主计划 DataFrame
+    """
+    if name_col not in main_plan_df.columns or name_col not in unfulfilled_df.columns:
+        raise ValueError(f"❌ 主计划或未交订单中缺少列：{name_col}")
+
+    # 获取未交订单中品名的顺序列表
+    priority_names = unfulfilled_df[name_col].dropna().astype(str).str.strip().unique().tolist()
+
+    # 添加排序键
+    main_plan_df["_排序键"] = main_plan_df[name_col].astype(str).str.strip().apply(
+        lambda x: priority_names.index(x) if x in priority_names else len(priority_names)
+    )
+
+    # 按排序键排序
+    main_plan_df = main_plan_df.sort_values(by="_排序键").drop(columns="_排序键").reset_index(drop=True)
+
+    return main_plan_df
+
