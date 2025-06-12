@@ -29,7 +29,7 @@ def highlight_replaced_names_in_main_sheet(ws, replaced_names: list[str], name_c
         name_col_header: 表头中品名字段名称，默认是“品名”
         header_row_idx: 表头所在的行号（默认第 2 行）
     """
-    red_fill = PatternFill(start_color="FFFF8080", end_color="FFFF8080", fill_type="solid")
+    red_fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
 
     # 获取表头行
     header_row = [str(cell.value).strip() if cell.value is not None else "" for cell in ws[header_row_idx]]
