@@ -276,6 +276,46 @@ class PivotProcessor:
         all_replaced_names.update(replaced_sub3)
         all_replaced_names.update(replaced_sub4)
 
+        df_new = self.dataframes["赛卓-到货明细"]
+        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-到货明细"])
+        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-到货明细"])
+        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-到货明细"])
+        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-到货明细"])
+        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-到货明细"])
+        self.dataframes["赛卓-到货明细"] = df_new
+        all_replaced_names.update(replaced_main)
+        all_replaced_names.update(replaced_sub1)
+        all_replaced_names.update(replaced_sub2)
+        all_replaced_names.update(replaced_sub3)
+        all_replaced_names.update(replaced_sub4)
+
+        df_new = self.dataframes["赛卓-下单明细"]
+        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-下单明细"])
+        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-下单明细"])
+        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-下单明细"])
+        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-下单明细"])
+        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-下单明细"])
+        self.dataframes["赛卓-下单明细"] = df_new
+        all_replaced_names.update(replaced_main)
+        all_replaced_names.update(replaced_sub1)
+        all_replaced_names.update(replaced_sub2)
+        all_replaced_names.update(replaced_sub3)
+        all_replaced_names.update(replaced_sub4)
+
+        df_new = self.dataframes["赛卓-销货明细"]
+        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-销货明细"])
+        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-销货明细"])
+        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-销货明细"])
+        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-销货明细"])
+        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-销货明细"])
+        self.dataframes["赛卓-销货明细"] = df_new
+        all_replaced_names.update(replaced_main)
+        all_replaced_names.update(replaced_sub1)
+        all_replaced_names.update(replaced_sub2)
+        all_replaced_names.update(replaced_sub3)
+        all_replaced_names.update(replaced_sub4)
+        
+
         all_replaced_names = sorted(all_replaced_names)
 
 
