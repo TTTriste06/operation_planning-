@@ -311,7 +311,7 @@ class PivotProcessor:
 
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
-            highlight_replaced_names_in_main_sheet(ws, all_replaced_names)
+            # highlight_replaced_names_in_main_sheet(ws, all_replaced_names)
 
 
             adjust_column_width(ws)
