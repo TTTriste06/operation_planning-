@@ -133,14 +133,14 @@ class PivotProcessor:
         all_replaced_names = set()  # 用 set 累计替换的新品名
         df_new = self.additional_sheets["赛卓-安全库存"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-安全库存"])
-        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-安全库存"], replaced_main)
+        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-安全库存"])
         self.additional_sheets["赛卓-安全库存"] = df_new
         all_replaced_names.update(replaced_main)
         all_replaced_names.update(replaced_sub)
         
         df_new = self.additional_sheets["赛卓-预测"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-预测"])
-        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-预测"], replaced_main)
+        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-预测"])
         self.additional_sheets["赛卓-预测"] = df_new
         all_replaced_names.update(replaced_main)
         all_replaced_names.update(replaced_sub)
@@ -148,7 +148,7 @@ class PivotProcessor:
         df_new = self.dataframes["赛卓-未交订单"]
         st.write(df_new)
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-未交订单"])
-        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-未交订单"], replaced_main)
+        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-未交订单"])
         self.dataframes["赛卓-未交订单"] = df_new
         st.write(df_new)
         all_replaced_names.update(replaced_main)
@@ -156,28 +156,28 @@ class PivotProcessor:
 
         df_new = self.dataframes["赛卓-成品库存"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品库存"])
-        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-成品库存"], replaced_main)
+        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-成品库存"])
         self.dataframes["赛卓-成品库存"] = df_new
         all_replaced_names.update(replaced_main)
         all_replaced_names.update(replaced_sub)
 
         df_new = self.dataframes["赛卓-成品在制"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品在制"])
-        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-成品在制"], replaced_main)
+        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-成品在制"])
         self.dataframes["赛卓-成品在制"] = df_new
         all_replaced_names.update(replaced_main)
         all_replaced_names.update(replaced_sub)
 
         df_new = self.dataframes["赛卓-CP在制"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-CP在制"])
-        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-CP在制"], replaced_main)
+        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-CP在制"])
         self.dataframes["赛卓-CP在制"] = df_new
         all_replaced_names.update(replaced_main)
         all_replaced_names.update(replaced_sub)
 
         df_new = self.dataframes["赛卓-晶圆库存"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-晶圆库存"])
-        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-晶圆库存"], replaced_main)
+        df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-晶圆库存"])
         self.dataframes["赛卓-晶圆库存"] = df_new
         all_replaced_names.update(replaced_main)
         all_replaced_names.update(replaced_sub)
@@ -311,7 +311,7 @@ class PivotProcessor:
 
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
-            # highlight_replaced_names_in_main_sheet(ws, all_replaced_names)
+            highlight_replaced_names_in_main_sheet(ws, all_replaced_names)
 
 
             adjust_column_width(ws)
