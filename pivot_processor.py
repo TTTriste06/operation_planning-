@@ -8,7 +8,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 
 from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX, FIELD_MAPPINGS, pivot_config, RENAME_MAP
-from excel_utils import adjust_column_width, highlight_replaced_names_in_main_sheet
+from excel_utils import adjust_column_width, highlight_replaced_names_in_main_sheet, reorder_main_plan_by_unfulfilled_sheet
 from mapping_utils import (
     clean_mapping_headers, 
     replace_all_names_with_mapping, 
@@ -250,8 +250,9 @@ class PivotProcessor:
 
         
         # 检查
+        main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
-
+        
         
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
