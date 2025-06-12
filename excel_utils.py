@@ -18,31 +18,34 @@ def adjust_column_width(ws, max_width=70):
                 pass
         ws.column_dimensions[col_letter].width = min(max_length + 8, max_width)
 
-def highlight_replaced_names_in_main_sheet(ws, replaced_names: list[str], name_col_header: str = "品名"):
-    """
-    在 Excel 主计划 sheet 中，将所有替换过的新品名所在行标红。
 
-    参数:
-        workbook: openpyxl 加载后的 Workbook 对象
-        sheet_name: 主计划 sheet 的名称
-        replaced_names: 所有被替换的新名字列表
-        name_col_header: 品名列的列名（默认为 "品名"）
+def highlight_replaced_names_in_main_sheet(ws, replaced_names: list[str], name_col_header: str = "品名", header_row_idx: int = 2):
+    """
+    高亮主计划 sheet 中所有品名在 replaced_names 中的整行（标红）。
+
+    参数：
+        ws: openpyxl 的 worksheet 对象（主计划）
+        replaced_names: 替换过的新名字列表
+        name_col_header: 表头中品名字段名称，默认是“品名”
+        header_row_idx: 表头所在的行号（默认第 2 行）
     """
     red_fill = PatternFill(start_color="FFFF6666", end_color="FFFF6666", fill_type="solid")
 
-    # 找到“品名”列的列索引
-    header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True))
-    try:
-        name_col_idx = header_row.index(name_col_header) + 1  # openpyxl 是从 1 开始
-    except ValueError:
-        raise ValueError(f"❌ 未找到“{name_col_header}”列，无法标红替换新品名")
+    # 获取表头行
+    header_row = [str(cell.value).strip() if cell.value is not None else "" for cell in ws[header_row_idx]]
 
-    # 遍历数据行，标记匹配的品名行
-    for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
+    if name_col_header not in header_row:
+        raise ValueError(f"❌ 未找到“{name_col_header}”列，无法标红替换新品名。")
+
+    name_col_idx = header_row.index(name_col_header) + 1  # openpyxl 列从 1 开始
+
+    # 遍历数据行（从 header 下一行开始）
+    for row in ws.iter_rows(min_row=header_row_idx + 1, max_row=ws.max_row):
         cell_value = str(row[name_col_idx - 1].value).strip()
         if cell_value in replaced_names:
             for cell in row:
                 cell.fill = red_fill
+
 
 
 def reorder_main_plan_by_unfulfilled_sheet(main_plan_df: pd.DataFrame, unfulfilled_df: pd.DataFrame, name_col: str = "品名") -> pd.DataFrame:
