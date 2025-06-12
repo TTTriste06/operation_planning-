@@ -71,20 +71,19 @@ class PivotProcessor:
         # === 标准化新旧料号表 ===
         self.additional_sheets = additional_sheets
         mapping_df = self.additional_sheets.get("赛卓-新旧料号")
-        st.write(mapping_df)
         if mapping_df is None or mapping_df.empty:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
 
         # 创建新的 mapping_semi：仅保留“半成品”字段非空的行
         mapping_semi = mapping_df[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        
+        st.write(mapping_semi)
         # 去除“品名”为空的行
         mapping_new = mapping_df[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         mapping_new = mapping_new[~mapping_new["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-
+        st.write(mapping_new)
         # 去除“替代品名”为空的行
         mapping_sub = mapping_df[~mapping_df["替代品名1"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-
+        st.write(mapping_sub)
         # === 构建主计划 ===
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
         main_plan_df = pd.DataFrame(columns=headers)
@@ -146,11 +145,9 @@ class PivotProcessor:
         all_replaced_names.update(replaced_sub)
 
         df_new = self.dataframes["赛卓-未交订单"]
-        st.write(df_new)
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-未交订单"])
         df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-未交订单"])
         self.dataframes["赛卓-未交订单"] = df_new
-        st.write(df_new)
         all_replaced_names.update(replaced_main)
         all_replaced_names.update(replaced_sub)
 
@@ -183,7 +180,6 @@ class PivotProcessor:
         all_replaced_names.update(replaced_sub)
 
         all_replaced_names = sorted(all_replaced_names)
-        st.write(all_replaced_names)
 
 
         ## == 安全库存 ==
@@ -207,7 +203,6 @@ class PivotProcessor:
 
         ## == 成品库存 ==
         finished_df = self.dataframes.get("赛卓-成品库存")
-        st.write(finished_df)
         if finished_df is not None and not finished_df.empty:
             main_plan_df, unmatched_finished = merge_finished_inventory_with_warehouse_types(main_plan_df, finished_df, mapping_semi)
             st.success("✅ 已合并成品库存数据")
