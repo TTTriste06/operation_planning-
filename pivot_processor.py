@@ -84,25 +84,57 @@ class PivotProcessor:
         st.write(mapping_new)
         
         # 去除“替代品名1”为空的行，并保留指定字段
+        rename_dict = {
+            "新晶圆品名": "NewWaferName",
+            "新规格": "NewSpec",
+            "新品名": "NewName",
+            "封装厂": "PackagingFactory",
+            "PC": "PC",
+            "半成品": "SemiProduct",
+            "备注": "Remark",
+            "替代晶圆1": "AltWafer1",
+            "替代规格1": "AltSpec1",
+            "替代品名1": "AltName1"
+        }
+
+        
         mapping_sub1 = mapping_df[
             ["新晶圆品名", "新规格", "新品名", "封装厂", "PC", "半成品", "备注", "替代晶圆1", "替代规格1", "替代品名1"]
         ]
         mapping_sub1 = mapping_sub1[~mapping_df["替代品名1"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_sub1.columns = [
+            "新晶圆品名", "新规格", "新品名", "封装厂", "PC", "半成品", "备注",
+            "替代晶圆", "替代规格", "替代品名"
+        ]
+
 
         mapping_sub2 = mapping_df[
             ["新晶圆品名", "新规格", "新品名", "封装厂", "PC", "半成品", "备注", "替代晶圆2", "替代规格2", "替代品名2"]
         ]
         mapping_sub2 = mapping_sub2[~mapping_df["替代品名2"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_sub2.columns = [
+            "新晶圆品名", "新规格", "新品名", "封装厂", "PC", "半成品", "备注",
+            "替代晶圆", "替代规格", "替代品名"
+        ]
 
         mapping_sub3 = mapping_df[
             ["新晶圆品名", "新规格", "新品名", "封装厂", "PC", "半成品", "备注", "替代晶圆3", "替代规格3", "替代品名3"]
         ]
         mapping_sub3 = mapping_sub3[~mapping_df["替代品名3"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_sub3.columns = [
+            "新晶圆品名", "新规格", "新品名", "封装厂", "PC", "半成品", "备注",
+            "替代晶圆", "替代规格", "替代品名"
+        ]
+        
 
         mapping_sub4 = mapping_df[
             ["新晶圆品名", "新规格", "新品名", "封装厂", "PC", "半成品", "备注", "替代晶圆4", "替代规格4", "替代品名4"]
         ]
         mapping_sub4 = mapping_sub4[~mapping_df["替代品名4"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_sub4.columns = [
+            "新晶圆品名", "新规格", "新品名", "封装厂", "PC", "半成品", "备注",
+            "替代晶圆", "替代规格", "替代品名"
+        ]
 
        
 
