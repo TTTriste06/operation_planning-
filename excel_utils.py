@@ -43,7 +43,9 @@ def highlight_replaced_names_in_main_sheet(ws, replaced_names: list[str], name_c
     for row in ws.iter_rows(min_row=header_row_idx + 1, max_row=ws.max_row):
         cell_value = str(row[name_col_idx - 1].value).strip()
         if cell_value in replaced_names:
-            for c
+            for cell in row[:3]:  # 只标红前三列 A, B, C
+                cell.fill = red_fill
+
 
 
 
