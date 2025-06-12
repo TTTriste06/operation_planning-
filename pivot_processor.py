@@ -8,7 +8,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 
 from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX, FIELD_MAPPINGS, pivot_config, RENAME_MAP
-from excel_utils import adjust_column_width
+from excel_utils import adjust_column_width, highlight_replaced_names_in_main_sheet
 from mapping_utils import (
     clean_mapping_headers, 
     replace_all_names_with_mapping, 
@@ -127,51 +127,62 @@ class PivotProcessor:
             additional_sheets=self.additional_sheets
         )
 
+        
         ## == 替换新旧料号、替代料号 ==
+        all_replaced_names = set()  # 用 set 累计替换的新品名
         df_new = self.additional_sheets["赛卓-安全库存"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-安全库存"])
         df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-安全库存"], replaced_main)
         self.additional_sheets["赛卓-安全库存"] = df_new
-        all_replaced_names = sorted(set(replaced_main) | set(replaced_sub))
+        all_replaced_names.update(replaced_main)
+        all_replaced_names.update(replaced_sub)
         
         df_new = self.additional_sheets["赛卓-预测"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-预测"])
         df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-预测"], replaced_main)
         self.additional_sheets["赛卓-预测"] = df_new
-        all_replaced_names = sorted(set(replaced_main) | set(replaced_sub))
+        all_replaced_names.update(replaced_main)
+        all_replaced_names.update(replaced_sub)
 
         df_new = self.dataframes["赛卓-未交订单"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-未交订单"])
         df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-未交订单"], replaced_main)
         self.dataframes["赛卓-未交订单"] = df_new
-        all_replaced_names = sorted(set(replaced_main) | set(replaced_sub))
+        all_replaced_names.update(replaced_main)
+        all_replaced_names.update(replaced_sub)
 
         df_new = self.dataframes["赛卓-成品库存"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品库存"])
         df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-成品库存"], replaced_main)
         self.dataframes["赛卓-成品库存"] = df_new
-        all_replaced_names = sorted(set(replaced_main) | set(replaced_sub))
+        all_replaced_names.update(replaced_main)
+        all_replaced_names.update(replaced_sub)
 
         df_new = self.dataframes["赛卓-成品在制"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品在制"])
         df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-成品在制"], replaced_main)
         self.dataframes["赛卓-成品在制"] = df_new
-        all_replaced_names = sorted(set(replaced_main) | set(replaced_sub))
+        all_replaced_names.update(replaced_main)
+        all_replaced_names.update(replaced_sub)
 
         df_new = self.dataframes["赛卓-CP在制"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-CP在制"])
         df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-CP在制"], replaced_main)
         self.dataframes["赛卓-CP在制"] = df_new
-        all_replaced_names = sorted(set(replaced_main) | set(replaced_sub))
+        all_replaced_names.update(replaced_main)
+        all_replaced_names.update(replaced_sub)
 
         df_new = self.dataframes["赛卓-晶圆库存"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-晶圆库存"])
         df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS["赛卓-晶圆库存"], replaced_main)
         self.dataframes["赛卓-晶圆库存"] = df_new
-        all_replaced_names = sorted(set(replaced_main) | set(replaced_sub))
+        all_replaced_names.update(replaced_main)
+        all_replaced_names.update(replaced_sub)
 
+        all_replaced_names = sorted(all_replaced_names)
         st.write(all_replaced_names)
-        
+
+
         ## == 安全库存 ==
         safety_df = self.additional_sheets.get("赛卓-安全库存")
         if safety_df is not None and not safety_df.empty:
@@ -296,6 +307,8 @@ class PivotProcessor:
 
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
+            highlight_replaced_names_in_main_sheet(ws, all_replaced_names)
+
 
             adjust_column_width(ws)
 
