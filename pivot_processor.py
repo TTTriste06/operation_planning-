@@ -369,7 +369,8 @@ class PivotProcessor:
         # main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
         
-        # 按“总未交订单”降序排序（若字段存在）
+        # 按“总未交订单”降序排序（若字段存在
+        st.write(main_plan_df.columns)
         if "总未交订单" in main_plan_df.columns:
             main_plan_df = main_plan_df.sort_values(by="总未交订单", ascending=False).reset_index(drop=True)
             
