@@ -76,12 +76,10 @@ class PivotProcessor:
 
         # 创建新的 mapping_semi：仅保留“半成品”字段非空的行
         mapping_semi = mapping_df[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        st.write(mapping_semi)
         
         # 去除“品名”为空的行
         mapping_new = mapping_df[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         mapping_new = mapping_new[~mapping_new["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        st.write(mapping_new)
         
         # 去除“替代品名1”为空的行，并保留指定字段
         rename_dict = {
