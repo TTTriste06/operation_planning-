@@ -189,7 +189,11 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         if "封装形式" in field_map:
             extract_cols[pkg_col] = df[field_map["封装形式"]]
 
+        st.write(extract_cols)
         extracted = pd.DataFrame(extract_cols).drop_duplicates()
+        st.write(extracted)
+
+        
 
         # 合并
         merged = main_plan_df.merge(extracted, on=name_col, how="left", suffixes=("", f"_{sheet}"))
