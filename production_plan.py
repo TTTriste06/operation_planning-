@@ -356,13 +356,14 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
                 if prev_actual_semi_col else "X"  # 若没有，则写死为 X 列
             )
 
-            for pos, row_idx in enumerate(main_plan_df.index):
-                if not mask.loc[row_idx]:
-                    continue
+            masked_df = main_plan_df[mask].reset_index(drop=True)
 
-                excel_row = pos + 3  # Excel 数据从第 3 行起（假设 startrow=1）
+            for i, row in masked_df.iterrows():
+                true_index = main_plan_df[mask].index[i]  # 获取主表中真实索引
+                excel_row = i + 3  # 第3行是数据起点
                 formula = f"={col_fg}{excel_row}-{col_half_in_progress}{excel_row}+({col_prev_semi}{excel_row}-{col_prev_actual}{excel_row})"
-                main_plan_df.at[row_idx, col] = formula
+                main_plan_df.at[true_index, col] = formula
+            
 
         # 其他行强制清空
         main_plan_df.loc[~mask, col] = ""
