@@ -295,9 +295,9 @@ def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd
         main_plan_df[col] = result_amt[col]
 
     return main_plan_df
-    
 
-def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[int],
+def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,
+                                forecast_months: list[int],
                                 mapping_df: pd.DataFrame) -> pd.DataFrame:
     """
     自动生成每月半成品投单计划并回填到 main_plan_df。
@@ -313,16 +313,17 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
 
     返回：
         更新后的 main_plan_df
-    """    
-    tmp = mapping_df[["新品名","半成品"]].copy()
-    tmp = clean_df(tmp)                               
-    tmp = tmp[tmp["半成品"].notna() & (tmp["半成品"].astype(str).str.strip() != "")]
+    """
+    # 提取半成品相关品名
+    tmp = mapping_df[["新品名", "半成品"]].copy()
+    tmp = tmp.dropna().astype(str).apply(lambda x: x.str.strip())
+    tmp = tmp[tmp["半成品"] != ""]
+
     combined_names = pd.Series(
-        tmp["新品名"].astype(str).str.strip().tolist() +
-        tmp["半成品"].astype(str).str.strip().tolist()
-    ).dropna().unique().tolist()                           
-    
-    # ✅ 提取目标列
+        tmp["新品名"].tolist() + tmp["半成品"].tolist()
+    ).dropna().unique().tolist()
+
+    # 提取列
     semi_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
     fg_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
     actual_semi_cols = [col for col in main_plan_df.columns if "半成品实际投单" in col]
@@ -330,7 +331,7 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
     if not semi_cols or not fg_cols:
         raise ValueError("❌ 半成品投单计划或成品投单计划列不存在")
 
-    # ✅ 仅对这些品名行进行写入
+    # 只处理这些品名
     mask = main_plan_df["品名"].astype(str).str.strip().isin(combined_names)
 
     for i, col in enumerate(semi_cols):
@@ -345,27 +346,29 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
         else:
             # 后续月份：写公式
             prev_semi_col = semi_cols[i - 1]
-            prev_actual_semi_col = actual_semi_cols[i - 1] if i - 1 < len(actual_semi_cols) else ""
+            prev_actual_semi_col = actual_semi_cols[i - 1] if i - 1 < len(actual_semi_cols) else None
 
             col_fg = get_column_letter(main_plan_df.columns.get_loc(fg_col) + 1)
             col_half_in_progress = get_column_letter(main_plan_df.columns.get_loc("半成品在制") + 1)
             col_prev_semi = get_column_letter(main_plan_df.columns.get_loc(prev_semi_col) + 1)
             col_prev_actual = (
                 get_column_letter(main_plan_df.columns.get_loc(prev_actual_semi_col) + 1)
-                if prev_actual_semi_col else "X"
+                if prev_actual_semi_col else "X"  # 若没有，则写死为 X 列
             )
 
-            def build_formula(row_idx: int) -> str:
-                row_num = row_idx + 3
-                return f"={col_fg}{row_num}-{col_half_in_progress}{row_num}+({col_prev_semi}{row_num}-{col_prev_actual}{row_num})"
+            for pos, row_idx in enumerate(main_plan_df.index):
+                if not mask.loc[row_idx]:
+                    continue
 
-            for row_idx in main_plan_df.index[mask]:
-                main_plan_df.at[row_idx, col] = build_formula(row_idx)
+                excel_row = pos + 3  # Excel 数据从第 3 行起（假设 startrow=1）
+                formula = f"={col_fg}{excel_row}-{col_half_in_progress}{excel_row}+({col_prev_semi}{excel_row}-{col_prev_actual}{excel_row})"
+                main_plan_df.at[row_idx, col] = formula
 
-        # ❌ 其他行必须清空
+        # 其他行强制清空
         main_plan_df.loc[~mask, col] = ""
 
     return main_plan_df
+
 
 
 
