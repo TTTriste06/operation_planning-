@@ -157,11 +157,7 @@ class PivotProcessor:
             name_forecast = df_forecast[col_name].astype(str).str.strip().tolist()
 
         all_names = pd.Series(name_unfulfilled + name_forecast)
-        all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_sub1)
-        all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_sub2)
-        all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_sub3)
-        all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_sub4)
-
+        all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_df)
         main_plan_df = main_plan_df.reindex(index=range(len(all_names)))
         if not all_names.empty:
             main_plan_df["品名"] = all_names.values
