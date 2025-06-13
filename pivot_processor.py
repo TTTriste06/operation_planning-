@@ -157,7 +157,6 @@ class PivotProcessor:
             name_forecast = df_forecast[col_name].astype(str).str.strip().tolist()
 
         all_names = pd.Series(name_unfulfilled + name_forecast)
-        all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_new)
 
         # 提取未交订单中所有品名
         unfulfilled_names = df_unfulfilled["品名"].astype(str).str.strip().unique().tolist()
@@ -172,6 +171,8 @@ class PivotProcessor:
             all_names[in_unfulfilled].sort_values(),
             all_names[~in_unfulfilled].sort_values()
         ]).reset_index(drop=True)
+
+        sorted_names = replace_all_names_with_mapping(sorted_names, mapping_new, mapping_new)
 
         sorted_df = pd.DataFrame({"品名": sorted_names})
         for col in headers:
