@@ -183,14 +183,6 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
 
             if pkg_col in field_map and pd.isna(row.get(pkg_col)):
                 main_plan_df.at[idx, pkg_col] = matched.iloc[0][field_map["封装形式"]]
-
-            if not matched.empty:
-                st.write(f"✅ 品名 {pname} 在 {sheet} 中找到匹配记录：")
-                cols_to_show = [field_map["品名"], field_map["封装厂"]]
-                if "封装形式" in field_map:
-                    cols_to_show.append(field_map["封装形式"])
-                st.write(matched[cols_to_show])
-        st.write(main_plan_df)
     # ========== 2️⃣ 通过封装厂填入 PC ==========
     pc_df = additional_sheets.get("赛卓-供应商-PC")
 
@@ -213,5 +205,4 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         # 填回 PC 列
         main_plan_df["PC"] = merged_pc["PC"]
 
-    st.write(main_plan_df)
     return main_plan_df
