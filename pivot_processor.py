@@ -162,26 +162,9 @@ class PivotProcessor:
         all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_sub3)
         all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_sub4)
 
-        # 提取未交订单中所有品名
-        unfulfilled_names = df_unfulfilled["品名"].astype(str).str.strip().unique().tolist()
-        
-        # 标记品名是否在未交订单中
-        all_names = all_names.dropna().astype(str).str.strip().drop_duplicates()
-        
-        in_unfulfilled = all_names.isin(unfulfilled_names)
-        
-        # 自定义排序：先出现在未交订单的，后不在的，同时各自按字母升序排列
-        sorted_names = pd.concat([
-            all_names[in_unfulfilled],
-            all_names[~in_unfulfilled]
-        ]).reset_index(drop=True)
-
-
-        sorted_df = pd.DataFrame({"品名": sorted_names})
-        for col in headers:
-            if col not in sorted_df.columns:
-                sorted_df[col] = ""
-        main_plan_df = sorted_df[headers]
+        main_plan_df = main_plan_df.reindex(index=range(len(all_names)))
+        if not all_names.empty:
+            main_plan_df["品名"] = all_names.values
 
         ## == 规格和晶圆 ==
         main_plan_df = fill_spec_and_wafer_info(
