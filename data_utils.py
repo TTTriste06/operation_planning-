@@ -125,9 +125,6 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
 
 
 
-import pandas as pd
-import streamlit as st
-
 def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict) -> pd.DataFrame:
     """
     根据多个数据源填入封装厂、封装形式、PC。
