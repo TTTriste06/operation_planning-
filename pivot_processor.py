@@ -81,21 +81,7 @@ class PivotProcessor:
         mapping_new = mapping_df[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         mapping_new = mapping_new[~mapping_new["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         
-        # 去除“替代品名1”为空的行，并保留指定字段
-        rename_dict = {
-            "新晶圆品名": "NewWaferName",
-            "新规格": "NewSpec",
-            "新品名": "NewName",
-            "封装厂": "PackagingFactory",
-            "PC": "PC",
-            "半成品": "SemiProduct",
-            "备注": "Remark",
-            "替代晶圆1": "AltWafer1",
-            "替代规格1": "AltSpec1",
-            "替代品名1": "AltName1"
-        }
-
-        
+        # 去除“替代品名”为空的行，并保留指定字段
         mapping_sub1 = mapping_df[
             ["新晶圆品名", "新规格", "新品名", "封装厂", "PC", "半成品", "备注", "替代晶圆1", "替代规格1", "替代品名1"]
         ]
