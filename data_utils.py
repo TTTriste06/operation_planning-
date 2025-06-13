@@ -125,17 +125,23 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
 
 
 
+import pandas as pd
+import streamlit as st
+
 def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict) -> pd.DataFrame:
     """
-    根据多个数据源填入封装厂、封装形式、PC，并记录参考行信息。
+    根据多个数据源填入封装厂、封装形式、PC。
 
     参数：
         main_plan_df: 主计划 DataFrame，含“品名”列
         dataframes: 所有主文件表格（如“赛卓-成品在制”等）
         additional_sheets: 所有辅助文件表格（如“赛卓-新旧料号”、“赛卓-供应商-PC”等）
+
     返回：
-        填入字段和参考信息的主计划 DataFrame
+        填入字段后的主计划 DataFrame
     """
+
+    # ✅ 封装厂别名映射
     VENDOR_ALIAS = {
         "绍兴千欣电子技术有限公司": "绍兴千欣",
         "南通宁芯": "南通宁芯微电子"
@@ -143,18 +149,14 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
 
     def normalize_vendor_name(name: str) -> str:
         name = str(name).strip()
-        name = name.split("-")[0]
+        name = name.split("-")[0]  # 去除如 -CP 等后缀
         return VENDOR_ALIAS.get(name, name)
 
     name_col = "品名"
     vendor_col = "封装厂"
     pkg_col = "封装形式"
-    ref_col = "封装厂参考"
 
-    # 初始化参考列
-    if ref_col not in main_plan_df.columns:
-        main_plan_df[ref_col] = None
-
+    # ========== 1️⃣ 封装厂、封装形式 来源顺序 ==========
     sources = [
         ("赛卓-成品在制", {"品名": "产品品名", "封装厂": "工作中心", "封装形式": "封装形式"})
     ]
@@ -168,49 +170,61 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         df[field_map["品名"]] = df[field_map["品名"]].astype(str).str.strip()
         df[field_map["封装厂"]] = df[field_map["封装厂"]].astype(str).apply(normalize_vendor_name)
 
-        # 添加来源信息列：记录来源 sheet 和原行号
-        df["_封装参考信息"] = f"{sheet}: " + (df.index + 2).astype(str)  # 加2是因为 Excel 从第2行数据起
-
-        extract_cols = {
-            name_col: df[field_map["品名"]],
-            vendor_col: df[field_map["封装厂"]],
-            "_封装参考信息": df["_封装参考信息"]
-        }
-
         if "封装形式" in field_map:
             df[field_map["封装形式"]] = df[field_map["封装形式"]].astype(str).str.strip()
+
+        # 👉 打印匹配记录
+        for _, row in main_plan_df.iterrows():
+            pname = str(row[name_col]).strip()
+            matched_rows = df[df[field_map["品名"]] == pname]
+            if not matched_rows.empty:
+                st.write(f"🔍 品名: {pname} 在 `{sheet}` 中匹配到以下记录：")
+                display_cols = [field_map["品名"], field_map["封装厂"]]
+                if "封装形式" in field_map:
+                    display_cols.append(field_map["封装形式"])
+                st.write(matched_rows[display_cols])
+
+        # 构造提取列并去重
+        extract_cols = {
+            name_col: df[field_map["品名"]],
+            vendor_col: df[field_map["封装厂"]]
+        }
+        if "封装形式" in field_map:
             extract_cols[pkg_col] = df[field_map["封装形式"]]
 
         extracted = pd.DataFrame(extract_cols).drop_duplicates()
 
         # 合并
         merged = main_plan_df.merge(extracted, on=name_col, how="left", suffixes=("", f"_{sheet}"))
-
-        for col in [vendor_col, pkg_col, "_封装参考信息"]:
+        for col in [vendor_col, pkg_col]:
             alt_col = f"{col}_{sheet}"
             if alt_col in merged.columns:
-                main_plan_df[col if col != "_封装参考信息" else ref_col] = main_plan_df.get(
-                    col if col != "_封装参考信息" else ref_col, pd.Series(index=main_plan_df.index)
-                ).combine_first(merged[alt_col])
+                main_plan_df[col] = main_plan_df.get(col, pd.Series(index=main_plan_df.index)).combine_first(
+                    merged[alt_col]
+                )
                 if alt_col in main_plan_df.columns:
                     main_plan_df.drop(columns=[alt_col], inplace=True)
 
-    # ========== 填入 PC ==========
+    # ========== 2️⃣ 通过封装厂填入 PC ==========
     pc_df = additional_sheets.get("赛卓-供应商-PC")
+
     if pc_df is not None and not pc_df.empty:
         pc_df = pc_df.copy()
         pc_df["封装厂"] = pc_df["封装厂"].astype(str).apply(normalize_vendor_name)
         pc_df["PC"] = pc_df["PC"].astype(str).str.strip()
 
+        # 删除主表中已存在的 PC 列
         if "PC" in main_plan_df.columns:
             main_plan_df.drop(columns=["PC"], inplace=True)
 
+        # 合并
         merged_pc = main_plan_df.merge(
             pc_df[["封装厂", "PC"]].drop_duplicates(),
             on="封装厂",
             how="left"
         )
 
+        # 填回 PC 列
         main_plan_df["PC"] = merged_pc["PC"]
 
     return main_plan_df
