@@ -369,7 +369,10 @@ class PivotProcessor:
         # main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
         
-        
+        # 按“总未交订单”降序排序（若字段存在）
+        if "总未交订单" in main_plan_df.columns:
+            main_plan_df = main_plan_df.sort_values(by="总未交订单", ascending=False).reset_index(drop=True)
+            
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
