@@ -382,7 +382,7 @@ class PivotProcessor:
 
         
         # 检查
-        # main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
+        main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
         
         
@@ -391,33 +391,7 @@ class PivotProcessor:
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
-            append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
             
-            # 透视表
-            standardized_files = standardize_uploaded_keys(uploaded_files, RENAME_MAP)
-            parsed_dataframes = {
-                filename: pd.read_excel(file)  # 或提前 parse 完成的 DataFrame dict
-                for filename, file in standardized_files.items()
-            }
-            pivot_tables = generate_monthly_pivots(parsed_dataframes, pivot_config)
-            for sheet_name, df in pivot_tables.items():
-                df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
-                
-            # 写完后手动调整所有透视表 sheet 的列宽
-            for sheet_name, df in pivot_tables.items():
-                ws = writer.book[sheet_name]
-                for col_cells in ws.columns:
-                    max_length = 0
-                    col_letter = col_cells[0].column_letter
-                    for cell in col_cells:
-                        try:
-                            if cell.value:
-                                max_length = max(max_length, len(str(cell.value)))
-                        except:
-                            pass
-                    adjusted_width = max_length * 1.2 + 10
-                    ws.column_dimensions[col_letter].width = min(adjusted_width, 50)
-
             #写入主计划
             ws = writer.book["主计划"]
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
@@ -465,6 +439,34 @@ class PivotProcessor:
         
             # 冻结
             ws.freeze_panes = "D3"
+
+            append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
+            
+            # 透视表
+            standardized_files = standardize_uploaded_keys(uploaded_files, RENAME_MAP)
+            parsed_dataframes = {
+                filename: pd.read_excel(file)  # 或提前 parse 完成的 DataFrame dict
+                for filename, file in standardized_files.items()
+            }
+            pivot_tables = generate_monthly_pivots(parsed_dataframes, pivot_config)
+            for sheet_name, df in pivot_tables.items():
+                df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
+                
+            # 写完后手动调整所有透视表 sheet 的列宽
+            for sheet_name, df in pivot_tables.items():
+                ws = writer.book[sheet_name]
+                for col_cells in ws.columns:
+                    max_length = 0
+                    col_letter = col_cells[0].column_letter
+                    for cell in col_cells:
+                        try:
+                            if cell.value:
+                                max_length = max(max_length, len(str(cell.value)))
+                        except:
+                            pass
+                    adjusted_width = max_length * 1.2 + 10
+                    ws.column_dimensions[col_letter].width = min(adjusted_width, 50)
+
 
         output_buffer.seek(0)
 
