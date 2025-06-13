@@ -159,6 +159,20 @@ class PivotProcessor:
         all_names = pd.Series(name_unfulfilled + name_forecast)
         all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_new)
 
+        # 提取未交订单中所有品名
+        unfulfilled_names = unfulfilled_df["品名"].astype(str).str.strip().unique().tolist()
+        
+        # 标记品名是否在未交订单中
+        all_names = all_names.dropna().astype(str).str.strip().drop_duplicates()
+        
+        in_unfulfilled = all_names.isin(unfulfilled_names)
+        
+        # 自定义排序：先出现在未交订单的，后不在的，同时各自按字母升序排列
+        sorted_names = pd.concat([
+            all_names[in_unfulfilled].sort_values(),
+            all_names[~in_unfulfilled].sort_values()
+        ]).reset_index(drop=True)
+
 
         main_plan_df = main_plan_df.reindex(index=range(len(all_names)))
         if not all_names.empty:
@@ -382,18 +396,14 @@ class PivotProcessor:
 
         
         # 检查
-        st.write(main_plan_df)
-        main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
-        st.write(main_plan_df)
+        # main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
         
         
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
-            st.write(main_plan_df)
             main_plan_df = clean_df(main_plan_df)
-            st.write(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
             
             #写入主计划
