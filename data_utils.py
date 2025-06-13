@@ -189,14 +189,11 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         if "封装形式" in field_map:
             extract_cols[pkg_col] = df[field_map["封装形式"]]
 
-        st.write(extract_cols)
         extracted = pd.DataFrame(extract_cols).drop_duplicates()
-        st.write(extracted)
-
-        
 
         # 合并
         merged = main_plan_df.merge(extracted, on=name_col, how="left", suffixes=("", f"_{sheet}"))
+        st.write(merged)
         for col in [vendor_col, pkg_col]:
             alt_col = f"{col}_{sheet}"
             if alt_col in merged.columns:
@@ -205,7 +202,7 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
                 )
                 if alt_col in main_plan_df.columns:
                     main_plan_df.drop(columns=[alt_col], inplace=True)
-
+        st.write(main_plan_df)
     # ========== 2️⃣ 通过封装厂填入 PC ==========
     pc_df = additional_sheets.get("赛卓-供应商-PC")
 
@@ -228,4 +225,5 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         # 填回 PC 列
         main_plan_df["PC"] = merged_pc["PC"]
 
+    st.write(main_plan_df)
     return main_plan_df
