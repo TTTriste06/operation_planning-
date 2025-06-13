@@ -160,7 +160,7 @@ class PivotProcessor:
         all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_new)
 
         # 提取未交订单中所有品名
-        unfulfilled_names = unfulfilled_df["品名"].astype(str).str.strip().unique().tolist()
+        unfulfilled_names = df_unfulfilled["品名"].astype(str).str.strip().unique().tolist()
         
         # 标记品名是否在未交订单中
         all_names = all_names.dropna().astype(str).str.strip().drop_duplicates()
