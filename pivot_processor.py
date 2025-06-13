@@ -382,7 +382,7 @@ class PivotProcessor:
 
         
         # 检查
-        main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
+        # main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
         
         
