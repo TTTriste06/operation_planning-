@@ -155,7 +155,9 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
 
     # ========== 1️⃣ 封装厂、封装形式 来源顺序 ==========
     sources = [
-        ("赛卓-成品在制", {"品名": "产品品名", "封装厂": "工作中心", "封装形式": "封装形式"})
+        ("赛卓-成品在制", {"品名": "产品品名", "封装厂": "工作中心", "封装形式": "封装形式"}),
+        ("赛卓-新旧料号", {"品名": "新品名", "封装厂": "封装厂"}),  # 无封装形式
+        ("赛卓-下单明细", {"品名": "回货明细_回货品名", "封装厂": "供应商名称"})  # 无封装形式
     ]
 
     for sheet, field_map in sources:
@@ -166,40 +168,28 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         df = df.copy()
         df[field_map["品名"]] = df[field_map["品名"]].astype(str).str.strip()
         df[field_map["封装厂"]] = df[field_map["封装厂"]].astype(str).apply(normalize_vendor_name)
-
         if "封装形式" in field_map:
             df[field_map["封装形式"]] = df[field_map["封装形式"]].astype(str).str.strip()
 
-        # 👉 打印匹配记录
-        for _, row in main_plan_df.iterrows():
+        # 逐行匹配和填入
+        for idx, row in main_plan_df.iterrows():
             pname = str(row[name_col]).strip()
-            matched_rows = df[df[field_map["品名"]] == pname]
-            if not matched_rows.empty:
-                st.write(f"🔍 品名: {pname} 在 `{sheet}` 中匹配到以下记录：")
-                display_cols = [field_map["品名"], field_map["封装厂"]]
+            matched = df[df[field_map["品名"]] == pname]
+            if matched.empty:
+                continue
+
+            if pd.isna(row[vendor_col]):
+                main_plan_df.at[idx, vendor_col] = matched.iloc[0][field_map["封装厂"]]
+
+            if pkg_col in field_map and pd.isna(row.get(pkg_col)):
+                main_plan_df.at[idx, pkg_col] = matched.iloc[0][field_map["封装形式"]]
+
+            if not matched.empty:
+                st.write(f"✅ 品名 {pname} 在 {sheet} 中找到匹配记录：")
+                cols_to_show = [field_map["品名"], field_map["封装厂"]]
                 if "封装形式" in field_map:
-                    display_cols.append(field_map["封装形式"])
-                st.write(matched_rows[display_cols])
-
-        # 构造提取列并去重
-        extract_cols = {
-            name_col: df[field_map["品名"]],
-            vendor_col: df[field_map["封装厂"]]
-        }
-        if "封装形式" in field_map:
-            extract_cols[pkg_col] = df[field_map["封装形式"]]
-
-        extracted = pd.DataFrame(extract_cols).drop_duplicates()
-
-        # 合并
-        merged = main_plan_df.merge(extracted, on=name_col, how="left", suffixes=("", f"_{sheet}"))
-        st.write(merged)
-    
-        # 直接用新值覆盖主表列
-        for col in [vendor_col, pkg_col]:
-            alt_col = f"{col}_{sheet}"
-            if alt_col in merged.columns:
-                main_plan_df[col] = merged[alt_col]
+                    cols_to_show.append(field_map["封装形式"])
+                st.write(matched[cols_to_show])
         st.write(main_plan_df)
     # ========== 2️⃣ 通过封装厂填入 PC ==========
     pc_df = additional_sheets.get("赛卓-供应商-PC")
