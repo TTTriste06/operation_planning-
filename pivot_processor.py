@@ -172,8 +172,8 @@ class PivotProcessor:
         
         # 自定义排序：先出现在未交订单的，后不在的，同时各自按字母升序排列
         sorted_names = pd.concat([
-            all_names[in_unfulfilled].sort_values(),
-            all_names[~in_unfulfilled].sort_values()
+            all_names[in_unfulfilled],
+            all_names[~in_unfulfilled]
         ]).reset_index(drop=True)
 
 
