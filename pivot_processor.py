@@ -157,6 +157,10 @@ class PivotProcessor:
             name_forecast = df_forecast[col_name].astype(str).str.strip().tolist()
 
         all_names = pd.Series(name_unfulfilled + name_forecast)
+        all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_sub1)
+        all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_sub2)
+        all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_sub3)
+        all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_sub4)
 
         # 提取未交订单中所有品名
         unfulfilled_names = df_unfulfilled["品名"].astype(str).str.strip().unique().tolist()
@@ -172,18 +176,12 @@ class PivotProcessor:
             all_names[~in_unfulfilled].sort_values()
         ]).reset_index(drop=True)
 
-        sorted_names = replace_all_names_with_mapping(sorted_names, mapping_new, mapping_sub1)
-        sorted_names = replace_all_names_with_mapping(sorted_names, mapping_new, mapping_sub2)
-        sorted_names = replace_all_names_with_mapping(sorted_names, mapping_new, mapping_sub3)
-        sorted_names = replace_all_names_with_mapping(sorted_names, mapping_new, mapping_sub4)
 
         sorted_df = pd.DataFrame({"品名": sorted_names})
         for col in headers:
             if col not in sorted_df.columns:
                 sorted_df[col] = ""
         main_plan_df = sorted_df[headers]
-
-        st.write(main_plan_df)
 
         ## == 规格和晶圆 ==
         main_plan_df = fill_spec_and_wafer_info(
