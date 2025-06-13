@@ -127,7 +127,7 @@ def replace_all_names_with_mapping(all_names: pd.Series, mapping_new: pd.DataFra
                 all_names = all_names.replace(sub_map)
 
     # 去重排序后返回
-    return all_names.dropna().drop_duplicates().sort_values().reset_index(drop=True)
+    return all_names.dropna().drop_duplicates().reset_index(drop=True)
 
 
 def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
