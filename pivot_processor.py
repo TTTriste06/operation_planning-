@@ -172,7 +172,7 @@ class PivotProcessor:
             all_names[~in_unfulfilled].sort_values()
         ]).reset_index(drop=True)
 
-        sorted_names = replace_all_names_with_mapping(sorted_names, mapping_new, mapping_new)
+        sorted_names = replace_all_names_with_mapping(sorted_names, mapping_new, mapping_sub)
 
         sorted_df = pd.DataFrame({"品名": sorted_names})
         for col in headers:
