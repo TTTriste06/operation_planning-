@@ -194,14 +194,12 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         # 合并
         merged = main_plan_df.merge(extracted, on=name_col, how="left", suffixes=("", f"_{sheet}"))
         st.write(merged)
+    
+        # 直接用新值覆盖主表列
         for col in [vendor_col, pkg_col]:
             alt_col = f"{col}_{sheet}"
             if alt_col in merged.columns:
-                main_plan_df[col] = main_plan_df.get(col, pd.Series(index=main_plan_df.index)).combine_first(
-                    merged[alt_col]
-                )
-                if alt_col in main_plan_df.columns:
-                    main_plan_df.drop(columns=[alt_col], inplace=True)
+                main_plan_df[col] = merged[alt_col]
         st.write(main_plan_df)
     # ========== 2️⃣ 通过封装厂填入 PC ==========
     pc_df = additional_sheets.get("赛卓-供应商-PC")
