@@ -349,6 +349,7 @@ class PivotProcessor:
         main_plan_df = aggregate_sales_quantity_and_amount(main_plan_df, df_sales, forecast_months)
 
         # 成品投单计划
+        st.write(main_plan_df)
         main_plan_df = generate_monthly_fg_plan(main_plan_df, forecast_months)
 
         # 半成品投单计划
