@@ -173,10 +173,13 @@ class PivotProcessor:
             all_names[~in_unfulfilled].sort_values()
         ]).reset_index(drop=True)
 
+        sorted_df = pd.DataFrame({"品名": sorted_names})
+        for col in headers:
+            if col not in sorted_df.columns:
+                sorted_df[col] = ""
+        main_plan_df = sorted_df[headers]
 
-        main_plan_df = main_plan_df.reindex(index=range(len(all_names)))
-        if not all_names.empty:
-            main_plan_df["品名"] = all_names.values
+        st.write(main_plan_df)
 
         ## == 规格和晶圆 ==
         main_plan_df = fill_spec_and_wafer_info(
