@@ -86,7 +86,7 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
             return pd.to_numeric(df_plan[col], errors="coerce").fillna(0) if col in df_plan.columns else pd.Series(0, index=main_plan_df.index)
 
         if idx == 0:
-            if (get(col_order_this) + get(col_sales_this)) > get(col_forecast_this):
+            if (get(col_order_this) + get(col_sales_this) > get(col_forecast_this)).any():
                 result = (
                     get("成品仓") +
                     get("成品在制") -
@@ -178,7 +178,7 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
             return pd.to_numeric(df_plan[col], errors="coerce").fillna(0) if col in df_plan.columns else pd.Series(0, index=main_plan_df.index)
 
         if idx == 0:
-            if (get(col_order_this) + get(col_sales_this)) > get(col_forecast_this):
+            if (get(col_order_this) + get(col_sales_this) > get(col_forecast_this)).any():
                 result = (
                     get("成品仓") +
                     get("半成品仓") +
