@@ -120,6 +120,13 @@ class PivotProcessor:
             "替代晶圆", "替代规格", "替代品名"
         ]
 
+        st.write(mapping_semi)
+        st.write(mapping_new)
+        st.write(mapping_sub1)
+        st.write(mapping_sub2)
+        st.write(mapping_sub3)
+        st.write(mapping_sub4)
+
        
 
         
