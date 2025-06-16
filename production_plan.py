@@ -185,8 +185,7 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
             col_in_df_plan = df_plan.columns[i] if i < len(df_plan.columns) else None
             if col_in_df_plan:
                 main_plan_df.loc[mask, col] = df_plan.loc[mask, col_in_df_plan]
-
-    st.success("✅ 半成品投单计划生成完毕")
+                
     return main_plan_df
 
 
