@@ -109,11 +109,16 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
                 st.write(f"📦【{name}】【{this_month}】成品投单计划 = {formula} = {result:.2f}")
                 df_plan.at[row_idx, col_target] = result
         else:
-            result = (
-                get_plan(col_target_prev) + get(col_actual_prod) - get(col_forecast_next)
-            )
-            
-        df_plan[col_target] = result
+            for row_idx in main_plan_df.index:
+                name = main_plan_df.at[row_idx, "品名"] if "品名" in main_plan_df.columns else f"Row {row_idx}"
+                v_prev_plan = get_plan(col_target_prev).at[row_idx]
+                v_actual = get(col_actual_prod).at[row_idx]
+                v_forecast_next = get(col_forecast_next).at[row_idx]
+
+                formula = f"{v_prev_plan} + {v_actual} - {v_forecast_next}"
+                result = v_prev_plan + v_actual - v_forecast_next
+                st.write(f"📦【{name}】【{this_month}】成品投单计划 = {formula} = {result:.2f}")
+                df_plan.at[row_idx, col_target] = result
 
     plan_cols_in_summary = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
     
