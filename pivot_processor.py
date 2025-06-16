@@ -75,10 +75,16 @@ class PivotProcessor:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
 
         # 创建新的 mapping_semi：仅保留“半成品”字段非空的行
-        mapping_semi = mapping_df[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_semi = mapping_df[
+            ["旧晶圆品名", "旧规格", "旧品名", "新晶圆品名", "新规格", "新品名", "半成品"]
+        ]
+        mapping_semi = mapping_semi[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         
         # 去除“品名”为空的行
-        mapping_new = mapping_df[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_new = mapping_df[
+            ["旧晶圆品名", "旧规格", "旧品名", "新晶圆品名", "新规格", "新品名"]
+        ]
+        mapping_new = mapping_new[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         mapping_new = mapping_new[~mapping_new["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         
         # 去除“替代品名”为空的行，并保留指定字段
