@@ -86,23 +86,28 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
             return pd.to_numeric(df_plan[col], errors="coerce").fillna(0) if col in df_plan.columns else pd.Series(0, index=main_plan_df.index)
 
         if idx == 0:
-            if (get(col_order_this) + get(col_sales_this) > get(col_forecast_this)).any():
-                result = (
-                    get("成品仓") +
-                    get("成品在制") -
-                    get("InvPart") -
-                    get(col_order_this) -
-                    pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
-                )
-            else:
-                result = (
-                    get("成品仓") +
-                    get("成品在制") -
-                    get("InvPart") -
-                    get(col_forecast_this) +
-                    get(col_sales_this)-
-                    pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
-                ) 
+            cond = (get(col_order_this) + get(col_sales_this) > get(col_forecast_this))
+            for row_idx in main_plan_df.index:
+                name = main_plan_df.at[row_idx, "品名"] if "品名" in main_plan_df.columns else f"Row {row_idx}"
+                v_invpart = get("InvPart").at[row_idx]
+                v_fg_inv = get("成品仓").at[row_idx]
+                v_fg_wip = get("成品在制").at[row_idx]
+                v_order_this = get(col_order_this).at[row_idx]
+                v_sales_this = get(col_sales_this).at[row_idx]
+                v_forecast_this = get(col_forecast_this).at[row_idx]
+                v_forecast_next = get(col_forecast_next).at[row_idx]
+                v_order_next = get(col_order_next).at[row_idx]
+                max_next = max(v_forecast_next, v_order_next)
+
+                if cond.at[row_idx]:
+                    formula = f"{v_fg_inv} + {v_fg_wip} - {v_invpart} - {v_order_this} - max({v_forecast_next}, {v_order_next})"
+                    result = v_fg_inv + v_fg_wip - v_invpart - v_order_this - max_next
+                else:
+                    formula = f"{v_fg_inv} + {v_fg_wip} - {v_invpart} - {v_forecast_this} + {v_sales_this} - max({v_forecast_next}, {v_order_next})"
+                    result = v_fg_inv + v_fg_wip - v_invpart - v_forecast_this + v_sales_this - max_next
+
+                st.write(f"📦【{name}】【{this_month}】成品投单计划 = {formula} = {result:.2f}")
+                df_plan.at[row_idx, col_target] = result
         else:
             result = (
                 get_plan(col_target_prev) + get(col_actual_prod) - get(col_forecast_next)
