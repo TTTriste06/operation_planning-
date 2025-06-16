@@ -125,8 +125,6 @@ class PivotProcessor:
             "新晶圆品名", "新规格", "新品名",
             "替代晶圆", "替代规格", "替代品名"
         ]
-
-        st.write(mapping_semi)
         st.write(mapping_new)
         st.write(mapping_sub1)
         st.write(mapping_sub2)
