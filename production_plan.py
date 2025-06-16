@@ -165,7 +165,7 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
             sfg = get("半成品仓")
             sfg_wip = get("半成品在制")
             
-            result = sfg + fg_wip + plan_this
+            result = sfg + sfg_wip + plan_this
         else:
             prev_plan = get_plan(col_target_prev)
             actual_prod = get(col_actual_prod)
