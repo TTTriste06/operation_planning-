@@ -75,7 +75,9 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
         col_target = f"{month}月成品投单计划"
         col_actual_prod = f"{prev_month}成品实际投单"
         col_target_prev = f"{prev_month}成品投单计划" if prev_month else None
-
+        col_sales_this = f"{month}月销售数量"
+        
+        
         # 安全提取列，如果缺失则填 0
         def get(col):
             return pd.to_numeric(main_plan_df[col], errors="coerce").fillna(0) if col in main_plan_df.columns else pd.Series(0, index=main_plan_df.index)
@@ -84,18 +86,28 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
             return pd.to_numeric(df_plan[col], errors="coerce").fillna(0) if col in df_plan.columns else pd.Series(0, index=main_plan_df.index)
 
         if idx == 0:
-            result = (
-                get("成品仓") +
-                get("成品在制") -
-                get("InvPart") -
-                pd.concat([get(col_forecast_this), get(col_order_this)], axis=1).max(axis=1) -
-                pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
-            )
+            if (get(col_order_this) + get(col_sales_this)) > get(col_forecast_this):
+                result = (
+                    get("成品仓") +
+                    get("成品在制") -
+                    get("InvPart") -
+                    get(col_order_this) -
+                    pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
+                )
+            else:
+                result = (
+                    get("成品仓") +
+                    get("成品在制") -
+                    get("InvPart") -
+                    get(col_forecast_this) +
+                    get(col_sales_this)-
+                    pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
+                ) 
         else:
             result = (
-                get_plan(col_target_prev) + get(col_actual_prod) -
-                pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
+                get_plan(col_target_prev) + get(col_actual_prod) - get(col_forecast_next)
             )
+            
         df_plan[col_target] = result
 
     plan_cols_in_summary = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
@@ -109,6 +121,104 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
             main_plan_df[col] = df_plan.iloc[:, i]
 
     return main_plan_df
+
+
+def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[int],
+                                mapping_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    自动生成每月半成品投单计划并回填到 main_plan_df。
+    仅对新旧料号中“半成品列非空”的那一行提取的“半成品”与“新品名”才写入，其余清空。
+
+    第一个月为：成品投单计划 - 半成品在制
+    后续月份为：成品投单计划 - 半成品在制 + (上月半成品投单计划 - 上月半成品实际投单)（写入公式）
+
+    参数：
+        main_plan_df: 主计划 DataFrame
+        forecast_months: 月份整数列表
+        mapping_df: 新旧料号 DataFrame，需含“半成品”和“新品名”列
+
+    返回：
+        更新后的 main_plan_df
+    """    
+    tmp = mapping_df[["新品名","半成品"]].copy()
+    tmp = clean_df(tmp)                               
+    tmp = tmp[tmp["半成品"].notna() & (tmp["半成品"].astype(str).str.strip() != "")]
+    combined_names = pd.Series(
+        tmp["新品名"].astype(str).str.strip().tolist() +
+        tmp["半成品"].astype(str).str.strip().tolist()
+    ).dropna().unique().tolist()             
+
+    # ✅ 仅对这些品名行进行写入
+    mask = main_plan_df["品名"].astype(str).str.strip().isin(combined_names)
+
+
+    df_plan = pd.DataFrame(index=main_plan_df.index)
+
+    for idx, month in enumerate(forecast_months[:-1]):  # 最后一个月不生成
+        this_month = f"{month}月"
+        next_month = f"{forecast_months[idx + 1]}月"
+        prev_month = f"{forecast_months[idx - 1]}月" if idx > 0 else None
+
+        # 构造字段名
+        col_forecast_this = f"{month}月预测"
+        col_order_this = f"未交订单 2025-{month:02d}"
+        col_forecast_next = f"{forecast_months[idx + 1]}月预测"
+        col_order_next = f"未交订单 2025-{forecast_months[idx + 1]:02d}"
+        col_target = f"{month}月半成品投单计划"
+        col_actual_prod = f"{prev_month}半成品实际投单"
+        col_target_prev = f"{prev_month}半成品投单计划" if prev_month else None
+        col_sales_this = f"{month}月销售数量"
+        
+        
+        # 安全提取列，如果缺失则填 0
+        def get(col):
+            return pd.to_numeric(main_plan_df[col], errors="coerce").fillna(0) if col in main_plan_df.columns else pd.Series(0, index=main_plan_df.index)
+        
+        def get_plan(col):
+            return pd.to_numeric(df_plan[col], errors="coerce").fillna(0) if col in df_plan.columns else pd.Series(0, index=main_plan_df.index)
+
+        if idx == 0:
+            if (get(col_order_this) + get(col_sales_this)) > get(col_forecast_this):
+                result = (
+                    get("成品仓") +
+                    get("半成品仓") +
+                    get("成品在制") +
+                    get("半成品在制")-
+                    get("InvPart") -
+                    get(col_order_this) -
+                    pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
+                )
+            else:
+                result = (
+                    get("成品仓") +
+                    get("半成品仓") +
+                    get("成品在制") +
+                    get("半成品在制")-
+                    get("InvPart") -
+                    get(col_forecast_this) +
+                    get(col_sales_this)-
+                    pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
+                ) 
+        else:
+            result = (
+                get_plan(col_target_prev) + get(col_actual_prod) - get(col_forecast_next)
+            )
+            
+        df_plan[col_target] = result
+
+    plan_cols_in_summary = [col for col in main_plan_df.columns if "半成品投单计划" in col]
+    
+    # 回填到主计划中，只更新 mask 行，其余清空
+    if len(plan_cols_in_summary) != df_plan.shape[1]:
+        st.error(f"❌ 写入失败：df_plan 有 {df_plan.shape[1]} 列，summary 中有 {len(plan_cols_in_summary)} 个 '半成品投单计划' 列")
+    else:
+        for i, col in enumerate(plan_cols_in_summary):
+            main_plan_df[col] = ""
+            main_plan_df.loc[mask, col] = df_plan.iloc[mask, i]
+
+    return main_plan_df
+
+
 
 def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
     """
@@ -295,78 +405,6 @@ def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd
         main_plan_df[col] = result_amt[col]
 
     return main_plan_df
-
-def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[int],
-                                mapping_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    自动生成每月半成品投单计划并回填到 main_plan_df。
-    仅对新旧料号中“半成品列非空”的那一行提取的“半成品”与“新品名”才写入，其余清空。
-
-    第一个月为：成品投单计划 - 半成品在制
-    后续月份为：成品投单计划 - 半成品在制 + (上月半成品投单计划 - 上月半成品实际投单)（写入公式）
-
-    参数：
-        main_plan_df: 主计划 DataFrame
-        forecast_months: 月份整数列表
-        mapping_df: 新旧料号 DataFrame，需含“半成品”和“新品名”列
-
-    返回：
-        更新后的 main_plan_df
-    """    
-    tmp = mapping_df[["新品名","半成品"]].copy()
-    tmp = clean_df(tmp)                               
-    tmp = tmp[tmp["半成品"].notna() & (tmp["半成品"].astype(str).str.strip() != "")]
-    combined_names = pd.Series(
-        tmp["新品名"].astype(str).str.strip().tolist() +
-        tmp["半成品"].astype(str).str.strip().tolist()
-    ).dropna().unique().tolist()                           
-    
-    # ✅ 提取目标列
-    semi_cols = [col for col in main_plan_df.columns if "半成品投单计划" in col]
-    fg_cols = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
-    actual_semi_cols = [col for col in main_plan_df.columns if "半成品实际投单" in col]
-
-    if not semi_cols or not fg_cols:
-        raise ValueError("❌ 半成品投单计划或成品投单计划列不存在")
-
-    # ✅ 仅对这些品名行进行写入
-    mask = main_plan_df["品名"].astype(str).str.strip().isin(combined_names)
-
-    for i, col in enumerate(semi_cols):
-        fg_col = fg_cols[i] if i < len(fg_cols) else None
-
-        if i == 0:
-            # 第一个月：直接计算
-            main_plan_df.loc[mask, col] = (
-                pd.to_numeric(main_plan_df.loc[mask, fg_col], errors="coerce").fillna(0) -
-                pd.to_numeric(main_plan_df.loc[mask, "半成品在制"], errors="coerce").fillna(0)
-            )
-        else:
-            # 后续月份：写公式
-            prev_semi_col = semi_cols[i - 1]
-            prev_actual_semi_col = actual_semi_cols[i - 1] if i - 1 < len(actual_semi_cols) else ""
-
-            col_fg = get_column_letter(main_plan_df.columns.get_loc(fg_col) + 1)
-            col_half_in_progress = get_column_letter(main_plan_df.columns.get_loc("半成品在制") + 1)
-            col_prev_semi = get_column_letter(main_plan_df.columns.get_loc(prev_semi_col) + 1)
-            col_prev_actual = (
-                get_column_letter(main_plan_df.columns.get_loc(prev_actual_semi_col) + 1)
-                if prev_actual_semi_col else "X"
-            )
-
-            def build_formula(row_idx: int) -> str:
-                row_num = row_idx + 3
-                return f"={col_fg}{row_num}-{col_half_in_progress}{row_num}+({col_prev_semi}{row_num}-{col_prev_actual}{row_num})"
-
-            for row_idx in main_plan_df.index[mask]:
-                main_plan_df.at[row_idx, col] = build_formula(row_idx)
-
-        # ❌ 其他行必须清空
-        main_plan_df.loc[~mask, col] = ""
-
-    return main_plan_df
-
-
 
 def generate_monthly_adjust_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
