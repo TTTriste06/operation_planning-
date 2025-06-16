@@ -148,7 +148,8 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
         next_month = f"{forecast_months[idx + 1]}月"
         prev_month = f"{forecast_months[idx - 1]}月" if idx > 0 else None
 
-        col_plan_this = f"{month}成品投单计划"
+        col_target = f"{this_month}半成品投单计划"
+        col_plan_this = f"{this_month}成品投单计划"
         col_forecast_next = f"{next_month}预测"
         col_actual_prod = f"{prev_month}半成品实际投单"
         col_target_prev = f"{prev_month}半成品投单计划" if prev_month else None
