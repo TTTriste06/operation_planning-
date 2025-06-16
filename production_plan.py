@@ -129,10 +129,6 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
 
     return main_plan_df
 
-
-import pandas as pd
-import streamlit as st
-
 def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list[int],
                                 mapping_df: pd.DataFrame) -> pd.DataFrame:
     tmp = mapping_df[["新品名", "半成品"]].copy()
@@ -152,14 +148,11 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
         next_month = f"{forecast_months[idx + 1]}月"
         prev_month = f"{forecast_months[idx - 1]}月" if idx > 0 else None
 
-        col_forecast_this = f"{month}月预测"
-        col_order_this = f"未交订单 2025-{month:02d}"
-        col_forecast_next = f"{forecast_months[idx + 1]}月预测"
-        col_order_next = f"未交订单 2025-{forecast_months[idx + 1]:02d}"
-        col_target = f"{month}月半成品投单计划"
+        col_plan_this = f"{month}成品投单计划"
+        col_forecast_next = f"{next_month}预测"
         col_actual_prod = f"{prev_month}半成品实际投单"
         col_target_prev = f"{prev_month}半成品投单计划" if prev_month else None
-        col_sales_this = f"{month}月销售数量"
+        
 
         def get(col):
             return pd.to_numeric(main_plan_df[col], errors="coerce").fillna(0) if col in main_plan_df.columns else pd.Series(0, index=main_plan_df.index)
@@ -169,44 +162,16 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
 
         st.write(f"📆 正在生成 {col_target}")
         if idx == 0:
-            sales = get(col_sales_this)
-            order_this = get(col_order_this)
-            forecast_this = get(col_forecast_this)
-            forecast_next = get(col_forecast_next)
-            order_next = get(col_order_next)
-            inv = get("InvPart")
-            fg = get("成品仓")
+            plan_this = get(col_plan_this)
             sfg = get("半成品仓")
-            fg_wip = get("成品在制")
             sfg_wip = get("半成品在制")
-            max_next = pd.concat([forecast_next, order_next], axis=1).max(axis=1)
-
-            if (order_this + sales > forecast_this).any():
-                result = fg + sfg + fg_wip + sfg_wip - inv - order_this - max_next
-            else:
-                result = fg + sfg + fg_wip + sfg_wip - inv - forecast_this + sales - max_next
-
-            # 打印计算过程
-            for i in main_plan_df.index[mask]:
-                name = main_plan_df.at[i, "品名"]
-                val = result[i]
-                st.write(
-                    f"【{name}】【{this_month}】半成品投单计划 = {fg[i]:.1f} + {sfg[i]:.1f} + {fg_wip[i]:.1f} + {sfg_wip[i]:.1f} "
-                    f"- {inv[i]:.1f} - {order_this[i]:.1f} - max({forecast_next[i]:.1f}, {order_next[i]:.1f}) = {val:.2f}"
-                )
-
+            
+            result = sfg + fg_wip + plan_this
         else:
             prev_plan = get_plan(col_target_prev)
             actual_prod = get(col_actual_prod)
             forecast_next = get(col_forecast_next)
             result = prev_plan + actual_prod - forecast_next
-
-            for i in main_plan_df.index[mask]:
-                name = main_plan_df.at[i, "品名"]
-                val = result[i]
-                st.write(
-                    f"【{name}】【{this_month}】半成品投单计划 = {prev_plan[i]:.1f} + {actual_prod[i]:.1f} - {forecast_next[i]:.1f} = {val:.2f}"
-                )
 
         df_plan[col_target] = result
 
