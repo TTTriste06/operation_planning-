@@ -130,23 +130,11 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
     return main_plan_df
 
 
+import pandas as pd
+import streamlit as st
+
 def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list[int],
                                 mapping_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    自动生成每月半成品投单计划并回填到 main_plan_df。
-    仅对新旧料号中“半成品列非空”的那一行提取的“半成品”与“新品名”才写入，其余清空。
-
-    第一个月为：成品投单计划 - 半成品在制
-    后续月份为：成品投单计划 - 半成品在制 + (上月半成品投单计划 - 上月半成品实际投单)（写入公式）
-
-    参数：
-        main_plan_df: 主计划 DataFrame
-        forecast_months: 月份整数列表
-        mapping_df: 新旧料号 DataFrame，需含“半成品”和“新品名”列
-
-    返回：
-        更新后的 main_plan_df
-    """    
     tmp = mapping_df[["新品名", "半成品"]].copy()
     tmp = clean_df(tmp)                               
     tmp = tmp[tmp["半成品"].notna() & (tmp["半成品"].astype(str).str.strip() != "")]
@@ -155,7 +143,6 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
         tmp["半成品"].astype(str).str.strip().tolist()
     ).dropna().unique().tolist()             
 
-    # ✅ 仅对这些品名行进行写入
     mask = main_plan_df["品名"].astype(str).str.strip().isin(combined_names)
 
     df_plan = pd.DataFrame(index=main_plan_df.index)
@@ -165,7 +152,6 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
         next_month = f"{forecast_months[idx + 1]}月"
         prev_month = f"{forecast_months[idx - 1]}月" if idx > 0 else None
 
-        # 构造字段名
         col_forecast_this = f"{month}月预测"
         col_order_this = f"未交订单 2025-{month:02d}"
         col_forecast_next = f"{forecast_months[idx + 1]}月预测"
@@ -175,7 +161,6 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
         col_target_prev = f"{prev_month}半成品投单计划" if prev_month else None
         col_sales_this = f"{month}月销售数量"
 
-        # 安全提取列
         def get(col):
             return pd.to_numeric(main_plan_df[col], errors="coerce").fillna(0) if col in main_plan_df.columns else pd.Series(0, index=main_plan_df.index)
 
@@ -183,42 +168,48 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
             return pd.to_numeric(df_plan[col], errors="coerce").fillna(0) if col in df_plan.columns else pd.Series(0, index=main_plan_df.index)
 
         st.write(f"📆 正在生成 {col_target}")
-        st.write(f"字段: forecast_this={col_forecast_this}, order_this={col_order_this}, forecast_next={col_forecast_next}, order_next={col_order_next}")
-
         if idx == 0:
-            if (get(col_order_this) + get(col_sales_this) > get(col_forecast_this)).any():
-                result = (
-                    get("成品仓") +
-                    get("半成品仓") +
-                    get("成品在制") +
-                    get("半成品在制") -
-                    get("InvPart") -
-                    get(col_order_this) -
-                    pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
-                )
-                st.write("✅ 用规则 A（订单+销售 > 预测）")
+            sales = get(col_sales_this)
+            order_this = get(col_order_this)
+            forecast_this = get(col_forecast_this)
+            forecast_next = get(col_forecast_next)
+            order_next = get(col_order_next)
+            inv = get("InvPart")
+            fg = get("成品仓")
+            sfg = get("半成品仓")
+            fg_wip = get("成品在制")
+            sfg_wip = get("半成品在制")
+            max_next = pd.concat([forecast_next, order_next], axis=1).max(axis=1)
+
+            if (order_this + sales > forecast_this).any():
+                result = fg + sfg + fg_wip + sfg_wip - inv - order_this - max_next
             else:
-                result = (
-                    get("成品仓") +
-                    get("半成品仓") +
-                    get("成品在制") +
-                    get("半成品在制") -
-                    get("InvPart") -
-                    get(col_forecast_this) +
-                    get(col_sales_this) -
-                    pd.concat([get(col_forecast_next), get(col_order_next)], axis=1).max(axis=1)
+                result = fg + sfg + fg_wip + sfg_wip - inv - forecast_this + sales - max_next
+
+            # 打印计算过程
+            for i in main_plan_df.index[mask]:
+                name = main_plan_df.at[i, "品名"]
+                val = result[i]
+                st.write(
+                    f"【{name}】【{this_month}】半成品投单计划 = {fg[i]:.1f} + {sfg[i]:.1f} + {fg_wip[i]:.1f} + {sfg_wip[i]:.1f} "
+                    f"- {inv[i]:.1f} - {order_this[i]:.1f} - max({forecast_next[i]:.1f}, {order_next[i]:.1f}) = {val:.2f}"
                 )
-                st.write("✅ 用规则 B（订单+销售 ≤ 预测）")
+
         else:
-            result = (
-                get_plan(col_target_prev) + get(col_actual_prod) - get(col_forecast_next)
-            )
-            st.write(f"📈 用规则 C（后续月份递推）：上一月目标={col_target_prev}，上一月实际={col_actual_prod}，当前预测={col_forecast_next}")
+            prev_plan = get_plan(col_target_prev)
+            actual_prod = get(col_actual_prod)
+            forecast_next = get(col_forecast_next)
+            result = prev_plan + actual_prod - forecast_next
+
+            for i in main_plan_df.index[mask]:
+                name = main_plan_df.at[i, "品名"]
+                val = result[i]
+                st.write(
+                    f"【{name}】【{this_month}】半成品投单计划 = {prev_plan[i]:.1f} + {actual_prod[i]:.1f} - {forecast_next[i]:.1f} = {val:.2f}"
+                )
 
         df_plan[col_target] = result
-        st.write(df_plan[[col_target]].loc[mask].head())  # 仅打印部分结果查看
 
-    # 回填到主计划中
     plan_cols_in_summary = [col for col in main_plan_df.columns if "半成品投单计划" in col]
 
     if len(plan_cols_in_summary) != df_plan.shape[1]:
@@ -232,6 +223,7 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
 
     st.success("✅ 半成品投单计划生成完毕")
     return main_plan_df
+
 
 
 
