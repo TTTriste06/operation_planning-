@@ -160,7 +160,6 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
         def get_plan(col):
             return pd.to_numeric(df_plan[col], errors="coerce").fillna(0) if col in df_plan.columns else pd.Series(0, index=main_plan_df.index)
 
-        st.write(f"📆 正在生成 {col_target}")
         if idx == 0:
             plan_this = get(col_plan_this)
             sfg = get("半成品仓")
