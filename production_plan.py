@@ -213,8 +213,9 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame,forecast_months: list[
         st.error(f"❌ 写入失败：df_plan 有 {df_plan.shape[1]} 列，summary 中有 {len(plan_cols_in_summary)} 个 '半成品投单计划' 列")
     else:
         for i, col in enumerate(plan_cols_in_summary):
-            main_plan_df[col] = ""
-            main_plan_df.loc[mask, col] = df_plan.iloc[mask, i]
+            main_plan_df[col] = ""  # 先清空整列
+            if df_plan.columns[i] in df_plan.columns:
+                main_plan_df.loc[mask, col] = df_plan.loc[mask, df_plan.columns[i]]
 
     return main_plan_df
 
