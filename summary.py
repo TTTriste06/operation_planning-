@@ -58,16 +58,13 @@ def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame,
     并将“历史未交订单”合并到第一个月的未交订单中，添加至主计划 DataFrame。
     返回合并后的主计划表和未匹配品名列表（df_unfulfilled 中存在但主计划中没有的）。
     """
-    # 1. 本月第一天
     today = pd.Timestamp(datetime.today().replace(day=1))
     
-    # 2. 自动推断最大交货月份（最大日期+1月）
     max_date = pd.to_datetime(df_unfulfilled["预交货日"], errors="coerce").max()
     if pd.isna(max_date):
         max_date = today
     final_month = (max_date + pd.offsets.MonthBegin(1)).replace(day=1)
     
-    # 3. 生成月份列表
     future_months = pd.period_range(today.to_period("M"), final_month.to_period("M"), freq="M")
     future_cols = [f"未交订单 {str(p)}" for p in future_months]
 
@@ -152,7 +149,7 @@ def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame,
 
 def merge_unfulfilled_order_header(sheet):
     """
-    自动检测以“未交订单 ”开头的列，在第一行合并并写入“未交订单”，居中。
+    自动检测以“未交订单”开头的列，在第一行合并并写入“未交订单”，居中。
     
     参数:
     - sheet: openpyxl worksheet 对象
