@@ -106,8 +106,6 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
                     formula = f" {v_invpart} + {v_forecast_this} - {v_sales_this} + max({v_forecast_next}, {v_order_next}) - {v_fg_inv} - {v_fg_wip}"
                     result = v_invpart + v_forecast_this - v_sales_this + max_next - v_fg_inv - v_fg_wip
                 df_plan.at[row_idx, col_target] = result
-                st.write(formula)
-                st.write(result)
         else:
             for row_idx in main_plan_df.index:
                 name = main_plan_df.at[row_idx, "品名"] if "品名" in main_plan_df.columns else f"Row {row_idx}"
