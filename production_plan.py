@@ -100,12 +100,13 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
                 max_next = max(v_forecast_next, v_order_next)
 
                 if cond.at[row_idx]:
-                    formula = f"{v_fg_inv} + {v_fg_wip} - {v_invpart} - {v_order_this} - max({v_forecast_next}, {v_order_next})"
+                    formula = f" {v_invpart} + {v_order_this} + max({v_forecast_next}, {v_order_next}) - {v_fg_inv} - {v_fg_wip}"
                     result = v_invpart + v_order_this + max_next - v_fg_inv - v_fg_inv
                 else:
-                    formula = f"{v_fg_inv} + {v_fg_wip} - {v_invpart} - {v_forecast_this} + {v_sales_this} - max({v_forecast_next}, {v_order_next})"
-                    result = v_invpart + v_forecast_this + max_next - v_fg_inv - v_fg_wip - v_sales_this
+                    formula = f" {v_invpart} + {v_forecast_this} - {v_sales_this} + max({v_forecast_next}, {v_order_next}) - {v_fg_inv} - {v_fg_wip}"
+                    result = v_invpart + v_forecast_this - v_sales_this + max_next - v_fg_inv - v_fg_wip
                 df_plan.at[row_idx, col_target] = result
+                st.write(formula)
         else:
             for row_idx in main_plan_df.index:
                 name = main_plan_df.at[row_idx, "品名"] if "品名" in main_plan_df.columns else f"Row {row_idx}"
@@ -113,9 +114,10 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
                 v_actual = get(col_actual_prod).at[row_idx]
                 v_forecast_next = get(col_forecast_next).at[row_idx]
 
-                formula = f"{v_prev_plan} + {v_actual} - {v_forecast_next}"
+                formula = f"{v_prev_plan} - {v_actual} + {v_forecast_next}"
                 result = v_prev_plan - v_actual + v_forecast_next
                 df_plan.at[row_idx, col_target] = result
+                st.write(formula)
 
     plan_cols_in_summary = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
     
