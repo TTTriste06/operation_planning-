@@ -324,6 +324,7 @@ class PivotProcessor:
             st.success("✅ 已合并未交订单数据")
         st.write("2")
         st.write(main_plan_df)
+        st.write(unmatched_unfulfilled)
 
 
         ## == 预测 ==
