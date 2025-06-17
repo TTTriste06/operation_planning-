@@ -160,6 +160,7 @@ class PivotProcessor:
         main_plan_df = main_plan_df.reindex(index=range(len(all_names)))
         if not all_names.empty:
             main_plan_df["品名"] = all_names.values
+        st.write(main_plan_df)
 
         ## == 规格和晶圆 ==
         main_plan_df = fill_spec_and_wafer_info(
