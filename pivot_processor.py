@@ -127,9 +127,6 @@ class PivotProcessor:
         ]
         st.write(mapping_new)
         st.write(mapping_sub1)
-        st.write(mapping_sub2)
-        st.write(mapping_sub3)
-        st.write(mapping_sub4)
 
        
 
@@ -154,13 +151,10 @@ class PivotProcessor:
             name_forecast = df_forecast[col_name].astype(str).str.strip().tolist()
 
         all_names = pd.Series(name_unfulfilled + name_forecast)
-        st.write(all_names)
         all_names = replace_all_names_with_mapping(all_names, mapping_new, mapping_df)
-        st.write(all_names)
         main_plan_df = main_plan_df.reindex(index=range(len(all_names)))
         if not all_names.empty:
             main_plan_df["品名"] = all_names.values
-        st.write(main_plan_df)
 
         ## == 规格和晶圆 ==
         main_plan_df = fill_spec_and_wafer_info(
@@ -219,6 +213,8 @@ class PivotProcessor:
         all_replaced_names.update(replaced_sub2)
         all_replaced_names.update(replaced_sub3)
         all_replaced_names.update(replaced_sub4)
+        st.write("1")
+        st.write(self.dataframes["赛卓-未交订单"])
 
         df_new = self.dataframes["赛卓-成品库存"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品库存"])
@@ -326,6 +322,8 @@ class PivotProcessor:
         if unfulfilled_df is not None and not unfulfilled_df.empty:
             main_plan_df, unmatched_unfulfilled = append_unfulfilled_summary_columns_by_date(main_plan_df, unfulfilled_df)
             st.success("✅ 已合并未交订单数据")
+        st.write("2")
+        st.write(main_plan_df)
 
 
         ## == 预测 ==
