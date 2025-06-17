@@ -58,13 +58,19 @@ def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame,
     并将“历史未交订单”合并到第一个月的未交订单中，添加至主计划 DataFrame。
     返回合并后的主计划表和未匹配品名列表（df_unfulfilled 中存在但主计划中没有的）。
     """
-    # 当月第一天，当作“本月”标识
+    # 1. 本月第一天
     today = pd.Timestamp(datetime.today().replace(day=1))
-    final_month = pd.Timestamp("2025-11-01")
-    # 枚举从本月到最终月的所有月份周期
+    
+    # 2. 自动推断最大交货月份（最大日期+1月）
+    max_date = pd.to_datetime(df_unfulfilled["预交货日"], errors="coerce").max()
+    if pd.isna(max_date):
+        max_date = today
+    final_month = (max_date + pd.offsets.MonthBegin(1)).replace(day=1)
+    
+    # 3. 生成月份列表
     future_months = pd.period_range(today.to_period("M"), final_month.to_period("M"), freq="M")
-    # 构造未来列名列表，例如 ["未交订单 2025-06", "未交订单 2025-07", ...]
     future_cols = [f"未交订单 {str(p)}" for p in future_months]
+
 
     # 复制一份未交订单，做清洗和预处理
     df = df_unfulfilled.copy()
