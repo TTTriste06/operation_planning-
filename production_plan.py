@@ -489,7 +489,17 @@ def format_monthly_grouped_headers(ws):
     - 去掉第2行每列前缀的“x月”
     - 每月块用不同背景色填充前两行
     """
-    start_col = 28  # ABB列 = 第29列
+    # 自动查找第2行中第一个“销售数量”字段的列号
+    start_col = None
+    for col_idx in range(1, ws.max_column + 1):
+        cell_value = ws.cell(row=2, column=col_idx).value
+        if isinstance(cell_value, str) and "销售数量" in cell_value:
+            start_col = col_idx
+            break
+    
+    if start_col is None:
+        raise ValueError("❌ 未在第2行找到“销售数量”字段，无法定位起始列")
+
     row_1 = 1
     row_2 = 2
     max_col = ws.max_column
