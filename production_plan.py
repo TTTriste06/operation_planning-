@@ -101,7 +101,7 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
 
                 if cond.at[row_idx]:
                     formula = f" {v_invpart} + {v_order_this} + max({v_forecast_next}, {v_order_next}) - {v_fg_inv} - {v_fg_wip}"
-                    result = v_invpart + v_order_this + max_next - v_fg_inv - v_fg_inv
+                    result = v_invpart + v_order_this + max_next - v_fg_inv - v_fg_wip
                 else:
                     formula = f" {v_invpart} + {v_forecast_this} - {v_sales_this} + max({v_forecast_next}, {v_order_next}) - {v_fg_inv} - {v_fg_wip}"
                     result = v_invpart + v_forecast_this - v_sales_this + max_next - v_fg_inv - v_fg_wip
