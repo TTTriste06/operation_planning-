@@ -213,21 +213,25 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         pc_df = pc_df.copy()
         pc_df["封装厂"] = pc_df["封装厂"].astype(str).apply(normalize_vendor_name)
         pc_df["PC"] = pc_df["PC"].astype(str).str.strip()
-
-        # 合并并仅填未填值
-        merged_pc = main_plan_df.merge(
-            pc_df[["封装厂", "PC"]].drop_duplicates(),
-            on="封装厂",
-            how="left",
-            suffixes=("", "_pc补充")
-        )
-
+    
+        # 确保主表封装厂也标准化
+        main_plan_df["封装厂"] = main_plan_df["封装厂"].astype(str).apply(normalize_vendor_name)
+    
+        # 初始化 PC 列
         if "PC" not in main_plan_df.columns:
             main_plan_df["PC"] = ""
+    
+        # 仅对 PC 为空的行进行补充合并
+        mask_empty_pc = main_plan_df["PC"].isna() | (main_plan_df["PC"] == "")
+        df_needs_pc = main_plan_df[mask_empty_pc].copy()
+    
+        df_merged = df_needs_pc.merge(
+            pc_df[["封装厂", "PC"]].drop_duplicates(),
+            on="封装厂",
+            how="left"
+        )
+    
+        # 用 merge 结果中的 PC 填回原表
+        main_plan_df.loc[mask_empty_pc, "PC"] = df_merged["PC"].values
 
-        for idx in merged_pc.index:
-            if not merged_pc.at[idx, "PC"] and pd.notna(merged_pc.at[idx, "PC"]):
-                main_plan_df.at[idx, "PC"] = merged_pc.at[idx, "PC"]
-                
-    return main_plan_df
     return main_plan_df
