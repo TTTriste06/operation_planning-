@@ -129,16 +129,9 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
     """
     根据多个数据源填入封装厂、封装形式、PC。
 
-    参数：
-        main_plan_df: 主计划 DataFrame，含“品名”列
-        dataframes: 所有主文件表格（如“赛卓-成品在制”等）
-        additional_sheets: 所有辅助文件表格（如“赛卓-新旧料号”、“赛卓-供应商-PC”等）
-
-    返回：
-        填入字段后的主计划 DataFrame
+    优先从“赛卓-新旧料号”获取 PC；若无，再通过“封装厂”匹配“赛卓-供应商-PC”。
     """
 
-    # ✅ 封装厂别名映射
     VENDOR_ALIAS = {
         "绍兴千欣电子技术有限公司": "绍兴千欣",
         "南通宁芯": "南通宁芯微电子"
@@ -146,18 +139,46 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
 
     def normalize_vendor_name(name: str) -> str:
         name = str(name).strip()
-        name = name.split("-")[0]  # 去除如 -CP 等后缀
+        name = name.split("-")[0]
         return VENDOR_ALIAS.get(name, name)
 
     name_col = "品名"
     vendor_col = "封装厂"
     pkg_col = "封装形式"
 
-    # ========== 1️⃣ 封装厂、封装形式 来源顺序 ==========
+    # ========== 1️⃣ 封装厂、封装形式、PC（第一优先） ==========
+    df_map = additional_sheets.get("赛卓-新旧料号")
+    if df_map is not None and not df_map.empty:
+        df_map = df_map.copy()
+        df_map["新品名"] = df_map["新品名"].astype(str).str.strip()
+        df_map["封装厂"] = df_map["封装厂"].astype(str).apply(normalize_vendor_name)
+        df_map["封装形式"] = df_map["封装形式"].astype(str).str.strip()
+        df_map["PC"] = df_map["PC"].astype(str).str.strip()
+
+        for idx, row in main_plan_df.iterrows():
+            pname = str(row[name_col]).strip()
+            matched = df_map[df_map["新品名"] == pname]
+            if matched.empty:
+                continue
+
+            if pd.isna(row[vendor_col]) and matched.iloc[0]["封装厂"]:
+                main_plan_df.at[idx, vendor_col] = matched.iloc[0]["封装厂"]
+
+            if pd.isna(row.get(pkg_col)) and matched.iloc[0]["封装形式"]:
+                main_plan_df.at[idx, pkg_col] = matched.iloc[0]["封装形式"]
+
+            # ✅ 优先填入 PC
+            if "PC" not in main_plan_df.columns:
+                main_plan_df["PC"] = ""
+            if pd.isna(row.get("PC")) or row["PC"] == "":
+                pc_value = matched.iloc[0]["PC"]
+                if pc_value:
+                    main_plan_df.at[idx, "PC"] = pc_value
+
+    # ========== 2️⃣ 封装厂、封装形式补充（其他来源） ==========
     sources = [
-        ("赛卓-新旧料号", {"品名": "新品名", "封装厂": "封装厂", "封装形式": "封装形式"}),
         ("赛卓-成品在制", {"品名": "产品品名", "封装厂": "工作中心", "封装形式": "封装形式"}),
-        ("赛卓-下单明细", {"品名": "回货明细_回货品名", "封装厂": "供应商名称"})  # 无封装形式
+        ("赛卓-下单明细", {"品名": "回货明细_回货品名", "封装厂": "供应商名称"})
     ]
 
     for sheet, field_map in sources:
@@ -166,12 +187,14 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
             continue
 
         df = df.copy()
+        if field_map["品名"] not in df.columns or field_map["封装厂"] not in df.columns:
+            continue
+
         df[field_map["品名"]] = df[field_map["品名"]].astype(str).str.strip()
         df[field_map["封装厂"]] = df[field_map["封装厂"]].astype(str).apply(normalize_vendor_name)
-        if "封装形式" in field_map:
+        if "封装形式" in field_map and field_map["封装形式"] in df.columns:
             df[field_map["封装形式"]] = df[field_map["封装形式"]].astype(str).str.strip()
 
-        # 逐行匹配和填入
         for idx, row in main_plan_df.iterrows():
             pname = str(row[name_col]).strip()
             matched = df[df[field_map["品名"]] == pname]
@@ -181,28 +204,29 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
             if pd.isna(row[vendor_col]):
                 main_plan_df.at[idx, vendor_col] = matched.iloc[0][field_map["封装厂"]]
 
-            if pkg_col in field_map and pd.isna(row.get(pkg_col)):
+            if "封装形式" in field_map and pd.isna(row.get(pkg_col)):
                 main_plan_df.at[idx, pkg_col] = matched.iloc[0][field_map["封装形式"]]
-    # ========== 2️⃣ 通过封装厂填入 PC ==========
-    pc_df = additional_sheets.get("赛卓-供应商-PC")
 
+    # ========== 3️⃣ PC 补充：通过封装厂匹配 ==========
+    pc_df = additional_sheets.get("赛卓-供应商-PC")
     if pc_df is not None and not pc_df.empty:
         pc_df = pc_df.copy()
         pc_df["封装厂"] = pc_df["封装厂"].astype(str).apply(normalize_vendor_name)
         pc_df["PC"] = pc_df["PC"].astype(str).str.strip()
 
-        # 删除主表中已存在的 PC 列
-        if "PC" in main_plan_df.columns:
-            main_plan_df.drop(columns=["PC"], inplace=True)
-
-        # 合并
+        # 合并并仅填未填值
         merged_pc = main_plan_df.merge(
             pc_df[["封装厂", "PC"]].drop_duplicates(),
             on="封装厂",
-            how="left"
+            how="left",
+            suffixes=("", "_pc补充")
         )
 
-        # 填回 PC 列
-        main_plan_df["PC"] = merged_pc["PC"]
+        if "PC" not in main_plan_df.columns:
+            main_plan_df["PC"] = ""
+
+        for idx in merged_pc.index:
+            if not merged_pc.at[idx, "PC"] and pd.notna(merged_pc.at[idx, "PC_pc补充"]):
+                main_plan_df.at[idx, "PC"] = merged_pc.at[idx, "PC_pc补充"]
 
     return main_plan_df
