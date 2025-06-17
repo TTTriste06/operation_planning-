@@ -125,8 +125,6 @@ class PivotProcessor:
             "新晶圆品名", "新规格", "新品名",
             "替代晶圆", "替代规格", "替代品名"
         ]
-        st.write(mapping_new)
-        st.write(mapping_sub1)
 
        
 
@@ -213,8 +211,6 @@ class PivotProcessor:
         all_replaced_names.update(replaced_sub2)
         all_replaced_names.update(replaced_sub3)
         all_replaced_names.update(replaced_sub4)
-        st.write("1")
-        st.write(self.dataframes["赛卓-未交订单"])
 
         df_new = self.dataframes["赛卓-成品库存"]
         df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品库存"])
@@ -322,11 +318,7 @@ class PivotProcessor:
         if unfulfilled_df is not None and not unfulfilled_df.empty:
             main_plan_df, unmatched_unfulfilled = append_unfulfilled_summary_columns_by_date(main_plan_df, unfulfilled_df)
             st.success("✅ 已合并未交订单数据")
-        st.write("2")
-        st.write(main_plan_df)
-        st.write(unmatched_unfulfilled)
-
-
+        
         ## == 预测 ==
         forecast_df = self.additional_sheets.get("赛卓-预测")
         if forecast_df is not None and not forecast_df.empty:
@@ -376,8 +368,6 @@ class PivotProcessor:
         
         # 回货计划调整
         main_plan_df = generate_monthly_return_adjustment(main_plan_df)
-
-        st.write(main_plan_df)
         
         # 检查
         # main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
