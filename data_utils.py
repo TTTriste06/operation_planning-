@@ -226,7 +226,8 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
             main_plan_df["PC"] = ""
 
         for idx in merged_pc.index:
-            if not merged_pc.at[idx, "PC"] and pd.notna(merged_pc.at[idx, "PC_pc补充"]):
-                main_plan_df.at[idx, "PC"] = merged_pc.at[idx, "PC_pc补充"]
-
+            if not merged_pc.at[idx, "PC"] and pd.notna(merged_pc.at[idx, "PC"]):
+                main_plan_df.at[idx, "PC"] = merged_pc.at[idx, "PC"]
+                
+    return main_plan_df
     return main_plan_df
