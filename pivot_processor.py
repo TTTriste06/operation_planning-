@@ -360,14 +360,14 @@ class PivotProcessor:
         main_plan_df = generate_monthly_semi_plan(main_plan_df, forecast_months, mapping_semi)
 
         # 投单计划调整
-        main_plan_df = generate_monthly_adjust_plan(main_plan_df)
+        # main_plan_df = generate_monthly_adjust_plan(main_plan_df)
 
         # 回货计划
-        main_plan_df = generate_monthly_return_plan(main_plan_df)
+        # main_plan_df = generate_monthly_return_plan(main_plan_df)
 
         
         # 回货计划调整
-        main_plan_df = generate_monthly_return_adjustment(main_plan_df)
+        # main_plan_df = generate_monthly_return_adjustment(main_plan_df)
         
         # 检查
         # main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
