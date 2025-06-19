@@ -242,19 +242,19 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
 
 
         st.write(pc_df)
-        st.write(merged)
+        st.write(main_plan_df)
         
         # 🔒 检查 merge 后是否含 PC 列
-        if "PC" not in merged.columns:
+        if "PC" not in main_plan_df.columns:
             raise ValueError("❌ 合并后没有生成 PC 列，可能‘供应商-PC’表格式错误或无匹配")
     
         # ✅ 回填 PC
-        main_plan_df.loc[mask_empty_pc, "PC"] = merged["PC"].values
+        main_plan_df.loc[mask_empty_pc, "PC"] = main_plan_df["PC"].values
     
         # 可选调试
         filled_count = merged["PC"].notna().sum()
         st.write(f"✅ 通过封装厂补充 PC：成功填入 {filled_count} 条")
-
+        st.write(main_plan_df)
 
 
     return main_plan_df
