@@ -128,8 +128,9 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
 def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict) -> pd.DataFrame:
     """
     根据多个数据源填入封装厂、封装形式、PC。
-
-    优先从“赛卓-新旧料号”获取 PC；若无，再通过“封装厂”匹配“赛卓-供应商-PC”。
+    PC填入优先级：
+    1. 先通过封装厂 + 供应商-PC 表补空；
+    2. 再使用新旧料号表中 PC 覆盖。
     """
 
     VENDOR_ALIAS = {
@@ -146,10 +147,48 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
     vendor_col = "封装厂"
     pkg_col = "封装形式"
 
-    # ========== 1️⃣ 封装厂、封装形式、PC（第一优先） ==========
+    if vendor_col not in main_plan_df.columns:
+        main_plan_df[vendor_col] = ""
+    if pkg_col not in main_plan_df.columns:
+        main_plan_df[pkg_col] = ""
+    if "PC" not in main_plan_df.columns:
+        main_plan_df["PC"] = ""
+
+    # ========== 1️⃣ 通过封装厂 + PC 表补 PC ==========
+    pc_df = additional_sheets.get("赛卓-供应商-PC")
+    if pc_df is not None and not pc_df.empty:
+        pc_df = pc_df.copy()
+        pc_df.columns = pc_df.columns.str.strip()
+        if "封装厂" not in pc_df.columns or "PC" not in pc_df.columns:
+            raise ValueError("❌ ‘赛卓-供应商-PC’ 缺少必要字段 ‘封装厂’ 或 ‘PC’")
+
+        pc_df["封装厂"] = pc_df["封装厂"].astype(str).apply(normalize_vendor_name)
+        pc_df["PC"] = pc_df["PC"].astype(str).str.strip()
+
+        main_plan_df["封装厂"] = main_plan_df["封装厂"].astype(str).apply(normalize_vendor_name)
+
+        # 找出 PC 为空的行进行合并
+        mask_empty_pc = main_plan_df["PC"].isna() | (main_plan_df["PC"] == "")
+        df_needs_pc = main_plan_df[mask_empty_pc].copy()
+
+        merged = df_needs_pc.merge(
+            pc_df[["封装厂", "PC"]].drop_duplicates(),
+            on="封装厂",
+            how="left"
+        )
+
+        if "PC" not in merged.columns:
+            # 不再 raise，而是继续处理，不报错
+            merged["PC"] = ""
+
+        # 回填已匹配 PC
+        main_plan_df.loc[mask_empty_pc, "PC"] = merged["PC"].reset_index(drop=True)
+
+    # ========== 2️⃣ 从新旧料号中覆盖封装厂/封装形式/PC ==========
     df_map = additional_sheets.get("赛卓-新旧料号")
     if df_map is not None and not df_map.empty:
         df_map = df_map.copy()
+        df_map.columns = df_map.columns.str.strip()
         df_map["新品名"] = df_map["新品名"].astype(str).str.strip()
         df_map["封装厂"] = df_map["封装厂"].astype(str).apply(normalize_vendor_name)
         df_map["封装形式"] = df_map["封装形式"].astype(str).str.strip()
@@ -161,24 +200,19 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
             if matched.empty:
                 continue
 
-            if pd.isna(row[vendor_col]) and matched.iloc[0]["封装厂"]:
-                main_plan_df.at[idx, vendor_col] = matched.iloc[0]["封装厂"]
+            # ✅ 无论原值如何，全部覆盖 PC
+            main_plan_df.at[idx, "PC"] = matched.iloc[0]["PC"]
 
-            if pd.isna(row.get(pkg_col)) and matched.iloc[0]["封装形式"]:
+            # 封装厂/封装形式：只补空
+            if pd.isna(row[vendor_col]) or row[vendor_col] == "":
+                main_plan_df.at[idx, vendor_col] = matched.iloc[0]["封装厂"]
+            if pd.isna(row[pkg_col]) or row[pkg_col] == "":
                 main_plan_df.at[idx, pkg_col] = matched.iloc[0]["封装形式"]
 
-            # ✅ 优先填入 PC
-            if "PC" not in main_plan_df.columns:
-                main_plan_df["PC"] = ""
-            if pd.isna(row.get("PC")) or row["PC"] == "":
-                pc_value = matched.iloc[0]["PC"]
-                if pc_value:
-                    main_plan_df.at[idx, "PC"] = pc_value
-
-    # ========== 2️⃣ 封装厂、封装形式补充（其他来源） ==========
+    # ========== 3️⃣ 其他来源补封装厂 / 封装形式 ==========
     sources = [
         ("赛卓-成品在制", {"品名": "产品品名", "封装厂": "工作中心", "封装形式": "封装形式"}),
-        ("赛卓-下单明细", {"品名": "回货明细_回货品名", "封装厂": "供应商名称"})
+        ("赛卓-下单明细", {"品名": "回货明细_回货品名", "封装厂": "供应商名称"})  # 无封装形式
     ]
 
     for sheet, field_map in sources:
@@ -187,12 +221,13 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
             continue
 
         df = df.copy()
-        if field_map["品名"] not in df.columns or field_map["封装厂"] not in df.columns:
-            continue
+        for col in field_map.values():
+            if col not in df.columns:
+                continue
 
         df[field_map["品名"]] = df[field_map["品名"]].astype(str).str.strip()
         df[field_map["封装厂"]] = df[field_map["封装厂"]].astype(str).apply(normalize_vendor_name)
-        if "封装形式" in field_map and field_map["封装形式"] in df.columns:
+        if "封装形式" in field_map and field_map.get("封装形式") in df.columns:
             df[field_map["封装形式"]] = df[field_map["封装形式"]].astype(str).str.strip()
 
         for idx, row in main_plan_df.iterrows():
@@ -201,13 +236,76 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
             if matched.empty:
                 continue
 
-            if pd.isna(row[vendor_col]):
+            if pd.isna(row[vendor_col]) or row[vendor_col] == "":
                 main_plan_df.at[idx, vendor_col] = matched.iloc[0][field_map["封装厂"]]
-
-            if "封装形式" in field_map and pd.isna(row.get(pkg_col)):
+            if "封装形式" in field_map and pd.isna(row[pkg_col]):
                 main_plan_df.at[idx, pkg_col] = matched.iloc[0][field_map["封装形式"]]
 
-    # ========== 3️⃣ 通过封装厂补充 PC（仅填空值） ==========
+    return main_plan_df
+
+
+
+def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict) -> pd.DataFrame:
+    """
+    根据多个数据源填入封装厂、封装形式、PC。
+    执行顺序：
+    1. 从“成品在制”和“下单明细”补充封装厂和封装形式（补空）
+    2. 从“供应商-PC”表按封装厂补 PC（补空）
+    3. 从“新旧料号”强制覆盖封装厂、封装形式、PC
+    """
+
+    VENDOR_ALIAS = {
+        "绍兴千欣电子技术有限公司": "绍兴千欣",
+        "南通宁芯": "南通宁芯微电子"
+    }
+
+    def normalize_vendor_name(name: str) -> str:
+        name = str(name).strip()
+        name = name.split("-")[0]
+        return VENDOR_ALIAS.get(name, name)
+
+    name_col = "品名"
+    vendor_col = "封装厂"
+    pkg_col = "封装形式"
+
+    # 保证必要字段存在
+    for col in [vendor_col, pkg_col, "PC"]:
+        if col not in main_plan_df.columns:
+            main_plan_df[col] = ""
+
+    # ========== 1️⃣ 从“成品在制”、“下单明细”补封装厂/封装形式（补空） ==========
+    sources = [
+        ("赛卓-成品在制", {"品名": "产品品名", "封装厂": "工作中心", "封装形式": "封装形式"}),
+        ("赛卓-下单明细", {"品名": "回货明细_回货品名", "封装厂": "供应商名称"})  # 无封装形式
+    ]
+
+    for sheet, field_map in sources:
+        df = dataframes.get(sheet) if sheet in dataframes else additional_sheets.get(sheet)
+        if df is None or df.empty:
+            continue
+
+        df = df.copy()
+        for col in field_map.values():
+            if col not in df.columns:
+                continue
+
+        df[field_map["品名"]] = df[field_map["品名"]].astype(str).str.strip()
+        df[field_map["封装厂"]] = df[field_map["封装厂"]].astype(str).apply(normalize_vendor_name)
+        if "封装形式" in field_map and field_map.get("封装形式") in df.columns:
+            df[field_map["封装形式"]] = df[field_map["封装形式"]].astype(str).str.strip()
+
+        for idx, row in main_plan_df.iterrows():
+            pname = str(row[name_col]).strip()
+            matched = df[df[field_map["品名"]] == pname]
+            if matched.empty:
+                continue
+
+            if pd.isna(row[vendor_col]) or row[vendor_col] == "":
+                main_plan_df.at[idx, vendor_col] = matched.iloc[0][field_map["封装厂"]]
+            if "封装形式" in field_map and (pd.isna(row[pkg_col]) or row[pkg_col] == ""):
+                main_plan_df.at[idx, pkg_col] = matched.iloc[0][field_map["封装形式"]]
+
+    # ========== 2️⃣ 从“供应商-PC”补 PC（补空） ==========
     pc_df = additional_sheets.get("赛卓-供应商-PC")
     if pc_df is not None and not pc_df.empty:
         pc_df = pc_df.copy()
@@ -218,10 +316,10 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         pc_df["封装厂"] = pc_df["封装厂"].astype(str).apply(normalize_vendor_name)
         pc_df["PC"] = pc_df["PC"].astype(str).str.strip()
 
-        # 确保主表封装厂也标准化
+        # 标准化主表封装厂
         main_plan_df["封装厂"] = main_plan_df["封装厂"].astype(str).apply(normalize_vendor_name)
 
-        # 获取需补 PC 的行
+        # 补 PC
         mask_empty_pc = main_plan_df["PC"].isna() | (main_plan_df["PC"] == "")
         df_needs_pc = main_plan_df[mask_empty_pc].copy()
 
@@ -232,10 +330,29 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         )
 
         if "PC" not in merged.columns:
-            raise ValueError("❌ 合并后没有生成 PC 列，可能供应商-PC 数据无效")
+            merged["PC"] = ""
 
-        # 安全赋值：行数对齐，避免 ValueError
         main_plan_df.loc[mask_empty_pc, "PC"] = merged["PC"].reset_index(drop=True)
 
-    return main_plan_df
+    # ========== 3️⃣ 从“新旧料号”强制覆盖 封装厂 / 封装形式 / PC ==========
+    df_map = additional_sheets.get("赛卓-新旧料号")
+    if df_map is not None and not df_map.empty:
+        df_map = df_map.copy()
+        df_map.columns = df_map.columns.str.strip()
+        df_map["新品名"] = df_map["新品名"].astype(str).str.strip()
+        df_map["封装厂"] = df_map["封装厂"].astype(str).apply(normalize_vendor_name)
+        df_map["封装形式"] = df_map["封装形式"].astype(str).str.strip()
+        df_map["PC"] = df_map["PC"].astype(str).str.strip()
 
+        for idx, row in main_plan_df.iterrows():
+            pname = str(row[name_col]).strip()
+            matched = df_map[df_map["新品名"] == pname]
+            if matched.empty:
+                continue
+
+            # ✅ 强制覆盖（优先级最高）
+            main_plan_df.at[idx, vendor_col] = matched.iloc[0]["封装厂"]
+            main_plan_df.at[idx, pkg_col] = matched.iloc[0]["封装形式"]
+            main_plan_df.at[idx, "PC"] = matched.iloc[0]["PC"]
+
+    return main_plan_df
