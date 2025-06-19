@@ -230,11 +230,16 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         df_needs_pc = main_plan_df[mask_empty_pc].copy()
     
         # 执行 merge
-        merged = df_needs_pc.merge(
+        if "PC" in main_plan_df.columns:
+            main_plan_df.drop(columns=["PC"], inplace=True)
+        
+        # 合并后只有一个 PC 列
+        main_plan_df = main_plan_df.merge(
             pc_df[["封装厂", "PC"]].drop_duplicates(),
             on="封装厂",
             how="left"
         )
+
 
         st.write(pc_df)
         st.write(merged)
