@@ -202,6 +202,10 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
         # 补 PC
         mask_empty_pc = main_plan_df["PC"].isna() | (main_plan_df["PC"] == "")
         df_needs_pc = main_plan_df[mask_empty_pc].copy()
+
+        # 在合并前删除原有 PC 列，避免 _x/_y 出现
+        if "PC" in df_needs_pc.columns:
+            df_needs_pc.drop(columns=["PC"], inplace=True)
         
         merged = df_needs_pc.merge(
             pc_df[["封装厂", "PC"]].drop_duplicates(),
