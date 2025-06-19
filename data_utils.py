@@ -212,29 +212,41 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
     
     if pc_df is not None and not pc_df.empty:
         pc_df = pc_df.copy()
+        pc_df.columns = pc_df.columns.str.strip()  # 防止列名中有空格
+        if "封装厂" not in pc_df.columns or "PC" not in pc_df.columns:
+            raise ValueError("❌ ‘赛卓-供应商-PC’ 缺少必要字段：‘封装厂’ 或 ‘PC’")
+    
         pc_df["封装厂"] = pc_df["封装厂"].astype(str).apply(normalize_vendor_name)
         pc_df["PC"] = pc_df["PC"].astype(str).str.strip()
     
-        # 确保主表也标准化封装厂
+        # 主表封装厂也标准化
         main_plan_df["封装厂"] = main_plan_df["封装厂"].astype(str).apply(normalize_vendor_name)
     
-        # 初始化 PC 列（如果缺失）
         if "PC" not in main_plan_df.columns:
             main_plan_df["PC"] = ""
     
-        # 只对 PC 为空的行补充
+        # 只填补空值
         mask_empty_pc = main_plan_df["PC"].isna() | (main_plan_df["PC"] == "")
         df_needs_pc = main_plan_df[mask_empty_pc].copy()
     
-        # 合并
+        # 执行 merge
         merged = df_needs_pc.merge(
             pc_df[["封装厂", "PC"]].drop_duplicates(),
             on="封装厂",
             how="left"
         )
     
-        # 回填：只填有匹配结果的
+        # 🔒 检查 merge 后是否含 PC 列
+        if "PC" not in merged.columns:
+            raise ValueError("❌ 合并后没有生成 PC 列，可能‘供应商-PC’表格式错误或无匹配")
+    
+        # ✅ 回填 PC
         main_plan_df.loc[mask_empty_pc, "PC"] = merged["PC"].values
+    
+        # 可选调试
+        filled_count = merged["PC"].notna().sum()
+        st.write(f"✅ 通过封装厂补充 PC：成功填入 {filled_count} 条")
+
 
 
     return main_plan_df
