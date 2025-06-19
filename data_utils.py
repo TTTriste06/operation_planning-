@@ -235,7 +235,10 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
             on="封装厂",
             how="left"
         )
-    
+
+        st.write(pc_df)
+        st.write(merged)
+        
         # 🔒 检查 merge 后是否含 PC 列
         if "PC" not in merged.columns:
             raise ValueError("❌ 合并后没有生成 PC 列，可能‘供应商-PC’表格式错误或无匹配")
