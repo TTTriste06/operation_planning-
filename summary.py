@@ -549,11 +549,7 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     forecast = main_plan_df[forecast_col].fillna(0)
     unfulfilled = main_plan_df[unfulfilled_col].fillna(0)
     fulfilled = main_plan_df[fulfilled_col].fillna(0)
-
-    st.write(forecast)
-    st.write(unfulfilled)
-    st.write(fulfilled)
-
+    
     total_order = unfulfilled + fulfilled
 
     # 应用逻辑（向量化计算）
@@ -565,7 +561,7 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     accuracy[mask1] = -9999
     accuracy[mask2] = 9999
     accuracy[mask3] = ((total_order[mask3] / forecast[mask3]) * 100).round(1).astype(str) + "%"
-    st.write(accuracy)
+    
     # 插入到“半成品在制”后面
     col_names = list(main_plan_df.columns)
     try:
