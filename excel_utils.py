@@ -119,11 +119,11 @@ def format_thousands_separator(ws: Worksheet):
             val = cell.value
 
             if isinstance(val, (int, float)):
-                cell.number_format = '#,##0.00'
+                cell.number_format = '#,##0'
             elif isinstance(val, str):
                 try:
                     num = float(val.replace(",", "").strip())
                     cell.value = num
-                    cell.number_format = '#,##0.00'
+                    cell.number_format = '#,##0'
                 except:
                     continue
