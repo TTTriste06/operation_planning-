@@ -80,21 +80,27 @@ def reorder_main_plan_by_unfulfilled_sheet(main_plan_df: pd.DataFrame, unfulfill
 
     return main_plan_df
 
-
 def format_currency_columns_rmb(ws: Worksheet):
     """
-    将所有标题中包含“金额”的列，设置为人民币货币格式（¥#,##0.00）
+    将所有标题中包含“金额”的列设置为人民币格式（¥#,##0.00），自动转换字符串为数字
     """
-    header_row = 2  # 第2行是标题行
+    header_row = 2
     max_col = ws.max_column
     max_row = ws.max_row
 
     for col_idx in range(1, max_col + 1):
-        header_value = ws.cell(row=header_row, column=col_idx).value
-        if isinstance(header_value, str) and "金额" in header_value:
-            for row in range(header_row + 1, max_row + 1):
-                cell = ws.cell(row=row, column=col_idx)
-                if isinstance(cell.value, (int, float)):
+        header = ws.cell(row=header_row, column=col_idx).value
+        if isinstance(header, str) and "金额" in header:
+            for row_idx in range(header_row + 1, max_row + 1):
+                cell = ws.cell(row=row_idx, column=col_idx)
+                val = cell.value
+                # 判断是否为数字或可转为数字的字符串
+                if isinstance(val, (int, float)):
                     cell.number_format = u'¥#,##0.00'
-
-
+                elif isinstance(val, str):
+                    try:
+                        num = float(val.replace(",", "").strip())
+                        cell.value = num
+                        cell.number_format = u'¥#,##0.00'
+                    except:
+                        pass  # 非法字符串忽略
