@@ -564,8 +564,21 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
 
     accuracy = main_plan_df.apply(calc_accuracy, axis=1)
 
+    print(main_plan_df.columns.tolist())
+
     # 插入到“半成品在制”后面
-    insert_pos = main_plan_df.columns.get_loc("半成品在制") + 1 if "半成品在制" in main_plan_df.columns else len(main_plan_df.columns)
-    main_plan_df.insert(insert_pos, accuracy_col, accuracy)
+    insert_pos = None
+    for idx, col in enumerate(main_plan_df.columns):
+        if str(col).strip() == "半成品在制":
+            insert_pos = idx + 1
+            st.write(insert_pos)
+            break
+    
+    # 如果找到了插入位置，则插入；否则放最后
+    if insert_pos is not None:
+        main_plan_df.insert(insert_pos, accuracy_col, accuracy)
+    else:
+        main_plan_df[accuracy_col] = accuracy
+
 
     return main_plan_df
