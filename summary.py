@@ -453,6 +453,7 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
         st.warning("⚠️ 未交订单为空，无法提取单价")
         main_plan_df["匹配到当月订单可发货金额"] = 0
         main_plan_df["匹配到所有订单可发货金额"] = 0
+        main_plan_df["订单外可发货金额"] = 0
         return main_plan_df
 
     # 提取品名到单价（注意清洗）
@@ -476,6 +477,7 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
     # 匹配金额列初始化
     current_delivery = []
     total_delivery = []
+    additional_delivery = []
 
     for _, row in main_plan_df.iterrows():
         name = str(row["品名"]).strip()
@@ -488,11 +490,18 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
         amt_curr = min(unfulfilled_curr, inventory) * price
         amt_total = min(unfulfilled_total, inventory) * price
 
+        if inventory > unfulfilled_total:
+            amt_additional = (inventory - unfulfilled_total) * price
+        else:
+            amt_additional = 0
+
         current_delivery.append(round(amt_curr, 2))
         total_delivery.append(round(amt_total, 2))
+        additional_delivery.append(round(amt_total, 2))
 
     main_plan_df["匹配到当月订单可发货金额"] = current_delivery
     main_plan_df["匹配到所有订单可发货金额"] = total_delivery
+    main_plan_df["订单外可发货金额"] = additional_delivery
     
     return main_plan_df
 
@@ -503,7 +512,7 @@ def mergeorder_delivery_amount(sheet):
     header_row = list(sheet.iter_rows(min_row=2, max_row=2, values_only=True))[0]
     cols = [
         idx for idx, val in enumerate(header_row, start=1)
-        if val in ["匹配到当月订单可发货金额", "匹配到所有订单可发货金额"]
+        if val in ["匹配到当月订单可发货金额", "匹配到所有订单可发货金额", "订单外可发货金额"]
     ]
 
     if not cols:
