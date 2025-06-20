@@ -347,7 +347,7 @@ class PivotProcessor:
 
         ## == 发货金额 ==
         if unfulfilled_df is not None and not unfulfilled_df.empty:
-            main_plan_df, unmatched_delivery = append_order_delivery_amount_columns(main_plan_df, unfulfilled_df)
+            main_plan_df = append_order_delivery_amount_columns(main_plan_df, unfulfilled_df)
             st.success("✅ 已合并发货金额")
 
         # === 投单计划 ===
