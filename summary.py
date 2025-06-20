@@ -565,18 +565,19 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     accuracy[mask1] = -9999
     accuracy[mask2] = 9999
     accuracy[mask3] = ((total_order[mask3] / forecast[mask3]) * 100).round(1).astype(str) + "%"
-
+    st.write(accuracy)
     # 插入到“半成品在制”后面
-    insert_pos = None
-    for idx, col in enumerate(main_plan_df.columns):
-        st.write(col)
-        if str(col).strip() == "半成品在制":
-            insert_pos = idx + 1
-            break
-
-    if insert_pos is not None:
-        main_plan_df.insert(insert_pos, accuracy_col, accuracy)
-    else:
+    col_names = list(main_plan_df.columns)
+    try:
+        insert_pos = col_names.index("半成品在制") + 1
+        main_plan_df = pd.concat([
+            main_plan_df.iloc[:, :insert_pos],
+            pd.DataFrame({accuracy_col: accuracy}),
+            main_plan_df.iloc[:, insert_pos:]
+        ], axis=1)
+    except ValueError:
+        # 若找不到就添加到最后
         main_plan_df[accuracy_col] = accuracy
+
 
     return main_plan_df
