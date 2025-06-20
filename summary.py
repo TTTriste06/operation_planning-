@@ -497,7 +497,7 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
 
         current_delivery.append(round(amt_curr, 2))
         total_delivery.append(round(amt_total, 2))
-        additional_delivery.append(round(amt_total, 2))
+        additional_delivery.append(round(amt_additional, 2))
 
     main_plan_df["匹配到当月订单可发货金额"] = current_delivery
     main_plan_df["匹配到所有订单可发货金额"] = total_delivery
