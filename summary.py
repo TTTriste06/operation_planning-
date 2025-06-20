@@ -550,6 +550,10 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
 
     total_order = unfulfilled + fulfilled
 
+    st.write("!")
+
+    st.write(main_plan_df.columns.tolist())
+
     def calc_accuracy(row):
         f = row[forecast_col]
         o = row[unfulfilled_col] + row[fulfilled_col]
@@ -564,10 +568,7 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
 
     accuracy = main_plan_df.apply(calc_accuracy, axis=1)
 
-    st.write("!")
-
-    st.write(main_plan_df.columns.tolist())
-
+    
     # 插入到“半成品在制”后面
     insert_pos = None
     for idx, col in enumerate(main_plan_df.columns):
