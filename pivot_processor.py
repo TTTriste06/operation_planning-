@@ -339,12 +339,6 @@ class PivotProcessor:
             main_plan_df, unmatched_in_progress = append_product_in_progress(main_plan_df, product_in_progress_df, mapping_semi)
             st.success("✅ 已合并成品在制数据")
 
-        ## == 成品在制 ==
-        product_in_progress_df = self.dataframes.get("赛卓-成品在制")
-        if product_in_progress_df is not None and not product_in_progress_df.empty:
-            main_plan_df, unmatched_in_progress = append_product_in_progress(main_plan_df, product_in_progress_df, mapping_semi)
-            st.success("✅ 已合并成品在制数据")
-
         ## == 发货金额 ==
         if unfulfilled_df is not None and not unfulfilled_df.empty:
             main_plan_df = append_order_delivery_amount_columns(main_plan_df, unfulfilled_df)
