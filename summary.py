@@ -463,9 +463,10 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
 
     # 获取字段
     current_month = datetime.now().month
-    current_month_col = f"{current_month}月未交订单"
+    current_month = datetime.now().strftime("%Y-%m")
+    current_month_col = f"未交订单 {current_month}"
     total_unfulfilled_col = "总未交订单"
-    inventory_col = "数量_成品仓"
+    inventory_col = "成品仓"
 
     # 若字段不存在，添加 0 值
     for col in [current_month_col, total_unfulfilled_col, inventory_col]:
@@ -492,6 +493,7 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
 
     main_plan_df["匹配到当月订单可发货金额"] = current_delivery
     main_plan_df["匹配到所有订单可发货金额"] = total_delivery
+    
     return main_plan_df
 
 def mergeorder_delivery_amount(sheet):
