@@ -536,12 +536,14 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
 
     current_year = datetime.now().strftime("%Y-%m")
-    current_month = datetime.now().strftime("%m")
+    current_month = str(datetime.now().month)  # 输出 "6"
+
 
     forecast_col = f"{current_month}月预测"
     unfulfilled_col = f"未交订单 {current_year}"
     fulfilled_col = f"{current_month}月销售数量"
     accuracy_col = "当月预测准确率(订单/预测)"
+    
     
     # 填充缺失值为0
     forecast = main_plan_df[forecast_col].fillna(0)
