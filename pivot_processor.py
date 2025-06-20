@@ -31,7 +31,9 @@ from summary import (
     merge_finished_inventory_with_warehouse_types,
     merge_inventory_header,
     append_product_in_progress,
-    merge_product_in_progress_header
+    merge_product_in_progress_header,
+    append_order_delivery_amount_columns,
+    mergeorder_delivery_amount
 )
 from production_plan import (
     init_monthly_fields,
@@ -343,6 +345,11 @@ class PivotProcessor:
             main_plan_df, unmatched_in_progress = append_product_in_progress(main_plan_df, product_in_progress_df, mapping_semi)
             st.success("✅ 已合并成品在制数据")
 
+        ## == 发货金额 ==
+        if unfulfilled_df is not None and not unfulfilled_df.empty:
+            main_plan_df, unmatched_delivery = append_order_delivery_amount_columns(main_plan_df, unfulfilled_df)
+            st.success("✅ 已合并发货金额")
+
         # === 投单计划 ===
         forecast_months = init_monthly_fields(main_plan_df)
 
@@ -405,6 +412,7 @@ class PivotProcessor:
             merge_forecast_header(ws)
             merge_inventory_header(ws)
             merge_product_in_progress_header(ws)
+            mergeorder_delivery_amount(ws)
 
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
