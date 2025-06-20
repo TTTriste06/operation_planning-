@@ -530,13 +530,11 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
     在“半成品在制”后面插入一列：当月预测准确率(订单/预测)
     """
-    current_month = datetime.now().strftime("%Y-%m")
-    st.write(current_month)
-    current_month2 = datetime.now().strftime("%m")
-    st.write(current_month2)
-    forecast_col = f"预测 {current_month}"
-    unfulfilled_col = f"未交订单 {current_month}"
-    fulfilled_col = f"成品实际投单 {current_month}"
+    current_year = datetime.now().strftime("%Y-%m")
+    current_month = datetime.now().strftime("%m")
+    forecast_col = f"{current_month}月预测"
+    unfulfilled_col = f"未交订单 {current_year}"
+    fulfilled_col = f"{current_month}月销售数量"
     accuracy_col = "当月预测准确率(订单/预测)"
 
     # 若缺字段，则填None
@@ -560,7 +558,7 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
         elif o > 0 and f == 0:
             return 9999
         elif o > 0 and f > 0:
-            return round(o / f, 2)
+            return f"{round(o / f * 100, 1)}%"
         else:
             return None
 
