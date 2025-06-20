@@ -564,7 +564,7 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
 
     accuracy = main_plan_df.apply(calc_accuracy, axis=1)
 
-    print(main_plan_df.columns.tolist())
+    st.write(main_plan_df.columns.tolist())
 
     # 插入到“半成品在制”后面
     insert_pos = None
