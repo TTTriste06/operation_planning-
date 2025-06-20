@@ -107,19 +107,17 @@ def format_currency_columns_rmb(ws: Worksheet):
 
 def format_thousands_separator(ws: Worksheet):
     """
-    将所有包含数字的列格式化为带千位分隔的数字（#,##0.00），不带货币符号。
-    适用于所有列值为 float 或 int 的字段。
+    将 F 列（第6列）之后的所有列，若为数值或可转数字的字符串，设置为千位分隔格式：#,##0.00。
     """
     header_row = 2
     max_col = ws.max_column
     max_row = ws.max_row
 
-    for col_idx in range(1, max_col + 1):
+    for col_idx in range(6, max_col + 1):  # 从F列开始
         for row_idx in range(header_row + 1, max_row + 1):
             cell = ws.cell(row=row_idx, column=col_idx)
             val = cell.value
 
-            # 仅处理数值或可转换为数值的字符串
             if isinstance(val, (int, float)):
                 cell.number_format = '#,##0.00'
             elif isinstance(val, str):
@@ -129,4 +127,3 @@ def format_thousands_separator(ws: Worksheet):
                     cell.number_format = '#,##0.00'
                 except:
                     continue
-
