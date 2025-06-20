@@ -212,8 +212,7 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
             on="封装厂",
             how="left"
         )
-
-        st.write(merged)
+        
         if "PC" not in merged.columns:
             merged["PC"] = ""
 
