@@ -526,4 +526,48 @@ def mergeorder_delivery_amount(sheet):
     cell.value = "发货金额"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
+def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    在“半成品在制”后面插入一列：当月预测准确率(订单/预测)
+    """
+    current_month = datetime.now().strftime("%Y-%m")
+    st.write(current_month)
+    current_month2 = datetime.now().strftime("%m")
+    st.write(current_month2)
+    forecast_col = f"预测 {current_month}"
+    unfulfilled_col = f"未交订单 {current_month}"
+    fulfilled_col = f"成品实际投单 {current_month}"
+    accuracy_col = "当月预测准确率(订单/预测)"
 
+    # 若缺字段，则填None
+    for col in [forecast_col, unfulfilled_col, fulfilled_col]:
+        if col not in main_plan_df.columns:
+            main_plan_df[accuracy_col] = None
+            return main_plan_df
+
+    # 提取数据列
+    forecast = main_plan_df[forecast_col].fillna(0)
+    unfulfilled = main_plan_df[unfulfilled_col].fillna(0)
+    fulfilled = main_plan_df[fulfilled_col].fillna(0)
+
+    total_order = unfulfilled + fulfilled
+
+    def calc_accuracy(row):
+        f = row[forecast_col]
+        o = row[unfulfilled_col] + row[fulfilled_col]
+        if o == 0 and f > 0:
+            return -9999
+        elif o > 0 and f == 0:
+            return 9999
+        elif o > 0 and f > 0:
+            return round(o / f, 2)
+        else:
+            return None
+
+    accuracy = main_plan_df.apply(calc_accuracy, axis=1)
+
+    # 插入到“半成品在制”后面
+    insert_pos = main_plan_df.columns.get_loc("半成品在制") + 1 if "半成品在制" in main_plan_df.columns else len(main_plan_df.columns)
+    main_plan_df.insert(insert_pos, accuracy_col, accuracy)
+
+    return main_plan_df
