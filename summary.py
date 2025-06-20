@@ -542,17 +542,15 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     unfulfilled_col = f"未交订单 {current_year}"
     fulfilled_col = f"{current_month}月销售数量"
     accuracy_col = "当月预测准确率(订单/预测)"
-
-    # 若缺字段则直接返回空列
-    for col in [forecast_col, unfulfilled_col, fulfilled_col]:
-        if col not in main_plan_df.columns:
-            main_plan_df[accuracy_col] = None
-            return main_plan_df
-
+    
     # 填充缺失值为0
     forecast = main_plan_df[forecast_col].fillna(0)
     unfulfilled = main_plan_df[unfulfilled_col].fillna(0)
     fulfilled = main_plan_df[fulfilled_col].fillna(0)
+
+    st.write(forecast)
+    st.write(unfulfilled)
+    st.write(fulfilled)
 
     total_order = unfulfilled + fulfilled
 
