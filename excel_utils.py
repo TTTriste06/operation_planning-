@@ -1,6 +1,8 @@
 import pandas as pd
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import PatternFill
+from openpyxl.worksheet.worksheet import Worksheet
+from openpyxl.styles import numbers
 
 def adjust_column_width(ws, max_width=70):
     """
@@ -77,4 +79,22 @@ def reorder_main_plan_by_unfulfilled_sheet(main_plan_df: pd.DataFrame, unfulfill
     main_plan_df = main_plan_df.sort_values(by="_排序键").drop(columns="_排序键").reset_index(drop=True)
 
     return main_plan_df
+
+
+def format_currency_columns_rmb(ws: Worksheet):
+    """
+    将所有标题中包含“金额”的列，设置为人民币货币格式（¥#,##0.00）
+    """
+    header_row = 2  # 第2行是标题行
+    max_col = ws.max_column
+    max_row = ws.max_row
+
+    for col_idx in range(1, max_col + 1):
+        header_value = ws.cell(row=header_row, column=col_idx).value
+        if isinstance(header_value, str) and "金额" in header_value:
+            for row in range(header_row + 1, max_row + 1):
+                cell = ws.cell(row=row, column=col_idx)
+                if isinstance(cell.value, (int, float)):
+                    cell.number_format = u'¥#,##0.00'
+
 
