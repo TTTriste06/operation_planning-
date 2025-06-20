@@ -8,7 +8,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 
 from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX, FIELD_MAPPINGS, pivot_config, RENAME_MAP
-from excel_utils import adjust_column_width, highlight_replaced_names_in_main_sheet, reorder_main_plan_by_unfulfilled_sheet
+from excel_utils import adjust_column_width, highlight_replaced_names_in_main_sheet, reorder_main_plan_by_unfulfilled_sheet, format_currency_columns_rmb
 from mapping_utils import (
     clean_mapping_headers, 
     replace_all_names_with_mapping, 
@@ -419,6 +419,7 @@ class PivotProcessor:
 
 
             adjust_column_width(ws)
+            format_currency_columns_rmb(ws)
 
 
             # 设置字体加粗，行高也调高一点
