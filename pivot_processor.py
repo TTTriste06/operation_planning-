@@ -33,7 +33,8 @@ from summary import (
     append_product_in_progress,
     merge_product_in_progress_header,
     append_order_delivery_amount_columns,
-    mergeorder_delivery_amount
+    mergeorder_delivery_amount,
+    append_forecast_accuracy_column
 )
 from production_plan import (
     init_monthly_fields,
@@ -375,7 +376,11 @@ class PivotProcessor:
         
         # 回货计划调整
         # main_plan_df = generate_monthly_return_adjustment(main_plan_df)
-        
+
+        # 添加预测准确率列
+        main_plan_df = append_forecast_accuracy_column(main_plan_df)
+
+
         # 检查
         # main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
