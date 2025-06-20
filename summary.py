@@ -569,6 +569,7 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     # 插入到“半成品在制”后面
     insert_pos = None
     for idx, col in enumerate(main_plan_df.columns):
+        st.write(col)
         if str(col).strip() == "半成品在制":
             insert_pos = idx + 1
             break
