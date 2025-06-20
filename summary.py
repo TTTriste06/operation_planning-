@@ -456,8 +456,8 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
         return main_plan_df
 
     # 提取品名到单价（注意清洗）
-    name_col = FIELD_MAPPINGS["赛卓-未交订单"]["品名"]
-    price_col = FIELD_MAPPINGS["赛卓-未交订单"]["单价"]
+    name_col = "品名"
+    price_col = "单价-原币"
     df_price[name_col] = df_price[name_col].astype(str).str.strip()
     price_map = df_price.dropna(subset=[price_col]).groupby(name_col)[price_col].mean().to_dict()
 
