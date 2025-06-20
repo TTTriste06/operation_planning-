@@ -529,59 +529,53 @@ def mergeorder_delivery_amount(sheet):
 def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
     在“半成品在制”后面插入一列：当月预测准确率(订单/预测)
+    逻辑：
+    - 若 (未交 + 销售) == 0 且 预测 > 0，则准确率 = -9999
+    - 若 (未交 + 销售) > 0 且 预测 == 0，则准确率 = 9999
+    - 若 (未交 + 销售) > 0 且 预测 > 0，则准确率 = (未交 + 销售) / 预测 × 100%
     """
+
     current_year = datetime.now().strftime("%Y-%m")
     current_month = datetime.now().strftime("%m")
+
     forecast_col = f"{current_month}月预测"
     unfulfilled_col = f"未交订单 {current_year}"
     fulfilled_col = f"{current_month}月销售数量"
     accuracy_col = "当月预测准确率(订单/预测)"
 
-    # 若缺字段，则填None
+    # 若缺字段则直接返回空列
     for col in [forecast_col, unfulfilled_col, fulfilled_col]:
         if col not in main_plan_df.columns:
             main_plan_df[accuracy_col] = None
             return main_plan_df
 
-    # 提取数据列
+    # 填充缺失值为0
     forecast = main_plan_df[forecast_col].fillna(0)
     unfulfilled = main_plan_df[unfulfilled_col].fillna(0)
     fulfilled = main_plan_df[fulfilled_col].fillna(0)
 
     total_order = unfulfilled + fulfilled
 
-    st.write("!")
+    # 应用逻辑（向量化计算）
+    accuracy = pd.Series(index=main_plan_df.index, dtype=object)
+    mask1 = (total_order == 0) & (forecast > 0)
+    mask2 = (total_order > 0) & (forecast == 0)
+    mask3 = (total_order > 0) & (forecast > 0)
 
-    st.write(main_plan_df.columns.tolist())
+    accuracy[mask1] = -9999
+    accuracy[mask2] = 9999
+    accuracy[mask3] = ((total_order[mask3] / forecast[mask3]) * 100).round(1).astype(str) + "%"
 
-    def calc_accuracy(row):
-        f = row[forecast_col]
-        o = row[unfulfilled_col] + row[fulfilled_col]
-        if o == 0 and f > 0:
-            return -9999
-        elif o > 0 and f == 0:
-            return 9999
-        elif o > 0 and f > 0:
-            return f"{round(o / f * 100, 1)}%"
-        else:
-            return None
-
-    accuracy = main_plan_df.apply(calc_accuracy, axis=1)
-
-    
     # 插入到“半成品在制”后面
     insert_pos = None
     for idx, col in enumerate(main_plan_df.columns):
         if str(col).strip() == "半成品在制":
             insert_pos = idx + 1
-            st.write(insert_pos)
             break
-    
-    # 如果找到了插入位置，则插入；否则放最后
+
     if insert_pos is not None:
         main_plan_df.insert(insert_pos, accuracy_col, accuracy)
     else:
         main_plan_df[accuracy_col] = accuracy
-
 
     return main_plan_df
