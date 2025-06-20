@@ -421,9 +421,6 @@ def merge_product_in_progress_header(sheet):
     """
     合并“成品在制”“半成品在制”列，在第一行写入“成品在制”，居中。
     """
-    from openpyxl.utils import get_column_letter
-    from openpyxl.styles import Alignment
-
     header_row = list(sheet.iter_rows(min_row=2, max_row=2, values_only=True))[0]
     cols = [
         idx for idx, val in enumerate(header_row, start=1)
@@ -440,4 +437,82 @@ def merge_product_in_progress_header(sheet):
     cell = sheet.cell(row=1, column=start_col)
     cell.value = "成品在制"
     cell.alignment = Alignment(horizontal="center", vertical="center")
+
+
+def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
+                               df_price: pd.DataFrame) -> tuple[pd.DataFrame, list]:
+    """
+    添加两列：
+    - 匹配到当月订单可发货金额
+    - 匹配到所有订单可发货金额
+    逻辑：
+    - 当月发货金额：min(当月未交, 成品仓) × 单价
+    - 所有发货金额：min(总未交订单, 成品仓) × 单价
+    """
+    if df_price is None or df_price.empty:
+        st.warning("⚠️ 未交订单为空，无法提取单价")
+        main_plan_df["匹配到当月订单可发货金额"] = 0
+        main_plan_df["匹配到所有订单可发货金额"] = 0
+        return main_plan_df
+
+    # 提取品名到单价（注意清洗）
+    name_col = FIELD_MAPPINGS["赛卓-未交订单"]["品名"]
+    price_col = FIELD_MAPPINGS["赛卓-未交订单"]["单价"]
+    df_price[name_col] = df_price[name_col].astype(str).str.strip()
+    price_map = df_price.dropna(subset=[price_col]).groupby(name_col)[price_col].mean().to_dict()
+
+    # 获取字段
+    current_month = datetime.now().month
+    current_month_col = f"{current_month}月未交订单"
+    total_unfulfilled_col = "总未交订单"
+    inventory_col = "数量_成品仓"
+
+    # 若字段不存在，添加 0 值
+    for col in [current_month_col, total_unfulfilled_col, inventory_col]:
+        if col not in main_plan_df.columns:
+            main_plan_df[col] = 0
+
+    # 匹配金额列初始化
+    current_delivery = []
+    total_delivery = []
+
+    for _, row in main_plan_df.iterrows():
+        name = str(row["品名"]).strip()
+        price = price_map.get(name, 0)
+
+        unfulfilled_curr = row.get(current_month_col, 0)
+        unfulfilled_total = row.get(total_unfulfilled_col, 0)
+        inventory = row.get(inventory_col, 0)
+
+        amt_curr = min(unfulfilled_curr, inventory) * price
+        amt_total = min(unfulfilled_total, inventory) * price
+
+        current_delivery.append(round(amt_curr, 2))
+        total_delivery.append(round(amt_total, 2))
+
+    main_plan_df["匹配到当月订单可发货金额"] = current_delivery
+    main_plan_df["匹配到所有订单可发货金额"] = total_delivery
+    return main_plan_df
+
+def mergeorder_delivery_amount(sheet):
+    """
+    合并“匹配到当月订单可发货金额”“匹配到所有订单可发货金额”列，在第一行写入“发货金额”，居中。
+    """
+    header_row = list(sheet.iter_rows(min_row=2, max_row=2, values_only=True))[0]
+    cols = [
+        idx for idx, val in enumerate(header_row, start=1)
+        if val in ["匹配到当月订单可发货金额", "匹配到所有订单可发货金额"]
+    ]
+
+    if not cols:
+        return
+
+    start_col = min(cols)
+    end_col = max(cols)
+
+    sheet.merge_cells(f"{get_column_letter(start_col)}1:{get_column_letter(end_col)}1")
+    cell = sheet.cell(row=1, column=start_col)
+    cell.value = "发货金额"
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+
 
