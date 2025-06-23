@@ -335,9 +335,6 @@ def merge_inventory_header(sheet):
     """
     合并“HOLD仓”、“成品仓”、“半成品仓”标题，写入“库存”，居中。
     """
-    from openpyxl.utils import get_column_letter
-    from openpyxl.styles import Alignment
-
     header_row = list(sheet.iter_rows(min_row=2, max_row=2, values_only=True))[0]
     inventory_cols = [
         idx for idx, col in enumerate(header_row, start=1)
@@ -458,7 +455,10 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
 
     # 提取品名到单价（注意清洗）
     name_col = "品名"
-    price_col = "单价-原币"
+    try:
+        price_col = "单价-原币"
+    except Exception as e:
+        st.error(f"⚠️ 未交订单中不存在“单价-原币”")
     df_price[name_col] = df_price[name_col].astype(str).str.strip()
     price_map = df_price.dropna(subset=[price_col]).groupby(name_col)[price_col].mean().to_dict()
 
