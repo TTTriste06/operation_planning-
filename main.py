@@ -8,7 +8,6 @@ from ui import setup_sidebar, get_uploaded_files
 from github_utils import load_file_with_github_fallback
 from urllib.parse import quote
 
-
 def main():
     st.set_page_config(page_title="Excel数据透视汇总工具", layout="wide")
     setup_sidebar()
@@ -67,8 +66,6 @@ def main():
                             st.error(f"❌ 无法读取工作表 `{sheet_name}`: {e}")
         except Exception as e:
             st.warning(f"⚠️ 无法预览生成的 Excel 文件：{e}")
-
-
 
 if __name__ == "__main__":
     try:
