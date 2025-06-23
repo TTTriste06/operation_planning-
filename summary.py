@@ -456,8 +456,13 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
     # 提取品名到单价（注意清洗）
     name_col = "品名"
     price_col = "单价-原币"
+    
+    # ✅ 检查是否存在“单价-原币”列
     if price_col not in df_price.columns:
-        raise ValueError(f"❌ 未交订单表中缺少 '{price_col}' 列，请确认表头是否正确。")
+        st.error(f"❌ 当前上传的未交订单表中缺少 `{price_col}` 列，请检查列名是否正确。")
+        st.stop()  # 中断后续运行，避免崩溃
+    
+    # ✅ 正常处理
     df_price[name_col] = df_price[name_col].astype(str).str.strip()
     price_map = (
         df_price
