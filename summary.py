@@ -455,12 +455,17 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
 
     # 提取品名到单价（注意清洗）
     name_col = "品名"
-    try:
-        price_col = "单价-原币"
-    except Exception as e:
-        st.error(f"⚠️ 未交订单中不存在“单价-原币”")
+    price_col = "单价-原币"
+    if price_col not in df_price.columns:
+        raise ValueError(f"❌ 未交订单表中缺少 '{price_col}' 列，请确认表头是否正确。")
     df_price[name_col] = df_price[name_col].astype(str).str.strip()
-    price_map = df_price.dropna(subset=[price_col]).groupby(name_col)[price_col].mean().to_dict()
+    price_map = (
+        df_price
+        .dropna(subset=[price_col])
+        .groupby(name_col)[price_col]
+        .mean()
+        .to_dict()
+    )
 
     # 获取字段
     current_month = datetime.now().month
