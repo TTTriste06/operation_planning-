@@ -182,140 +182,43 @@ class PivotProcessor:
 
         
         ## == 替换新旧料号、替代料号 ==
-        all_replaced_names = set()  # 用 set 累计替换的新品名
-        df_new = self.additional_sheets["赛卓-安全库存"]
-        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-安全库存"])
-        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-安全库存"])
-        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-安全库存"])
-        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-安全库存"])
-        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-安全库存"])
-        self.additional_sheets["赛卓-安全库存"] = df_new
-        all_replaced_names.update(replaced_main)
-        all_replaced_names.update(replaced_sub1)
-        all_replaced_names.update(replaced_sub2)
-        all_replaced_names.update(replaced_sub3)
-        all_replaced_names.update(replaced_sub4)
+        # 替代料号列表
+        mapping_sub_list = [mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4]
         
-        df_new = self.additional_sheets["赛卓-预测"]
-        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-预测"])
-        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-预测"])
-        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-预测"])
-        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-预测"])
-        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-预测"])
-        self.additional_sheets["赛卓-预测"] = df_new
-        all_replaced_names.update(replaced_main)
-        all_replaced_names.update(replaced_sub1)
-        all_replaced_names.update(replaced_sub2)
-        all_replaced_names.update(replaced_sub3)
-        all_replaced_names.update(replaced_sub4)
-
-        df_new = self.dataframes["赛卓-未交订单"]
-        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-未交订单"])
-        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-未交订单"])
-        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-未交订单"])
-        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-未交订单"])
-        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-未交订单"])
-        self.dataframes["赛卓-未交订单"] = df_new
-        all_replaced_names.update(replaced_main)
-        all_replaced_names.update(replaced_sub1)
-        all_replaced_names.update(replaced_sub2)
-        all_replaced_names.update(replaced_sub3)
-        all_replaced_names.update(replaced_sub4)
-
-        df_new = self.dataframes["赛卓-成品库存"]
-        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品库存"])
-        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-成品库存"])
-        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-成品库存"])
-        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-成品库存"])
-        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-成品库存"])
-        self.dataframes["赛卓-成品库存"] = df_new
-        all_replaced_names.update(replaced_main)
-        all_replaced_names.update(replaced_sub1)
-        all_replaced_names.update(replaced_sub2)
-        all_replaced_names.update(replaced_sub3)
-        all_replaced_names.update(replaced_sub4)
-
-        df_new = self.dataframes["赛卓-成品在制"]
-        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-成品在制"])
-        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-成品在制"])
-        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-成品在制"])
-        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-成品在制"])
-        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-成品在制"])
-        self.dataframes["赛卓-成品在制"] = df_new
-        all_replaced_names.update(replaced_main)
-        all_replaced_names.update(replaced_sub1)
-        all_replaced_names.update(replaced_sub2)
-        all_replaced_names.update(replaced_sub3)
-        all_replaced_names.update(replaced_sub4)
-
-        df_new = self.dataframes["赛卓-CP在制"]
-        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-CP在制"])
-        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-CP在制"])
-        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-CP在制"])
-        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-CP在制"])
-        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-CP在制"])
-        self.dataframes["赛卓-CP在制"] = df_new
-        all_replaced_names.update(replaced_main)
-        all_replaced_names.update(replaced_sub1)
-        all_replaced_names.update(replaced_sub2)
-        all_replaced_names.update(replaced_sub3)
-        all_replaced_names.update(replaced_sub4)
-
-        df_new = self.dataframes["赛卓-晶圆库存"]
-        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-晶圆库存"])
-        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-晶圆库存"])
-        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-晶圆库存"])
-        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-晶圆库存"])
-        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-晶圆库存"])
-        self.dataframes["赛卓-晶圆库存"] = df_new
-        all_replaced_names.update(replaced_main)
-        all_replaced_names.update(replaced_sub1)
-        all_replaced_names.update(replaced_sub2)
-        all_replaced_names.update(replaced_sub3)
-        all_replaced_names.update(replaced_sub4)
-
-        df_new = self.dataframes["赛卓-到货明细"]
-        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-到货明细"])
-        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-到货明细"])
-        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-到货明细"])
-        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-到货明细"])
-        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-到货明细"])
-        self.dataframes["赛卓-到货明细"] = df_new
-        all_replaced_names.update(replaced_main)
-        all_replaced_names.update(replaced_sub1)
-        all_replaced_names.update(replaced_sub2)
-        all_replaced_names.update(replaced_sub3)
-        all_replaced_names.update(replaced_sub4)
-
-        df_new = self.dataframes["赛卓-下单明细"]
-        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-下单明细"])
-        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-下单明细"])
-        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-下单明细"])
-        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-下单明细"])
-        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-下单明细"])
-        self.dataframes["赛卓-下单明细"] = df_new
-        all_replaced_names.update(replaced_main)
-        all_replaced_names.update(replaced_sub1)
-        all_replaced_names.update(replaced_sub2)
-        all_replaced_names.update(replaced_sub3)
-        all_replaced_names.update(replaced_sub4)
-
-        df_new = self.dataframes["赛卓-销货明细"]
-        df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS["赛卓-销货明细"])
-        df_new, replaced_sub1 = apply_extended_substitute_mapping(df_new, mapping_sub1, FIELD_MAPPINGS["赛卓-销货明细"])
-        df_new, replaced_sub2 = apply_extended_substitute_mapping(df_new, mapping_sub2, FIELD_MAPPINGS["赛卓-销货明细"])
-        df_new, replaced_sub3 = apply_extended_substitute_mapping(df_new, mapping_sub3, FIELD_MAPPINGS["赛卓-销货明细"])
-        df_new, replaced_sub4 = apply_extended_substitute_mapping(df_new, mapping_sub4, FIELD_MAPPINGS["赛卓-销货明细"])
-        self.dataframes["赛卓-销货明细"] = df_new
-        all_replaced_names.update(replaced_main)
-        all_replaced_names.update(replaced_sub1)
-        all_replaced_names.update(replaced_sub2)
-        all_replaced_names.update(replaced_sub3)
-        all_replaced_names.update(replaced_sub4)
+        # 需要处理的 sheet（key, 所在字典）
+        target_sheets = [
+            ("赛卓-安全库存", self.additional_sheets),
+            ("赛卓-预测", self.additional_sheets),
+            ("赛卓-未交订单", self.dataframes),
+            ("赛卓-成品库存", self.dataframes),
+            ("赛卓-成品在制", self.dataframes),
+            ("赛卓-CP在制", self.dataframes),
+            ("赛卓-晶圆库存", self.dataframes),
+            ("赛卓-到货明细", self.dataframes),
+            ("赛卓-下单明细", self.dataframes),
+            ("赛卓-销货明细", self.dataframes),
+        ]
         
-
+        all_replaced_names = set()
+        
+        # 执行替换逻辑
+        for sheet_name, container in target_sheets:
+            df_new = container[sheet_name]
+        
+            # 主映射替换
+            df_new, replaced_main = apply_mapping_and_merge(df_new, mapping_new, FIELD_MAPPINGS[sheet_name])
+            all_replaced_names.update(replaced_main)
+        
+            # 替代映射替换（1~4）
+            for mapping_sub in mapping_sub_list:
+                df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS[sheet_name])
+                all_replaced_names.update(replaced_sub)
+        
+            # 更新回字典
+            container[sheet_name] = df_new
+        
+        # 最终排序
         all_replaced_names = sorted(all_replaced_names)
-
 
         ## == 安全库存 ==
         safety_df = self.additional_sheets.get("赛卓-安全库存")
