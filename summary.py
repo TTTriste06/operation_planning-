@@ -515,7 +515,7 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
     
     return main_plan_df
 
-def mergeorder_delivery_amount(sheet):
+def merge_order_delivery_amount(sheet):
     """
     合并“匹配到当月订单可发货金额”“匹配到所有订单可发货金额”列，在第一行写入“发货金额”，居中。
     """
@@ -587,3 +587,25 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
 
 
     return main_plan_df
+
+def merge_forecast_accuracy(sheet):
+    """
+    合并“匹配到当月订单可发货金额”“匹配到所有订单可发货金额”列，在第一行写入“发货金额”，居中。
+    """
+    header_row = list(sheet.iter_rows(min_row=2, max_row=2, values_only=True))[0]
+    cols = [
+        idx for idx, val in enumerate(header_row, start=1)
+        if val in ["当月预测准确率(订单/预测)"]
+    ]
+
+    if not cols:
+        return
+
+    start_col = min(cols)
+    end_col = max(cols)
+
+    sheet.merge_cells(f"{get_column_letter(start_col)}1:{get_column_letter(end_col)}1")
+    cell = sheet.cell(row=1, column=start_col)
+    cell.value = "预测准确率"
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+
