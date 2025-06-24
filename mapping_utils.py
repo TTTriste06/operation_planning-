@@ -38,8 +38,8 @@ def apply_all_name_replacements(df, mapping_new, mapping_sub, sheet_name, field_
 
     all_mapped_keys = mapped_main.union(mapped_sub)
 
-    if verbose:
-        print(f"✅ [{sheet_name}] 共完成替换: {len(all_mapped_keys)} 种新料号")
+    #if verbose:
+    #    print(f"✅ [{sheet_name}] 共完成替换: {len(all_mapped_keys)} 种新料号")
 
     return df, all_mapped_keys
 
@@ -157,8 +157,8 @@ def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
     # 记录被替换的新品名（即原品名 != 映射后的品名）
     replaced_names = set(mapping_dict.values()).intersection(set(df[name_col]))
 
-    if verbose:
-        st.write(f"✅ 新旧料号替换成功: {len(replaced_names)} 项")
+    #if verbose:
+    #    st.write(f"✅ 新旧料号替换成功: {len(replaced_names)} 项")
 
     return df, replaced_names
 
@@ -205,8 +205,8 @@ def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=True):
             df.loc[mask, name_col] = sub["新品名"]
             matched_keys.update(df.loc[mask, name_col])
 
-    if verbose:
-        st.success(f"✅ 替代品名替换完成，共替换: {len(matched_keys)} 种")
+    #if verbose:
+    #    st.success(f"✅ 替代品名替换完成，共替换: {len(matched_keys)} 种")
 
     return df, matched_keys
     
