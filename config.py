@@ -22,9 +22,9 @@ RENAME_MAP = {
 OUTPUT_FILENAME_PREFIX = "运营主计划"
 
 # ✅ 全局运行配置（如用户交互中选择的参数）
-CONFIG = {
-    "selected_month": None  # 用户手动输入的历史数据截止月份（格式 YYYY-MM）
-}
+#CONFIG = {
+#    "selected_month": None  # 用户手动输入的历史数据截止月份（格式 YYYY-MM）
+#}
 
 # ✅ 各类 Excel 文件中字段的标准映射
 FIELD_MAPPINGS = {
