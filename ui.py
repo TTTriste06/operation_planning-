@@ -18,8 +18,8 @@ def get_uploaded_files():
     st.header("📤 Excel 数据处理与汇总")
 
     # 📅 输入历史截止月份
-    manual_month = st.text_input("📅 输入历史数据截止月份（格式: YYYY-MM，可留空表示不筛选）")
-    CONFIG["selected_month"] = manual_month.strip() if manual_month.strip() else None
+    # manual_month = st.text_input("📅 输入历史数据截止月份（格式: YYYY-MM，可留空表示不筛选）")
+    # CONFIG["selected_month"] = manual_month.strip() if manual_month.strip() else None
 
     # ✅ 合并上传框：所有主+明细文件统一上传
     all_files = st.file_uploader(
