@@ -39,8 +39,9 @@ from summary import (
     append_product_in_progress,
     merge_product_in_progress_header,
     append_order_delivery_amount_columns,
-    mergeorder_delivery_amount,
-    append_forecast_accuracy_column
+    merge_order_delivery_amount,
+    append_forecast_accuracy_column,
+    merge_forecast_accuracy
 )
 from production_plan import (
     init_monthly_fields,
@@ -417,7 +418,8 @@ class PivotProcessor:
             merge_forecast_header(ws)
             merge_inventory_header(ws)
             merge_product_in_progress_header(ws)
-            mergeorder_delivery_amount(ws)
+            merge_order_delivery_amount(ws)
+            merge_forecast_accuracy(ws)
 
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
