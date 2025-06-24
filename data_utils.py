@@ -223,6 +223,27 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
     if df_map is not None and not df_map.empty:
         df_map = df_map.copy()
         df_map.columns = df_map.columns.str.strip()
+        df_map["旧品名"] = df_map["旧品名"].astype(str).str.strip()
+        df_map["封装厂"] = df_map["封装厂"].astype(str).apply(normalize_vendor_name)
+        df_map["封装形式"] = df_map["封装形式"].astype(str).str.strip()
+        df_map["PC"] = df_map["PC"].astype(str).str.strip()
+
+        for idx, row in main_plan_df.iterrows():
+            pname = str(row[name_col]).strip()
+            matched = df_map[df_map["旧品名"] == pname]
+            if matched.empty:
+                continue
+
+            # ✅ 强制覆盖（优先级最高）
+            main_plan_df.at[idx, vendor_col] = matched.iloc[0]["封装厂"]
+            main_plan_df.at[idx, pkg_col] = matched.iloc[0]["封装形式"]
+            main_plan_df.at[idx, "PC"] = matched.iloc[0]["PC"]
+    
+    # ========== 3️⃣ 从“新旧料号”强制覆盖 封装厂 / 封装形式 / PC ==========
+    df_map = additional_sheets.get("赛卓-新旧料号")
+    if df_map is not None and not df_map.empty:
+        df_map = df_map.copy()
+        df_map.columns = df_map.columns.str.strip()
         df_map["新品名"] = df_map["新品名"].astype(str).str.strip()
         df_map["封装厂"] = df_map["封装厂"].astype(str).apply(normalize_vendor_name)
         df_map["封装形式"] = df_map["封装形式"].astype(str).str.strip()
@@ -238,5 +259,6 @@ def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict)
             main_plan_df.at[idx, vendor_col] = matched.iloc[0]["封装厂"]
             main_plan_df.at[idx, pkg_col] = matched.iloc[0]["封装形式"]
             main_plan_df.at[idx, "PC"] = matched.iloc[0]["PC"]
+
 
     return main_plan_df
