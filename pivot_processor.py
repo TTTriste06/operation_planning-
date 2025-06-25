@@ -414,7 +414,6 @@ class PivotProcessor:
             # 获取 workbook 和 worksheet
             wb = writer.book
             ws_diagram = wb["Summary"]
-            adjust_column_width(ws_diagram)
             st.write(wb.sheetnames)
             add_sheet_hyperlinks(ws_diagram, wb.sheetnames)
             
