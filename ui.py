@@ -21,12 +21,12 @@ def get_uploaded_files():
     # CONFIG["selected_month"] = manual_month.strip() if manual_month.strip() else None
 
     # 📅 添加主计划起始时间选择器
-    # st.subheader("📅 选择主计划起始时间")
+    st.subheader("📅 选择主计划起始时间")
     selected_date = st.date_input(
-        "选择一个起始日期", 
-        value=datetime(datetime.now().year, datetime.now().month, 1),
-        format="YYYY-MM-DD"
+        "📅 选择主计划起始时间", 
+        value=datetime(datetime.now().year, datetime.now().month, 1)
     )
+
 
     # ✅ 合并上传框：所有主+明细文件统一上传
     all_files = st.file_uploader(
