@@ -3,6 +3,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import numbers
+from openpyxl.styles import Font
 
 def adjust_column_width(ws, max_width=70):
     """
