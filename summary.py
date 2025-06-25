@@ -537,7 +537,7 @@ def merge_order_delivery_amount(sheet):
     cell.value = "发货金额"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
-def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
+def append_forecast_accuracy_column(main_plan_df: pd.DataFrame, start_date: datetime = None) -> pd.DataFrame:
     """
     在“半成品在制”后面插入一列：当月预测准确率(订单/预测)
     逻辑：
