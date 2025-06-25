@@ -131,6 +131,9 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
 
 def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list[int],
                                 mapping_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    半成品投单计划
+    """
     tmp = mapping_df[["新品名", "半成品"]].copy()
     tmp = clean_df(tmp)                               
     tmp = tmp[tmp["半成品"].notna() & (tmp["半成品"].astype(str).str.strip() != "")]
