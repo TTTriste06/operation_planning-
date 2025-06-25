@@ -438,7 +438,7 @@ def merge_product_in_progress_header(sheet):
 
 
 def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
-                               df_price: pd.DataFrame) -> tuple[pd.DataFrame, list]:
+                               df_price: pd.DataFrame, start_date: datetime = None) -> tuple[pd.DataFrame, list]:
     """
     添加两列：
     - 匹配到当月订单可发货金额
@@ -474,6 +474,8 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
     )
 
     # 获取字段
+    today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
+    st.write(today)
     current_month = datetime.now().month
     current_month = datetime.now().strftime("%Y-%m")
     current_month_col = f"未交订单 {current_month}"
