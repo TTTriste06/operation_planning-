@@ -8,7 +8,7 @@ from collections import defaultdict
 from openpyxl.styles import numbers
 from sheet_add import clean_df
 
-def init_monthly_fields(main_plan_df: pd.DataFrame) -> list[int]:
+def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None) -> list[int]:
     """
     自动识别主计划中预测字段的月份，添加 HEADER_TEMPLATE 中的所有月度字段列。
     初始化为 ""。
@@ -31,7 +31,8 @@ def init_monthly_fields(main_plan_df: pd.DataFrame) -> list[int]:
     if not forecast_months:
         return []
 
-    start_month = datetime.today().month
+    today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
+    start_month = today.month
     end_month = max(forecast_months) - 1
 
     for m in range(start_month, end_month + 1):
