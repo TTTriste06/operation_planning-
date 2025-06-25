@@ -62,7 +62,7 @@ from sheet_add import clean_df, append_all_standardized_sheets
 from pivot_generator import generate_monthly_pivots, standardize_uploaded_keys
 
 class PivotProcessor:
-    def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None):
+    def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None, selected_date):
         """
         替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
         """
@@ -229,7 +229,7 @@ class PivotProcessor:
         ## == 未交订单 ==
         unfulfilled_df = self.dataframes.get("赛卓-未交订单")
         if unfulfilled_df is not None and not unfulfilled_df.empty:
-            main_plan_df, unmatched_unfulfilled = append_unfulfilled_summary_columns_by_date(main_plan_df, unfulfilled_df)
+            main_plan_df, unmatched_unfulfilled = append_unfulfilled_summary_columns_by_date(main_plan_df, unfulfilled_df, selected_date)
             st.success("✅ 已合并未交订单数据")
         
         ## == 预测 ==
