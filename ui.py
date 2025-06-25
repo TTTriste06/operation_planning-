@@ -17,7 +17,7 @@ def get_uploaded_files():
     st.header("📤 Excel 数据处理与汇总")
 
     # 📅 输入历史截止月份
-    # manual_month = st.text_input("📅 输入历史数据截止月份（格式: YYYY-MM，可留空表示不筛选）")
+    manual_month = st.text_input("📅 输入历史数据截止月份（格式: YYYY-MM，可留空表示不筛选）")
     # CONFIG["selected_month"] = manual_month.strip() if manual_month.strip() else None
 
     # 📅 添加主计划起始时间选择器
