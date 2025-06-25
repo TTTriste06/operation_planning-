@@ -416,7 +416,7 @@ class PivotProcessor:
             
             # 添加一个文档内部超链接
             cell1 = sheet.Range[2, 2]
-            internalLink = sheet.HyperLinks.Add(cell1)
+            internalLink = ws_diagram.HyperLinks.Add(cell1)
             internalLink.Type = HyperLinkType.Workbook
             internalLink.TextToDisplay = "主计划"
             internalLink.Address = "主计划!A1"
