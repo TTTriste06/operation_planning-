@@ -302,7 +302,7 @@ class PivotProcessor:
             summary_data = [
                 ["", "超链接", "备注"],
                 ["数据汇总", "主计划", ""],
-                ["赛卓-交订单-汇总", "赛卓-交订单-汇总", ""],
+                ["赛卓-交订单-汇总", "赛卓-未交订单-汇总", ""],
                 ["赛卓-成品库存-汇总", "赛卓-成品库存-汇总", "关注“hold仓”“成品仓”"],
                 ["赛卓-晶圆库存-汇总", "赛卓-晶圆库存-汇总", "晶圆片数已转换为对应的Die数量"],
                 ["赛卓-CP在制-汇总", "赛卓-CP在制-汇总", ""],
@@ -414,7 +414,8 @@ class PivotProcessor:
             # 获取 workbook 和 worksheet
             wb = writer.book
             ws_diagram = wb["Summary"]
-            adjust_column_width(ws)
+            adjust_column_width(ws_diagram)
+            st.write(wb.sheetnames)
             add_sheet_hyperlinks(ws_diagram, wb.sheetnames)
             
         output_buffer.seek(0)
