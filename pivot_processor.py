@@ -253,7 +253,7 @@ class PivotProcessor:
 
         ## == 发货金额 ==
         if unfulfilled_df is not None and not unfulfilled_df.empty:
-            main_plan_df = append_order_delivery_amount_columns(main_plan_df, unfulfilled_df)
+            main_plan_df = append_order_delivery_amount_columns(main_plan_df, unfulfilled_df, start_date)
             st.success("✅ 已合并发货金额")
 
         # === 投单计划 ===
@@ -289,8 +289,7 @@ class PivotProcessor:
         # main_plan_df = generate_monthly_return_adjustment(main_plan_df)
 
         # 添加预测准确率列
-        main_plan_df = append_forecast_accuracy_column(main_plan_df)
-
+        main_plan_df = append_forecast_accuracy_column(main_plan_df, start_date)
 
         # 检查
         # main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
