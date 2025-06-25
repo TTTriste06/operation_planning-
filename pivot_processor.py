@@ -415,7 +415,7 @@ class PivotProcessor:
             ws_diagram = wb["Summary"]
             
             # 添加一个文档内部超链接
-            cell1 = ws_diagram.cell(row=2, column=2)  ✅（正确）
+            cell1 = ws_diagram.cell(row=2, column=2)
             internalLink = ws_diagram.HyperLinks.Add(cell1)
             internalLink.Type = HyperLinkType.Workbook
             internalLink.TextToDisplay = "主计划"
