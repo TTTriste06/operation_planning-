@@ -475,9 +475,7 @@ def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
 
     # 获取字段
     today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
-    st.write(today)
     current_month = today.strftime("%Y-%m")
-    st.write(current_month)
     current_month_col = f"未交订单 {current_month}"
     total_unfulfilled_col = "总未交订单"
     inventory_col = "成品仓"
@@ -547,9 +545,9 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     - 若 (未交 + 销售) > 0 且 预测 == 0，则准确率 = 9999
     - 若 (未交 + 销售) > 0 且 预测 > 0，则准确率 = (未交 + 销售) / 预测 × 100%
     """
-
-    current_year = datetime.now().strftime("%Y-%m")
-    current_month = str(datetime.now().month)  # 输出 "6"
+    today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
+    current_year = today.strftime("%Y-%m")
+    current_month = str(today.month)  # 输出 "6"
 
 
     forecast_col = f"{current_month}月预测"
