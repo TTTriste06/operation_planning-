@@ -142,45 +142,4 @@ def add_sheet_hyperlinks(ws: Worksheet, sheet_names: list):
         target_sheet = cell.value
         if target_sheet and target_sheet in sheet_names:
             # 添加内部超链接
-            cell.value = f'=HYPERLINK("#{target_sheet}!A1", "{target_sheet}")'
-
-
-def write_diagram_sheet(wb):
-    """
-    在工作簿 wb 中添加名为“图”的 sheet，写入静态内容并添加 sheet 内跳转超链接。
-    如果已存在“图”sheet，将覆盖内容。
-    """
-    data = [
-        ["数据汇总", "超链接", "备注"],
-        ["赛卓-未交订单-汇总", "赛卓-未交订单-汇总", ""],
-        ["赛卓-成品库存-汇总", "赛卓-成品库存-汇总", ""],
-        ["赛卓-成品在制-汇总", "赛卓-成品在制-汇总", "类比“hold仓+成品仓”"],
-        ["赛卓-CP在制-汇总", "赛卓-CP在制-汇总", "晶圆数已转换为对应的Die数量"],
-        ["赛卓-成品制造-汇总", "赛卓-成品制造-汇总", ""],
-        ["赛卓-到货明细", "赛卓-到货明细", ""],
-        ["赛卓-安全库存", "赛卓-安全库存", ""],
-    ]
-
-    # 若图页已存在，清空内容；否则创建
-    if "图" in wb.sheetnames:
-        ws = wb["图"]
-        wb.remove(ws)
-    ws = wb.create_sheet("图", 0)
-
-    for row_idx, row in enumerate(data, start=1):
-        for col_idx, value in enumerate(row, start=1):
-            cell = ws.cell(row=row_idx, column=col_idx, value=value)
-
-            # 第二列：插入超链接
-            if row_idx > 1 and col_idx == 2:
-                sheet_name = value
-                if sheet_name in wb.sheetnames:
-                    cell.value = f'=HYPERLINK("#{sheet_name}!A1", "{sheet_name}")'
-                    cell.font = Font(color="0000FF", underline="single")
-
-    # 自动调整列宽
-    for col in ws.columns:
-        max_len = max(len(str(c.value or "")) for c in col)
-        col_letter = get_column_letter(col[0].column)
-        ws.column_dimensions[col_letter].width = max_len + 4
-
+            cell.value = f'=HYPERLINK("#\'{sheet_name}\'!A1", "{sheet_name}")'
