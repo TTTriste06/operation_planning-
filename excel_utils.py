@@ -127,3 +127,20 @@ def format_thousands_separator(ws: Worksheet):
                     cell.number_format = '#,##0'
                 except:
                     continue
+
+def add_sheet_hyperlinks(ws: Worksheet, sheet_names: list):
+    """
+    给 ws 的第二列添加超链接，跳转到名称相同的工作表。
+    要求第 1 行是表头，从第 2 行开始为内容。
+
+    参数：
+        ws: openpyxl 的工作表对象（即“图”）
+        sheet_names: 所有已存在的 sheet 名称列表
+    """
+    for row in range(2, ws.max_row + 1):
+        cell = ws.cell(row=row, column=2)
+        target_sheet = cell.value
+        if target_sheet and target_sheet in sheet_names:
+            # 添加内部超链接
+            cell.value = f'=HYPERLINK("#{target_sheet}!A1", "{target_sheet}")'
+
