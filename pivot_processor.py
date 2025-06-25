@@ -416,8 +416,9 @@ class PivotProcessor:
             
             # 添加一个文档内部超链接
             cell = ws_diagram.cell(row=3, column=2)
-            target_sheet = "赛卓-未交订单-汇总"
-            cell.value = f'=HYPERLINK("#{target_sheet}!A1", "{target_sheet}")'
+            sheet_name = "赛卓-未交订单-汇总"
+            cell.value = f'=HYPERLINK("#\'{sheet_name}\'!A1", "{sheet_name}")'
+
             cell.font = Font(color="0000FF", underline="single")
 
             
