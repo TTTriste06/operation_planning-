@@ -257,7 +257,7 @@ class PivotProcessor:
             st.success("✅ 已合并发货金额")
 
         # === 投单计划 ===
-        forecast_months = init_monthly_fields(main_plan_df)
+        forecast_months = init_monthly_fields(main_plan_df, start_date)
 
         # 成品&半成品实际投单
         df_order = self.dataframes.get("赛卓-下单明细", pd.DataFrame())
