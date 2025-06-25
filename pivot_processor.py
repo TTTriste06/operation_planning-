@@ -13,7 +13,8 @@ from excel_utils import (
     highlight_replaced_names_in_main_sheet, 
     reorder_main_plan_by_unfulfilled_sheet, 
     format_currency_columns_rmb,
-    format_thousands_separator
+    format_thousands_separator,
+    add_sheet_hyperlinks
 )
 from mapping_utils import (
     clean_mapping_headers, 
@@ -298,7 +299,7 @@ class PivotProcessor:
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
-            static_data = [
+            summary_data = [
                 ["", "超链接", "备注"],
                 ["数据汇总", "主计划", ""],
                 ["赛卓-交订单-汇总", "赛卓-交订单-汇总", ""],
@@ -309,9 +310,9 @@ class PivotProcessor:
                 ["赛卓-预测", "赛卓-预测", ""],
                 ["赛卓-安全库存", "赛卓-安全库存", ""]
             ]
-            df_static = pd.DataFrame(static_data[1:], columns=static_data[0])
-            df_static.to_excel(writer, sheet_name="Summary", index=False)
-        
+            df_summary = pd.DataFrame(summary_data[1:], columns=summary_data[0])
+            df_summary.to_excel(writer, sheet_name="Summary", index=False)
+                    
             # 写入主计划表
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
@@ -410,7 +411,12 @@ class PivotProcessor:
                     adjusted_width = max_length * 1.2 + 10
                     ws.column_dimensions[col_letter].width = min(adjusted_width, 50)
 
-
+            # 获取 workbook 和 worksheet
+            wb = writer.book
+            ws_diagram = wb["Summary"]
+            adjust_column_width(ws)
+            add_sheet_hyperlinks(ws_diagram, wb.sheetnames)
+            
         output_buffer.seek(0)
 
        
