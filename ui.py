@@ -22,8 +22,8 @@ def get_uploaded_files():
 
     # 选择生成的月份
     st.markdown("### 📅 选择主计划起始时间")
-        selected_year = st.selectbox("选择年份", list(range(2022, datetime.now().year + 2)), index=1)
-        selected_month = st.selectbox("选择月份", list(range(1, 13)), index=datetime.now().month - 1)
+    selected_year = st.selectbox("选择年份", list(range(2022, datetime.now().year + 2)), index=1)
+    selected_month = st.selectbox("选择月份", list(range(1, 13)), index=datetime.now().month - 1)
 
 
     # ✅ 合并上传框：所有主+明细文件统一上传
