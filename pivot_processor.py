@@ -416,7 +416,7 @@ class PivotProcessor:
             
             for col_idx in range(1, ws_diagram.max_column + 1):
                 col_letter = get_column_letter(col_idx)
-                ws_diagram.column_dimensions[col_letter].width = 20
+                ws_diagram.column_dimensions[col_letter].width = 25
 
         output_buffer.seek(0)
 
