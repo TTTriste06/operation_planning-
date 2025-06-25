@@ -6,6 +6,7 @@ from datetime import datetime
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
+from spire.xls import Workbook, HyperLinkType, FileFormat
 
 from config import FILE_KEYWORDS, OUTPUT_FILENAME_PREFIX, FIELD_MAPPINGS, pivot_config, RENAME_MAP
 from excel_utils import (
