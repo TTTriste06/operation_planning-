@@ -23,9 +23,10 @@ def get_uploaded_files():
     # 📅 添加主计划起始时间选择器
     st.subheader("📅 选择主计划起始时间")
     selected_date = st.date_input(
-        "📅 选择主计划起始时间", 
-        value=datetime(datetime.now().year, datetime.now().month, 1)
+        "选择一个起始日期", 
+        value=datetime(datetime.now().year, datetime.now().month, 1)  # 默认选当月1号
     )
+
 
 
     # ✅ 合并上传框：所有主+明细文件统一上传
