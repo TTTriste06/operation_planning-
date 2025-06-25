@@ -179,7 +179,8 @@ def merge_unfulfilled_order_header(sheet):
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
-def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFrame, start_date: datetime = None) -> tuple[pd.DataFrame, list]:
+def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFrame, 
+                               start_date: datetime = None) -> tuple[pd.DataFrame, list]:
     """
     从预测表中提取当月及未来的预测信息（仅按“品名”匹配），合并至 summary_df。
     返回合并后的表格和未匹配的品名列表。
@@ -194,6 +195,7 @@ def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFra
     """
     today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
     this_month_int = today.month  
+    st.write(this_month_int)
 
     # ✅ 统一列名
     forecast_df = forecast_df.rename(columns={"生产料号": "品名"}).copy()
