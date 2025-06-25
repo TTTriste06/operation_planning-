@@ -20,12 +20,6 @@ def get_uploaded_files():
     # manual_month = st.text_input("📅 输入历史数据截止月份（格式: YYYY-MM，可留空表示不筛选）")
     # CONFIG["selected_month"] = manual_month.strip() if manual_month.strip() else None
 
-    # 选择生成的月份
-    st.markdown("### 📅 选择主计划起始时间")
-    selected_year = st.selectbox("选择年份", list(range(2022, datetime.now().year + 2)), index=1)
-    selected_month = st.selectbox("选择月份", list(range(1, 13)), index=datetime.now().month - 1)
-
-
     # ✅ 合并上传框：所有主+明细文件统一上传
     all_files = st.file_uploader(
         "📁 上传主文件: 未交订单/成品在制/成品库存/CP在制/晶圆库存/下单明细/销货明细/到货明细（支持多选）",
