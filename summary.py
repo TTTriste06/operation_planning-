@@ -51,11 +51,8 @@ def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
     except Exception as e:
         st.error(f"⚠️ 安全库存表头合并失败: {e}")
 
-def append_unfulfilled_summary_columns_by_date(
-    main_plan_df: pd.DataFrame,
-    df_unfulfilled: pd.DataFrame,
-    start_date: datetime = None
-) -> tuple[pd.DataFrame, list]:
+def append_unfulfilled_summary_columns_by_date( main_plan_df: pd.DataFrame, df_unfulfilled: pd.DataFrame,
+    start_date: datetime = None ) -> tuple[pd.DataFrame, list]:
     """
     将未交订单按预交货日分为历史与未来月份，
     并将“历史未交订单”合并到第一个月的未交订单中，添加至主计划 DataFrame。
@@ -182,7 +179,7 @@ def merge_unfulfilled_order_header(sheet):
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
-def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
+def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFrame, start_date: datetime = None) -> tuple[pd.DataFrame, list]:
     """
     从预测表中提取当月及未来的预测信息（仅按“品名”匹配），合并至 summary_df。
     返回合并后的表格和未匹配的品名列表。
@@ -195,7 +192,7 @@ def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFra
     - result: 合并后的 DataFrame
     - unmatched_keys: list[str]，未匹配的品名
     """
-    today = datetime.today()
+    today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
     this_month_int = today.month  
 
     # ✅ 统一列名
