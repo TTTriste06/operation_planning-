@@ -412,10 +412,15 @@ class PivotProcessor:
                     ws.column_dimensions[col_letter].width = min(adjusted_width, 50)
 
             # 获取 workbook 和 worksheet
-            wb = writer.book
             ws_diagram = wb["Summary"]
-            st.write(wb.sheetnames)
-            add_sheet_hyperlinks(ws_diagram, wb.sheetnames)
+            
+            # 添加一个文档内部超链接
+            cell1 = sheet.Range[2, 2]
+            internalLink = sheet.HyperLinks.Add(cell1)
+            internalLink.Type = HyperLinkType.Workbook
+            internalLink.TextToDisplay = "主计划"
+            internalLink.Address = "主计划!A1"
+
             
         output_buffer.seek(0)
 
