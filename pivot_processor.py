@@ -236,7 +236,7 @@ class PivotProcessor:
         ## == 预测 ==
         forecast_df = self.additional_sheets.get("赛卓-预测")
         if forecast_df is not None and not forecast_df.empty:
-            main_plan_df, unmatched_forecast = append_forecast_to_summary(main_plan_df, forecast_df)
+            main_plan_df, unmatched_forecast = append_forecast_to_summary(main_plan_df, forecast_df, start_date)
             st.success("✅ 已合并预测数据")
 
         ## == 成品库存 ==
