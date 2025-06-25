@@ -142,4 +142,4 @@ def add_sheet_hyperlinks(ws: Worksheet, sheet_names: list):
         target_sheet = cell.value
         if target_sheet and target_sheet in sheet_names:
             # 添加内部超链接
-            cell.value = f'=HYPERLINK("#\'{sheet_name}\'!A1", "{sheet_name}")'
+            cell.value = f'=HYPERLINK("#\'{target_sheet}\'!A1", "{target_sheet}")'
