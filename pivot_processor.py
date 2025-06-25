@@ -415,11 +415,10 @@ class PivotProcessor:
             ws_diagram = wb["Summary"]
             
             # 添加一个文档内部超链接
-            cell1 = ws_diagram.cell(row=2, column=2)
-            internalLink = ws_diagram.HyperLinks.Add(cell1)
-            internalLink.Type = HyperLinkType.Workbook
-            internalLink.TextToDisplay = "主计划"
-            internalLink.Address = "主计划!A1"
+            cell = ws.cell(row=3, column=2)
+            target_sheet = "赛卓-未交订单-汇总"
+            cell.value = f'=HYPERLINK("#{target_sheet}!A1", "{target_sheet}")'
+            cell.font = Font(color="0000FF", underline="single")
 
             
         output_buffer.seek(0)
