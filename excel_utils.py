@@ -137,9 +137,12 @@ def add_sheet_hyperlinks(ws: Worksheet, sheet_names: list):
         ws: openpyxl 的工作表对象（即“图”）
         sheet_names: 所有已存在的 sheet 名称列表
     """
+    hyperlink_font = Font(color="0000FF", underline="single")  # 蓝色 + 下划线
+
     for row in range(2, ws.max_row + 1):
         cell = ws.cell(row=row, column=2)
         target_sheet = cell.value
         if target_sheet and target_sheet in sheet_names:
             # 添加内部超链接
             cell.value = f'=HYPERLINK("#\'{target_sheet}\'!A1", "{target_sheet}")'
+            cell.font = hyperlink_font  # 设置样式
