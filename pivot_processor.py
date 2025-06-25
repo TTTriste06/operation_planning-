@@ -298,6 +298,36 @@ class PivotProcessor:
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
+            static_data = [
+                ["", "超链接", "备注"],
+                ["数据汇总", "主计划", ""],
+                ["赛卓-交订单-汇总", "赛卓-交订单-汇总", ""],
+                ["赛卓-成品库存-汇总", "赛卓-成品库存-汇总", "关注“hold仓”“成品仓”"],
+                ["赛卓-晶圆库存-汇总", "赛卓-晶圆库存-汇总", "晶圆片数已转换为对应的Die数量"],
+                ["赛卓-CP在制-汇总", "赛卓-CP在制-汇总", ""],
+                ["赛卓-成品在制-汇总", "赛卓-成品在制-汇总", ""],
+                ["赛卓-预测", "赛卓-预测", ""],
+                ["赛卓-安全库存", "赛卓-安全库存", ""]
+            ]
+            df_static = pd.DataFrame(static_data[1:], columns=static_data[0])
+            df_static.to_excel(writer, sheet_name="Summary", index=False)
+        
+            # 写入主计划表
+            main_plan_df = clean_df(main_plan_df)
+            main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
+        
+            # 获取 workbook 和 worksheet
+            wb = writer.book
+            ws = wb["主计划"]
+        
+            # 写时间戳和说明
+            ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
+            legend_cell = ws.cell(row=1, column=3)
+            legend_cell.value = "Red < 0"
+
+
+
+            
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
             
