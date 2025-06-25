@@ -413,14 +413,16 @@ class PivotProcessor:
 
             # 获取 workbook 和 worksheet
             ws_diagram = wb["Summary"]
-            
+            add_sheet_hyperlinks(ws_diagram, wb.sheetnames)
+
+            """
             # 添加一个文档内部超链接
             cell = ws_diagram.cell(row=3, column=2)
             sheet_name = "赛卓-未交订单-汇总"
             cell.value = f'=HYPERLINK("#\'{sheet_name}\'!A1", "{sheet_name}")'
 
             cell.font = Font(color="0000FF", underline="single")
-
+            """
             
         output_buffer.seek(0)
 
