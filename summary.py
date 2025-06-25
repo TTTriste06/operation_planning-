@@ -51,14 +51,17 @@ def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
     except Exception as e:
         st.error(f"⚠️ 安全库存表头合并失败: {e}")
 
-def append_unfulfilled_summary_columns_by_date(main_plan_df: pd.DataFrame,
-                                               df_unfulfilled: pd.DataFrame) -> tuple[pd.DataFrame, list]:
+def append_unfulfilled_summary_columns_by_date(
+    main_plan_df: pd.DataFrame,
+    df_unfulfilled: pd.DataFrame,
+    start_date: datetime = None
+) -> tuple[pd.DataFrame, list]:
     """
     将未交订单按预交货日分为历史与未来月份，
     并将“历史未交订单”合并到第一个月的未交订单中，添加至主计划 DataFrame。
     返回合并后的主计划表和未匹配品名列表（df_unfulfilled 中存在但主计划中没有的）。
     """
-    today = pd.Timestamp(datetime.today().replace(day=1))
+    today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
     
     max_date = pd.to_datetime(df_unfulfilled["预交货日"], errors="coerce").max()
     if pd.isna(max_date):
