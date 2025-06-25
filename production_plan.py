@@ -172,8 +172,10 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
             prev_plan = get_plan(col_target_prev)
             actual_prod = get(col_actual_prod)
             forecast_next = get(col_forecast_next)
+            st.write(forecast_next)
             order_next = get(col_order_next)
-            result = prev_plan +  max(forecast_next, order_next)
+            st.write(order_next)
+            result = prev_plan + max(forecast_next, order_next)
 
         df_plan[col_target] = result
 
