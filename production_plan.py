@@ -114,7 +114,7 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
                 v_forecast_next = get(col_forecast_next).at[row_idx]
 
                 formula = f"{v_prev_plan} - {v_actual} + {v_forecast_next}"
-                result = v_prev_plan + v_forecast_next
+                result = v_prev_plan + max_next
                 df_plan.at[row_idx, col_target] = result
                 
     plan_cols_in_summary = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
@@ -151,6 +151,7 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
         col_target = f"{this_month}半成品投单计划"
         col_plan_this = f"{this_month}成品投单计划"
         col_forecast_next = f"{next_month}预测"
+        col_order_next = f"未交订单 2025-{forecast_months[idx + 1]:02d}"
         col_actual_prod = f"{prev_month}半成品实际投单"
         col_target_prev = f"{prev_month}半成品投单计划" if prev_month else None
         
@@ -171,7 +172,8 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
             prev_plan = get_plan(col_target_prev)
             actual_prod = get(col_actual_prod)
             forecast_next = get(col_forecast_next)
-            result = prev_plan + forecast_next
+            order_next = get(col_order_next)
+            result = prev_plan +  max(forecast_next, order_next)
 
         df_plan[col_target] = result
 
