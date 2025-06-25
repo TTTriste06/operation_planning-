@@ -168,16 +168,15 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
             sfg_wip = get("半成品在制")
             
             result = plan_this - sfg - sfg_wip
+            df_plan[col_target] = result
         else:
-            prev_plan = get_plan(col_target_prev)
-            actual_prod = get(col_actual_prod)
-            forecast_next = get(col_forecast_next)
-            st.write(forecast_next)
-            order_next = get(col_order_next)
-            st.write(order_next)
-            result = prev_plan + max(forecast_next, order_next)
-
-        df_plan[col_target] = result
+            for row_idx in main_plan_df.index:
+                prev_plan = get_plan(col_target_prev).at[row_idx]
+                actual_prod = get(col_actual_prod).at[row_idx]
+                forecast_next = get(col_forecast_next).at[row_idx]
+                order_next = get(col_order_next).at[row_idx]
+                result = prev_plan + max(forecast_next, order_next)
+                df_plan.at[row_idx, col_target] = result
 
     plan_cols_in_summary = [col for col in main_plan_df.columns if "半成品投单计划" in col]
 
