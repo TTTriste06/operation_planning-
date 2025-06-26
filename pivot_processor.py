@@ -99,47 +99,23 @@ class PivotProcessor:
         mapping_new = mapping_new[~mapping_new["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         
         # 去除“替代品名”为空的行，并保留指定字段
-        mapping_sub1 = mapping_df[
-            ["新晶圆品名", "新规格", "新品名", "替代晶圆1", "替代规格1", "替代品名1"]
-        ]
-        mapping_sub1 = mapping_sub1[~mapping_df["替代品名1"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_sub1.columns = [
-            "新晶圆品名", "新规格", "新品名", 
-            "替代晶圆", "替代规格", "替代品名"
-        ]
-
-
-        mapping_sub2 = mapping_df[
-            ["新晶圆品名", "新规格", "新品名", "替代晶圆2", "替代规格2", "替代品名2"]
-        ]
-        mapping_sub2 = mapping_sub2[~mapping_df["替代品名2"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_sub2.columns = [
-            "新晶圆品名", "新规格", "新品名",
-            "替代晶圆", "替代规格", "替代品名"
-        ]
-
-        mapping_sub3 = mapping_df[
-            ["新晶圆品名", "新规格", "新品名", "替代晶圆3", "替代规格3", "替代品名3"]
-        ]
-        mapping_sub3 = mapping_sub3[~mapping_df["替代品名3"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_sub3.columns = [
-            "新晶圆品名", "新规格", "新品名",
-            "替代晶圆", "替代规格", "替代品名"
-        ]
+        mapping_subs = []
+        for i in range(1, 5):
+            sub_cols = ["新晶圆品名", "新规格", "新品名", f"替代晶圆{i}", f"替代规格{i}", f"替代品名{i}"]
+            sub_df = mapping_df[sub_cols].copy()
+            
+            # 去除“替代品名”为空或为 nan 的行
+            valid_mask = ~sub_df[f"替代品名{i}"].astype(str).str.strip().replace("nan", "").eq("")
+            sub_df = sub_df[valid_mask].copy()
         
-
-        mapping_sub4 = mapping_df[
-            ["新晶圆品名", "新规格", "新品名", "替代晶圆4", "替代规格4", "替代品名4"]
-        ]
-        mapping_sub4 = mapping_sub4[~mapping_df["替代品名4"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_sub4.columns = [
-            "新晶圆品名", "新规格", "新品名",
-            "替代晶圆", "替代规格", "替代品名"
-        ]
-
-       
-
+            # 统一列名
+            sub_df.columns = ["新晶圆品名", "新规格", "新品名", "替代晶圆", "替代规格", "替代品名"]
+            mapping_subs.append(sub_df)
         
+        # 分别赋值给 mapping_sub1 ~ mapping_sub4
+        mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4 = mapping_subs
+
+
         # === 构建主计划 ===
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
         main_plan_df = pd.DataFrame(columns=headers)
@@ -181,7 +157,6 @@ class PivotProcessor:
             additional_sheets=self.additional_sheets
         )
 
-        
         ## == 替换新旧料号、替代料号 ==
         # 替代料号列表
         mapping_sub_list = [mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4]
@@ -278,26 +253,16 @@ class PivotProcessor:
         # 半成品投单计划
         main_plan_df = generate_monthly_semi_plan(main_plan_df, forecast_months, mapping_semi)
 
-        # 投单计划调整
-        # main_plan_df = generate_monthly_adjust_plan(main_plan_df)
-
-        # 回货计划
-        # main_plan_df = generate_monthly_return_plan(main_plan_df)
-
-        
-        # 回货计划调整
-        # main_plan_df = generate_monthly_return_adjustment(main_plan_df)
-
         # 添加预测准确率列
         main_plan_df = append_forecast_accuracy_column(main_plan_df, start_date)
 
         # 检查
-        # main_plan_df = reorder_main_plan_by_unfulfilled_sheet(main_plan_df, unfulfilled_df)
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
          
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
+            # 写入Summary
             summary_data = [
                 ["", "超链接", "备注"],
                 ["数据汇总", "主计划", ""],
@@ -325,9 +290,6 @@ class PivotProcessor:
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
             legend_cell = ws.cell(row=1, column=3)
             legend_cell.value = "Red < 0"
-
-
-
             
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
@@ -346,7 +308,6 @@ class PivotProcessor:
             fill = PatternFill(start_color="FFCCE6FF", end_color="FFCCE6FF", fill_type="solid")
             legend_cell.fill = fill
 
-
             merge_safety_header(ws, main_plan_df)
             merge_unfulfilled_order_header(ws)
             merge_forecast_header(ws)
@@ -359,11 +320,9 @@ class PivotProcessor:
             highlight_production_plan_cells(ws, main_plan_df)
             highlight_replaced_names_in_main_sheet(ws, all_replaced_names)
 
-
             adjust_column_width(ws)
             format_currency_columns_rmb(ws)
             format_thousands_separator(ws)
-
 
             # 设置字体加粗，行高也调高一点
             bold_font = Font(bold=True)
@@ -383,7 +342,6 @@ class PivotProcessor:
         
             # 冻结
             ws.freeze_panes = "D3"
-
             append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
             
             # 透视表
