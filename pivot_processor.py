@@ -86,11 +86,23 @@ class PivotProcessor:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
 
         # 创建新的 mapping_semi：仅保留“半成品”字段非空的行
-        mapping_semi = mapping_df[
-            ["旧晶圆品名", "旧规格", "旧品名", "新晶圆品名", "新规格", "新品名", "半成品"]
+        mapping_semi1 = mapping_df[
+            ["新晶圆品名", "新规格", "新品名", "半成品"]
         ]
-        mapping_semi = mapping_semi[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        
+        mapping_semi1 = mapping_semi1[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_semi1 = mapping_semi1[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_semi2 = mapping_df[
+            ["旧晶圆品名", "旧规格", "旧品名", "半成品"]
+        ]
+        mapping_semi2 = mapping_semi2[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_semi2 = mapping_semi2[~mapping_df["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_semi = pd.concat([mapping_semi1, mapping_semi2], ignore_index=True)
+        st.write(mapping_semi1)
+        st.write(mapping_semi2)
+        st.write(mapping_semi)
+
+
+       
         # 去除“品名”为空的行
         mapping_new = mapping_df[
             ["旧晶圆品名", "旧规格", "旧品名", "新晶圆品名", "新规格", "新品名"]
