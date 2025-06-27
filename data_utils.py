@@ -89,11 +89,11 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
     if source_nj is not None and not source_nj.empty:
         # 取出“半成品”“新规格”“新晶圆品名”“旧规格”“旧晶圆品名”五列
         tmp = source_nj[[
-            "半成品","新规格","新晶圆品名","旧规格","旧晶圆品名"
+            "半成品","新规格","新晶圆品名"
         ]].copy()
     
         # 重命名为统一列名
-        tmp.columns = ["半成品", "新规格", "新晶圆品名", "旧规格", "旧晶圆品名"]
+        tmp.columns = ["半成品", "新规格", "新晶圆品名"]
         tmp["半成品"] = tmp["半成品"].astype(str).str.strip()
     
         # 如果同一个“半成品”多行，只保留第一行
@@ -106,12 +106,10 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
             key = row["半成品"]
             # 检查“新规格”是否为空或 NaN
             new_spec = row["新规格"]
-            old_spec = row["旧规格"]
             spec_map[key] = new_spec if pd.notna(new_spec) and str(new_spec).strip() != "" else old_spec
     
             # 检查“新晶圆品名”是否为空或 NaN
             new_wafer = row["新晶圆品名"]
-            old_wafer = row["旧晶圆品名"]
             wafer_map[key] = new_wafer if pd.notna(new_wafer) and str(new_wafer).strip() != "" else old_wafer
     
         # 找出 main_plan_df 中，“品名”正好等于某个“半成品”的行
