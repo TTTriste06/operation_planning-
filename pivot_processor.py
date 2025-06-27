@@ -94,20 +94,12 @@ class PivotProcessor:
         mapping_semi2 = mapping_df[
             ["新晶圆品名", "新规格", "新品名", "旧晶圆品名", "旧规格", "旧品名", "半成品"]
         ]
-        st.write(mapping_semi2)
-        mapping_semi2 = mapping_semi2[
-            mapping_semi2["新品名"].astype(str).str.strip().replace("nan", "") == ""
-        ].copy()
-        st.write(mapping_semi2)
+        mapping_semi2 = mapping_semi2[mapping_semi2["新品名"].astype(str).str.strip().replace("nan", "") == ""].copy()
         mapping_semi2 = mapping_semi2[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        st.write(mapping_semi2)
         mapping_semi2 = mapping_semi2[~mapping_df["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        st.write(mapping_semi2)
+        mapping_semi2 = mapping_semi2.drop(columns=["新晶圆品名", "新规格", "新品名"])
         mapping_semi2.columns = ["新晶圆品名", "新规格", "新品名", "半成品"]
         mapping_semi = pd.concat([mapping_semi1, mapping_semi2], ignore_index=True)
-
-
-
        
         # 去除“品名”为空的行
         mapping_new = mapping_df[
