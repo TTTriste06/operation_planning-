@@ -96,7 +96,7 @@ class PivotProcessor:
         ]
         mapping_semi2 = mapping_semi2[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         mapping_semi2 = mapping_semi2[~mapping_df["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_semi2.columns = ["新晶圆品名", "新规格", "新品名", "替代晶圆", "替代规格", "替代品名"]
+        mapping_semi2.columns = ["新晶圆品名", "新规格", "新品名", "半成品"]
         mapping_semi = pd.concat([mapping_semi1, mapping_semi2], ignore_index=True)
         st.write(mapping_semi1)
         st.write(mapping_semi2)
