@@ -356,61 +356,78 @@ def append_product_in_progress(summary_df: pd.DataFrame,
                                product_in_progress_df: pd.DataFrame,
                                mapping_df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
     """
-    将成品在制表中数据按“品名”合并进主计划表：
-    - 半成品通过 mapping_df 中“半成品”映射到“新品名”，填入“半成品在制”列；
-    - 其他数据直接匹配“产品品名” → “成品在制”列；
-    返回合并后的表格与未匹配的品名列表。
+    将在制数据合并进主计划表：
+    - “半成品在制”：从 mapping_df 中找到半成品 → 新品名，然后匹配；
+    - “成品在制”：在制表中的“产品品名”可匹配主计划中的品名，允许匹配“旧品名”或“新品名”；
+    返回合并后的表格与未匹配品名列表。
     """
     summary_df = summary_df.copy()
     summary_df["成品在制"] = 0
     summary_df["半成品在制"] = 0
 
-    # 数值列：只处理数值型的未交列
-    numeric_cols = product_in_progress_df.select_dtypes(include='number').columns.tolist()
-    if "未交" not in product_in_progress_df.columns:
-        raise ValueError("❌ '成品在制'文件中未找到 '未交' 列")
-    
     product_in_progress_df["产品品名"] = product_in_progress_df["产品品名"].astype(str).str.strip()
     summary_df["品名"] = summary_df["品名"].astype(str).str.strip()
     mapping_df["半成品"] = mapping_df["半成品"].astype(str).str.strip()
     mapping_df["新品名"] = mapping_df["新品名"].astype(str).str.strip()
+    mapping_df["旧品名"] = mapping_df.get("旧品名", "").astype(str).str.strip()  # 若存在“旧品名”列
 
     used_keys = set()
     unmatched_keys = set()
 
-    # === 处理半成品在制 ===
-    semi_rows = mapping_df[mapping_df["半成品"] != ""]
-    matched_half = product_in_progress_df[
-        product_in_progress_df["产品品名"].isin(semi_rows["半成品"])
-    ]
+    # === 构造“品名”映射关系：新品名 → summary 行索引 + 允许旧品名也能匹配 ===
+    name_to_index = {}
+    for i, row in summary_df.iterrows():
+        name = row["品名"]
+        name_to_index[name] = i
 
-    # 聚合半成品 → 新品名
+    # === 半成品在制 ===
+    semi_rows = mapping_df[mapping_df["半成品"] != ""]
     for _, row in semi_rows.iterrows():
         semi = row["半成品"]
         new = row["新品名"]
-        value = matched_half.loc[
-            matched_half["产品品名"] == semi, "未交"
+        value = product_in_progress_df.loc[
+            product_in_progress_df["产品品名"] == semi, "未交"
         ].sum()
 
-        if new in summary_df["品名"].values:
-            summary_df.loc[summary_df["品名"] == new, "半成品在制"] += value
+        if new in name_to_index:
+            summary_df.at[name_to_index[new], "半成品在制"] += value
             used_keys.add(new)
         else:
             unmatched_keys.add(new)
 
-    # === 删除已处理的半成品行 ===
-    remaining = product_in_progress_df[
+    # === 去除已处理的半成品行 ===
+    remaining_df = product_in_progress_df[
         ~product_in_progress_df["产品品名"].isin(semi_rows["半成品"])
     ]
 
-    # === 处理成品在制 ===
-    for _, row in remaining.iterrows():
+    # === 成品在制 ===
+    # 支持用旧品名 → 找到 summary 中匹配项
+    old_to_new_map = {}
+    if "旧品名" in mapping_df.columns:
+        for _, row in mapping_df.iterrows():
+            old = row["旧品名"]
+            new = row["新品名"]
+            if old and new:
+                old_to_new_map[old] = new
+
+    for _, row in remaining_df.iterrows():
         pname = row["产品品名"]
         qty = row["未交"]
-        if pname in summary_df["品名"].values:
-            summary_df.loc[summary_df["品名"] == pname, "成品在制"] += qty
+
+        # 优先用原品名匹配
+        matched = False
+        if pname in name_to_index:
+            summary_df.at[name_to_index[pname], "成品在制"] += qty
             used_keys.add(pname)
-        else:
+            matched = True
+        # 尝试用旧品名匹配
+        elif pname in old_to_new_map and old_to_new_map[pname] in name_to_index:
+            new_name = old_to_new_map[pname]
+            summary_df.at[name_to_index[new_name], "成品在制"] += qty
+            used_keys.add(pname)
+            matched = True
+
+        if not matched:
             unmatched_keys.add(pname)
 
     return summary_df, sorted(list(unmatched_keys - used_keys))
