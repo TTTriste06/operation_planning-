@@ -126,6 +126,7 @@ class PivotProcessor:
         st.write(mapping_subs)
         mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4 = mapping_subs
         mapping_sub = pd.concat([mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4], ignore_index=True)
+        st.write(mapping_sub)
 
 
         # === 构建主计划 ===
