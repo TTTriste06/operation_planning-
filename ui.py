@@ -6,9 +6,8 @@ from datetime import datetime
 
 def setup_sidebar():
     with st.sidebar:
-        st.title("欢迎使用")
+        st.title("功能简介")
         st.markdown("---")
-        st.markdown("### 功能简介：")
         st.markdown("- 起始日期可以改变预测、未交订单和投单计划的起始月份")
         st.markdown("- 8个主文件每次都必须上传，每个文件一定要包含对应的关键字")
         st.markdown("- 等上方加载的标识消失后再进行下载")
