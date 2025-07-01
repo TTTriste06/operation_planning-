@@ -296,17 +296,7 @@ class PivotProcessor:
             ws = wb["主计划"]
         
             # 写时间戳和说明
-            ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
-            legend_cell = ws.cell(row=1, column=3)
-            legend_cell.value = "Red < 0"
-            
-            main_plan_df = clean_df(main_plan_df)
-            main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
-            
-            #写入主计划
-            ws = writer.book["主计划"]
-            ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")
-            
+            ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")            
             legend_cell = ws.cell(row=1, column=3)
             legend_cell.value = (
                 "Red < 0    "
@@ -317,6 +307,7 @@ class PivotProcessor:
             fill = PatternFill(start_color="FFCCE6FF", end_color="FFCCE6FF", fill_type="solid")
             legend_cell.fill = fill
 
+            # 合并单元格
             merge_safety_header(ws, main_plan_df)
             merge_unfulfilled_order_header(ws)
             merge_forecast_header(ws)
@@ -325,10 +316,12 @@ class PivotProcessor:
             merge_order_delivery_amount(ws)
             merge_forecast_accuracy(ws)
 
+            # 高亮显示
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
             highlight_replaced_names_in_main_sheet(ws, all_replaced_names)
 
+            # 格式调整
             adjust_column_width(ws)
             format_currency_columns_rmb(ws)
             format_thousands_separator(ws)
