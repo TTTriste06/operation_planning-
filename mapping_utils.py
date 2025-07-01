@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-def apply_all_name_replacements(df, mapping_new, mapping_sub, sheet_name, field_mappings, verbose=True):
+def apply_all_name_replacements(df, mapping_new, mapping_sub, sheet_name, field_mappings, verbose=False):
     """
     对任意 DataFrame 表执行“新旧料号替换 + 替代料号替换”流程。
     会自动识别 FIELD_MAPPINGS 中定义的品名字段。
@@ -38,8 +38,8 @@ def apply_all_name_replacements(df, mapping_new, mapping_sub, sheet_name, field_
 
     all_mapped_keys = mapped_main.union(mapped_sub)
 
-    #if verbose:
-    #    print(f"✅ [{sheet_name}] 共完成替换: {len(all_mapped_keys)} 种新料号")
+    if verbose:
+        print(f"✅ [{sheet_name}] 共完成替换: {len(all_mapped_keys)} 种新料号")
 
     return df, all_mapped_keys
 
@@ -130,7 +130,7 @@ def replace_all_names_with_mapping(all_names: pd.Series, mapping_new: pd.DataFra
     return all_names.dropna().drop_duplicates().reset_index(drop=True)
 
 
-def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
+def apply_mapping_and_merge(df, mapping_df, field_map, verbose=False):
     """
     按品名字段替换主料号（新旧料号映射）
     对 df 中的品名列进行逐行检查：
@@ -157,12 +157,12 @@ def apply_mapping_and_merge(df, mapping_df, field_map, verbose=True):
     # 记录被替换的新品名（即原品名 != 映射后的品名）
     replaced_names = set(mapping_dict.values()).intersection(set(df[name_col]))
 
-    #if verbose:
-    #    st.write(f"✅ 新旧料号替换成功: {len(replaced_names)} 项")
+    if verbose:
+        st.write(f"✅ 新旧料号替换成功: {len(replaced_names)} 项")
 
     return df, replaced_names
 
-def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=True):
+def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=False):
     """
     替代料号品名替换（仅品名字段替换，无聚合合并）
     """
@@ -205,8 +205,8 @@ def apply_extended_substitute_mapping(df, mapping_df, field_map, verbose=True):
             df.loc[mask, name_col] = sub["新品名"]
             matched_keys.update(df.loc[mask, name_col])
 
-    #if verbose:
-    #    st.success(f"✅ 替代品名替换完成，共替换: {len(matched_keys)} 种")
+    if verbose:
+        st.success(f"✅ 替代品名替换完成，共替换: {len(matched_keys)} 种")
 
     return df, matched_keys
     
