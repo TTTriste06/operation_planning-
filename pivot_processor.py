@@ -124,7 +124,8 @@ class PivotProcessor:
             mapping_subs.append(sub_df)
         
         # 分别赋值给 mapping_sub1 ~ mapping_sub4
-        mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4 = mapping_subs
+        # mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4 = mapping_subs
+        mapping_sub = pd.concat([mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4], ignore_index=True)
 
 
         # === 构建主计划 ===
@@ -170,7 +171,7 @@ class PivotProcessor:
 
         ## == 替换新旧料号、替代料号 ==
         # 替代料号列表
-        mapping_sub_list = [mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4]
+        # mapping_sub_list = [mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4]
         
         # 需要处理的 sheet（key, 所在字典）
         target_sheets = [
@@ -197,9 +198,8 @@ class PivotProcessor:
             all_replaced_names.update(replaced_main)
         
             # 替代映射替换（1~4）
-            for mapping_sub in mapping_sub_list:
-                df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS[sheet_name])
-                all_replaced_names.update(replaced_sub)
+            df_new, replaced_sub = apply_extended_substitute_mapping(df_new, mapping_sub, FIELD_MAPPINGS[sheet_name])
+            all_replaced_names.update(replaced_sub)
         
             # 更新回字典
             container[sheet_name] = df_new
