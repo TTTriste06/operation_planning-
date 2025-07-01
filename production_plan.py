@@ -78,7 +78,6 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[i
         col_target_prev = f"{prev_month}成品投单计划" if prev_month else None
         col_sales_this = f"{month}月销售数量"
         
-        
         # 安全提取列，如果缺失则填 0
         def get(col):
             return pd.to_numeric(main_plan_df[col], errors="coerce").fillna(0) if col in main_plan_df.columns else pd.Series(0, index=main_plan_df.index)
@@ -196,9 +195,6 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
                 
     return main_plan_df
 
-
-
-
 def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
     """
     从下单明细中抓取“成品实际投单”并写入 main_plan_df，每月写入“X月成品实际投单”列。
@@ -245,7 +241,6 @@ def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFram
         main_plan_df[col] = order_summary[col]
 
     return main_plan_df
-
 
 def aggregate_actual_sfg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFrame, mapping_df: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
     """
@@ -338,7 +333,6 @@ def aggregate_actual_arrivals(main_plan_df: pd.DataFrame, df_arrival: pd.DataFra
 
     return main_plan_df
 
-
 def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
     """
     将销货明细中的销售数量和销售金额按照月份填入主计划表。
@@ -417,9 +411,7 @@ def generate_monthly_adjust_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
                 return f"={col_curr_plan}{row_num}+({col_prev_plan}{row_num}-{col_prev_actual}{row_num})"
 
             main_plan_df[col] = [build_formula(i) for i in range(len(main_plan_df))]
-
     return main_plan_df
-
 
 def generate_monthly_return_adjustment(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
