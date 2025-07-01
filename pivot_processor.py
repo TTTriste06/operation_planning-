@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 
-from config import FILE_KEYWORDS, FIELD_MAPPINGS, RENAME_MAP
+from config import FILE_KEYWORDS, FIELD_MAPPINGS, pivot_config, RENAME_MAP
 from excel_utils import (
     adjust_column_width, 
     highlight_replaced_names_in_main_sheet, 
@@ -356,7 +356,7 @@ class PivotProcessor:
                 filename: pd.read_excel(file)  # 或提前 parse 完成的 DataFrame dict
                 for filename, file in standardized_files.items()
             }
-            pivot_tables = generate_monthly_pivots(parsed_dataframes)
+            pivot_tables = generate_monthly_pivots(parsed_dataframes, pivot_config)
             for sheet_name, df in pivot_tables.items():
                 df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
                 
