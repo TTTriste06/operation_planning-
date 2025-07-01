@@ -167,6 +167,7 @@ class PivotProcessor:
             dataframes=self.dataframes,
             additional_sheets=self.additional_sheets
         )
+        st.success("✅ 已合并产品信息")
 
         ## == 替换新旧料号、替代料号 ==
         target_sheets = [
@@ -264,6 +265,8 @@ class PivotProcessor:
 
         # 检查
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
+        
+        st.success("✅ 已合并投单计划")
          
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
