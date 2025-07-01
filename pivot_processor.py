@@ -372,12 +372,12 @@ class PivotProcessor:
                     ws.column_dimensions[col_letter].width = min(adjusted_width, 50)
 
             # 获取 workbook 和 worksheet
-            ws_diagram = wb["Summary"]
-            add_sheet_hyperlinks(ws_diagram, wb.sheetnames)
+            ws_summary = wb["Summary"]
+            add_sheet_hyperlinks(ws_summary, wb.sheetnames)
             
-            for col_idx in range(1, ws_diagram.max_column + 1):
+            for col_idx in range(1, ws_summary.max_column + 1):
                 col_letter = get_column_letter(col_idx)
-                ws_diagram.column_dimensions[col_letter].width = 25
+                ws_summary.column_dimensions[col_letter].width = 25
 
         output_buffer.seek(0)
        
