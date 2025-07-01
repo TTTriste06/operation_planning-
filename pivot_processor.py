@@ -387,7 +387,6 @@ class PivotProcessor:
                 ws_diagram.column_dimensions[col_letter].width = 25
 
         output_buffer.seek(0)
-
        
     def set_additional_data(self, sheets_dict):
         """
