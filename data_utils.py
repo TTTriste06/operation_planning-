@@ -2,21 +2,6 @@ import pandas as pd
 import streamlit as st
 import re
 
-def extract_info(df, mapping, fields=("规格", "晶圆品名")):
-    if df is None or df.empty:
-        return pd.DataFrame(columns=["品名"] + list(fields))
-    cols = {"品名": mapping.get("品名")}
-    for f in fields:
-        if f in mapping:
-            cols[f] = mapping[f]
-    try:
-        sub = df[[cols["品名"]] + list(cols.values())[1:]].copy()
-        sub.columns = ["品名"] + [f for f in fields if f in cols]
-        return sub.drop_duplicates(subset=["品名"])
-    except Exception:
-        return pd.DataFrame(columns=["品名"] + list(fields))
-
-
 def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
                               dataframes: dict,
                               additional_sheets: dict,
@@ -120,8 +105,6 @@ def fill_spec_and_wafer_info(main_plan_df: pd.DataFrame,
             main_plan_df.loc[mask, "晶圆品名"] = main_plan_df.loc[mask, "品名"].map(wafer_map)
 
     return main_plan_df
-
-
 
 def fill_packaging_info(main_plan_df, dataframes: dict, additional_sheets: dict) -> pd.DataFrame:
     """
