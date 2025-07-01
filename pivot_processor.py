@@ -109,7 +109,7 @@ class PivotProcessor:
         mapping_new = mapping_new[~mapping_new["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         
         # 去除“替代品名”为空的行，并保留指定字段
-        mapping_subs = []
+        mapping_sub = pd.DataFrame()
         for i in range(1, 5):
             sub_cols = ["新晶圆品名", "新规格", "新品名", f"替代晶圆{i}", f"替代规格{i}", f"替代品名{i}"]
             sub_df = mapping_df[sub_cols].copy()
@@ -120,12 +120,9 @@ class PivotProcessor:
         
             # 统一列名
             sub_df.columns = ["新晶圆品名", "新规格", "新品名", "替代晶圆", "替代规格", "替代品名"]
-            mapping_subs.append(sub_df)
+            mapping_sub = pd.concat([mapping_sub, sub_df], ignore_index=True)
         
         # 分别赋值给 mapping_sub1 ~ mapping_sub4
-        st.write(mapping_subs)
-        mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4 = mapping_subs
-        mapping_sub = pd.concat([mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4], ignore_index=True)
         st.write(mapping_sub)
         st.write(type(mapping_sub))
 
