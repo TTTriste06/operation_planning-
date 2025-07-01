@@ -17,8 +17,6 @@ RENAME_MAP = {
                 "未交订单": "赛卓-未交订单.xlsx"
             }
 
-OUTPUT_FILENAME_PREFIX = "运营主计划"
-
 FIELD_MAPPINGS = {
     "赛卓-新旧料号": {
         "规格": "新规格",
