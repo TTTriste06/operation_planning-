@@ -21,7 +21,6 @@ def adjust_column_width(ws, max_width=70):
                 pass
         ws.column_dimensions[col_letter].width = min(max_length + 8, max_width)
 
-
 def highlight_replaced_names_in_main_sheet(ws, replaced_names: list[str], name_col_header: str = "品名", header_row_idx: int = 2):
     """
     只标红主计划 sheet 中所有品名在 replaced_names 中的整行的前三列。
@@ -48,10 +47,6 @@ def highlight_replaced_names_in_main_sheet(ws, replaced_names: list[str], name_c
         if cell_value in replaced_names:
             for cell in row[:3]:  # 只标红前三列 A, B, C
                 cell.fill = red_fill
-
-
-
-
 
 def reorder_main_plan_by_unfulfilled_sheet(main_plan_df: pd.DataFrame, unfulfilled_df: pd.DataFrame, name_col: str = "品名") -> pd.DataFrame:
     """
