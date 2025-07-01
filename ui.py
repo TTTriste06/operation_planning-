@@ -4,7 +4,6 @@ from dateutil.relativedelta import relativedelta
 from datetime import date
 from datetime import datetime
 
-
 def setup_sidebar():
     with st.sidebar:
         st.title("欢迎使用数据汇总工具")
@@ -16,10 +15,6 @@ def setup_sidebar():
 
 def get_uploaded_files():
     st.header("📤 Excel 数据处理与汇总")
-
-    # 📅 输入历史截止月份
-    # manual_month = st.text_input("📅 输入历史数据截止月份（格式: YYYY-MM，可留空表示不筛选）")
-    # CONFIG["selected_month"] = manual_month.strip() if manual_month.strip() else None
 
     # 📅 添加主计划起始时间选择器
     st.subheader("📅 选择主计划起始时间")
@@ -47,7 +42,7 @@ def get_uploaded_files():
     else:
         st.info("📂 尚未上传文件。")
 
-    # 📁 上传辅助文件（可选）
+    # 📁 上传辅助文件
     st.subheader("📁 上传辅助文件（如无更新可跳过）")
     forecast_file = st.file_uploader("📈 上传预测文件", type="xlsx", key="forecast")
     safety_file = st.file_uploader("🔐 上传安全库存文件", type="xlsx", key="safety")
