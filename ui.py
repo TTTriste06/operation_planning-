@@ -6,12 +6,12 @@ from datetime import datetime
 
 def setup_sidebar():
     with st.sidebar:
-        st.title("欢迎使用数据汇总工具")
+        st.title("欢迎使用")
         st.markdown("---")
         st.markdown("### 功能简介：")
-        st.markdown("- 上传 5 个主数据表")
-        st.markdown("- 上传辅助数据（预测、安全库存、新旧料号）")
-        st.markdown("- 自动生成汇总 Excel 文件")
+        st.markdown("- 起始日期可以改变预测、未交订单和投单计划的起始月份")
+        st.markdown("- 8个主文件每次都必须上传，每个文件一定要包含对应的关键字")
+        st.markdown("- 等上方加载的标识消失后再进行下载")
 
 def get_uploaded_files():
     st.header("📤 Excel 数据处理与汇总")
@@ -26,7 +26,7 @@ def get_uploaded_files():
     # ✅ 合并上传框：所有主+明细文件统一上传
     st.subheader("📁 上传主文件")
     all_files = st.file_uploader(
-        "未交订单/成品在制/成品库存/CP在制/晶圆库存/下单明细/销货明细/到货明细（支持多选）",
+        "关键字：未交订单/成品在制/成品库存/CP在制/晶圆库存/下单明细/销货明细/到货明细（支持多选）",
         type=["xlsx"],
         accept_multiple_files=True,
         key="all_files"
