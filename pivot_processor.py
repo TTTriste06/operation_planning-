@@ -170,10 +170,6 @@ class PivotProcessor:
         )
 
         ## == 替换新旧料号、替代料号 ==
-        # 替代料号列表
-        # mapping_sub_list = [mapping_sub1, mapping_sub2, mapping_sub3, mapping_sub4]
-        
-        # 需要处理的 sheet（key, 所在字典）
         target_sheets = [
             ("赛卓-安全库存", self.additional_sheets),
             ("赛卓-预测", self.additional_sheets),
