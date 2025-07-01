@@ -32,7 +32,6 @@ def merge_safety_inventory(summary_df: pd.DataFrame, safety_df: pd.DataFrame) ->
 
     return merged, unmatched_keys
 
-
 def merge_safety_header(ws: Worksheet, df: pd.DataFrame):
     """
     将“InvWaf”和“InvPart”两列的上方合并写入“安全库存”标题。
@@ -67,7 +66,6 @@ def append_unfulfilled_summary_columns_by_date( main_plan_df: pd.DataFrame, df_u
     
     future_months = pd.period_range(today.to_period("M"), final_month.to_period("M"), freq="M")
     future_cols = [f"未交订单 {str(p)}" for p in future_months]
-
 
     # 复制一份未交订单，做清洗和预处理
     df = df_unfulfilled.copy()
@@ -178,7 +176,6 @@ def merge_unfulfilled_order_header(sheet):
     cell.value = "未交订单"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
-
 def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFrame, 
                                start_date: datetime = None) -> tuple[pd.DataFrame, list]:
     """
@@ -212,7 +209,6 @@ def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFra
         col for col in month_cols
         if int(col[:col.index("月")]) >= this_month_int
     ]
-
 
     if not future_month_cols:
         st.warning("⚠️ 未找到当月或未来月份的预测列（格式应为“5月预测”）")
@@ -266,7 +262,6 @@ def merge_forecast_header(sheet):
     cell.value = "预测"
     cell.alignment = Alignment(horizontal="center", vertical="center")
     
-
 def merge_finished_inventory_with_warehouse_types(summary_df: pd.DataFrame, finished_inventory_df: pd.DataFrame, mapping_df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
     """
     1. 提取成品库存的“HOLD仓”、“成品仓”、“半成品仓”库存数量，根据“品名”合并进主计划；
@@ -330,8 +325,6 @@ def merge_finished_inventory_with_warehouse_types(summary_df: pd.DataFrame, fini
 
     return summary_df, unmatched
 
-
-
 def merge_inventory_header(sheet):
     """
     合并“HOLD仓”、“成品仓”、“半成品仓”标题，写入“库存”，居中。
@@ -350,7 +343,6 @@ def merge_inventory_header(sheet):
     cell = sheet.cell(row=1, column=start_col)
     cell.value = "成品库存"
     cell.alignment = Alignment(horizontal="center", vertical="center")
-
 
 def append_product_in_progress(summary_df: pd.DataFrame,
                                product_in_progress_df: pd.DataFrame,
@@ -415,7 +407,6 @@ def append_product_in_progress(summary_df: pd.DataFrame,
 
     return summary_df, sorted(list(unmatched_keys - used_keys))
 
-
 def merge_product_in_progress_header(sheet):
     """
     合并“成品在制”“半成品在制”列，在第一行写入“成品在制”，居中。
@@ -436,7 +427,6 @@ def merge_product_in_progress_header(sheet):
     cell = sheet.cell(row=1, column=start_col)
     cell.value = "成品在制"
     cell.alignment = Alignment(horizontal="center", vertical="center")
-
 
 def append_order_delivery_amount_columns(main_plan_df: pd.DataFrame,
                                df_price: pd.DataFrame, start_date: datetime = None) -> tuple[pd.DataFrame, list]:
@@ -586,8 +576,7 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame, start_date: date
     except ValueError:
         # 若找不到就添加到最后
         main_plan_df[accuracy_col] = accuracy
-
-
+        
     return main_plan_df
 
 def merge_forecast_accuracy(sheet):
@@ -610,4 +599,3 @@ def merge_forecast_accuracy(sheet):
     cell = sheet.cell(row=1, column=start_col)
     cell.value = "预测准确率"
     cell.alignment = Alignment(horizontal="center", vertical="center")
-
