@@ -24,7 +24,6 @@ from mapping_utils import (
     apply_all_name_replacements
 )
 from data_utils import (
-    extract_info, 
     fill_spec_and_wafer_info, 
     fill_packaging_info
 )
