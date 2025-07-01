@@ -84,44 +84,30 @@ class PivotProcessor:
         if mapping_df is None or mapping_df.empty:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
 
-        # 创建新的 mapping_semi1：新品名不为空，半成品不为空
+        # 创建新的 mapping_semi：仅保留“半成品”字段非空的行
         mapping_semi1 = mapping_df[
             ["新晶圆品名", "新规格", "新品名", "半成品"]
-        ].copy()
-        mapping_semi1 = mapping_semi1[
-            mapping_semi1["半成品"].astype(str).str.strip().ne("") &
-            mapping_semi1["新品名"].astype(str).str.strip().ne("")
         ]
-        
-        # 创建 mapping_semi2：新品名为空但旧品名、半成品不为空
+        mapping_semi1 = mapping_semi1[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_semi1 = mapping_semi1[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
         mapping_semi2 = mapping_df[
             ["新晶圆品名", "新规格", "新品名", "旧晶圆品名", "旧规格", "旧品名", "半成品"]
-        ].copy()
-        mapping_semi2 = mapping_semi2[
-            mapping_semi2["新品名"].astype(str).str.strip().eq("") &
-            mapping_semi2["半成品"].astype(str).str.strip().ne("") &
-            mapping_semi2["旧品名"].astype(str).str.strip().ne("")
         ]
+        mapping_semi2 = mapping_semi2[mapping_semi2["新品名"].astype(str).str.strip().replace("nan", "") == ""].copy()
+        mapping_semi2 = mapping_semi2[~mapping_semi2["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_semi2 = mapping_semi2[~mapping_semi2["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_semi2 = mapping_semi2.drop(columns=["新晶圆品名", "新规格", "新品名"])
+        mapping_semi2.columns = ["新晶圆品名", "新规格", "新品名", "半成品"]
         
-        # 重命名列（保留旧品名相关字段作为“新”字段）
-        mapping_semi2 = mapping_semi2.rename(columns={
-            "旧晶圆品名": "新晶圆品名",
-            "旧规格": "新规格",
-            "旧品名": "新品名"
-        })[["新晶圆品名", "新规格", "新品名", "半成品"]]
-        
-        # 合并两个半成品映射表
-        mapping_semi = pd.concat([mapping_semi1, mapping_semi2], ignore_index=True).reset_index(drop=True)
-        
-        # 构造 mapping_new：新品名、旧品名都不为空的标准新旧料号表
+        mapping_semi = pd.concat([mapping_semi1, mapping_semi2], ignore_index=True)
+       
+        # 去除“品名”为空的行
         mapping_new = mapping_df[
             ["旧晶圆品名", "旧规格", "旧品名", "新晶圆品名", "新规格", "新品名"]
-        ].copy()
-        mapping_new = mapping_new[
-            mapping_new["新品名"].astype(str).str.strip().ne("") &
-            mapping_new["旧品名"].astype(str).str.strip().ne("")
-        ].reset_index(drop=True)
-
+        ]
+        mapping_new = mapping_new[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        mapping_new = mapping_new[~mapping_new["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
+        
         
         # 去除“替代品名”为空的行，并保留指定字段
         mapping_sub = pd.DataFrame()
