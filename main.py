@@ -16,8 +16,8 @@ def main():
     uploaded_files, forecast_file, safety_file, mapping_file, pc_file, selected_date, start = get_uploaded_files()
 
     if safety_file is not None:
-    xls = pd.ExcelFile(safety_file)
-    st.write("📄 Safety File Sheets:", xls.sheet_names)
+        xls = pd.ExcelFile(safety_file)
+        st.write("📄 Safety File Sheets:", xls.sheet_names)
 
     if start:
         if len(uploaded_files) < 8:
