@@ -48,8 +48,6 @@ def get_uploaded_files():
     mapping_file = st.file_uploader("🔁 上传新旧料号对照表", type="xlsx", key="mapping")
     pc_file = st.file_uploader("🔁 上传PC-供应商表", type="xlsx", key="pc")
 
-    st.write(forecast_file.sheet_names)
-
 
     # 🚀 生成按钮
     start = st.button("🚀 生成汇总 Excel")
