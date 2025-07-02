@@ -19,8 +19,7 @@ def main():
         if len(uploaded_files) < 8:
             st.error("❌ 请上传 8 个核心文件（未交订单/成品在制/成品库存/CP在制/晶圆库存/下单明细/销货明细/到货明细）！")
             return
-
-        st.write(forecast_file)
+            
         # 加载辅助表
         df_forecast = load_file_with_github_fallback("forecast", forecast_file)
         df_safety = load_file_with_github_fallback("safety", safety_file)
