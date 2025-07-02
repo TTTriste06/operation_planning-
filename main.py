@@ -25,8 +25,6 @@ def main():
         df_safety = load_file_with_github_fallback("safety", safety_file)
         df_mapping = load_file_with_github_fallback("mapping", mapping_file)
         df_pc = load_file_with_github_fallback("pc", pc_file)
-
-        st.write(df_forecast)
         
         additional_sheets = {
             "赛卓-预测": df_forecast,
