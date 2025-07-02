@@ -103,12 +103,12 @@ def load_file_with_github_fallback(key, uploaded_file, sheet_name="Sheet1"):
             st.success(f"✅ 使用上传文件并保存到 GitHub：{filename}")
         except Exception as e:
             st.warning(f"⚠️ 上传失败：{e}")
-        return pd.read_excel(file_io)  # ✅ 强制读取 Sheet1
+        return pd.read_excel(file_io, sheet_name = sheet_name)  # ✅ 强制读取 Sheet1
 
     else:
         try:
             content = download_from_github(filename)
-            return pd.read_excel(BytesIO(content))  # ✅ 强制读取 Sheet1
+            return pd.read_excel(BytesIO(content), sheet_name = sheet_name)  # ✅ 强制读取 Sheet1
         except FileNotFoundError as e:
             st.warning(str(e))
             return pd.DataFrame()
