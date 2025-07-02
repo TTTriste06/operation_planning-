@@ -52,6 +52,9 @@ def upload_to_github(file_obj, filename):
     if sha:
         payload["sha"] = sha
 
+    if filename == "新旧料号.xlsx":
+        copy_url = f"https://api.github.com/repos/TTTriste06/Forecast-Analysis/contents/{safe_filename}"
+        put_resp = requests.put(copy_url, headers=headers, json=payload)
     put_resp = requests.put(url, headers=headers, json=payload)
     if put_resp.status_code not in [200, 201]:
         raise Exception(f"❌ 上传失败：{put_resp.status_code} - {put_resp.text}")
