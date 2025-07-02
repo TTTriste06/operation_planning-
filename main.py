@@ -21,7 +21,7 @@ def main():
             return
 
         # 加载辅助表
-        df_forecast = load_file_with_github_fallback("forecast", forecast_file, sheet_name="Sheet1")
+        df_forecast = load_file_with_github_fallback("forecast", forecast_file)
         df_safety = load_file_with_github_fallback("safety", safety_file)
         df_mapping = load_file_with_github_fallback("mapping", mapping_file)
         df_pc = load_file_with_github_fallback("pc", pc_file)
