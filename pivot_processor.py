@@ -21,7 +21,8 @@ from mapping_utils import (
     replace_all_names_with_mapping, 
     apply_mapping_and_merge, 
     apply_extended_substitute_mapping,
-    apply_all_name_replacements
+    apply_all_name_replacements,
+    extract_mappings
 )
 from data_utils import (
     fill_spec_and_wafer_info, 
@@ -84,44 +85,7 @@ class PivotProcessor:
         if mapping_df is None or mapping_df.empty:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
 
-        # 创建新的 mapping_semi：仅保留“半成品”字段非空的行
-        mapping_semi1 = mapping_df[
-            ["新晶圆品名", "新规格", "新品名", "半成品"]
-        ]
-        mapping_semi1 = mapping_semi1[~mapping_df["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_semi1 = mapping_semi1[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_semi2 = mapping_df[
-            ["新晶圆品名", "新规格", "新品名", "旧晶圆品名", "旧规格", "旧品名", "半成品"]
-        ]
-        mapping_semi2 = mapping_semi2[mapping_semi2["新品名"].astype(str).str.strip().replace("nan", "") == ""].copy()
-        mapping_semi2 = mapping_semi2[~mapping_semi2["半成品"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_semi2 = mapping_semi2[~mapping_semi2["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_semi2 = mapping_semi2.drop(columns=["新晶圆品名", "新规格", "新品名"])
-        mapping_semi2.columns = ["新晶圆品名", "新规格", "新品名", "半成品"]
-        
-        mapping_semi = pd.concat([mapping_semi1, mapping_semi2], ignore_index=True)
-       
-        # 去除“品名”为空的行
-        mapping_new = mapping_df[
-            ["旧晶圆品名", "旧规格", "旧品名", "新晶圆品名", "新规格", "新品名"]
-        ]
-        mapping_new = mapping_new[~mapping_df["新品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        mapping_new = mapping_new[~mapping_new["旧品名"].astype(str).str.strip().replace("nan", "").eq("")].copy()
-        
-        
-        # 去除“替代品名”为空的行，并保留指定字段
-        mapping_sub = pd.DataFrame()
-        for i in range(1, 5):
-            sub_cols = ["新晶圆品名", "新规格", "新品名", f"替代晶圆{i}", f"替代规格{i}", f"替代品名{i}"]
-            sub_df = mapping_df[sub_cols].copy()
-            
-            # 去除“替代品名”为空或为 nan 的行
-            valid_mask = ~sub_df[f"替代品名{i}"].astype(str).str.strip().replace("nan", "").eq("")
-            sub_df = sub_df[valid_mask].copy()
-        
-            # 统一列名
-            sub_df.columns = ["新晶圆品名", "新规格", "新品名", "替代晶圆", "替代规格", "替代品名"]
-            mapping_sub = pd.concat([mapping_sub, sub_df], ignore_index=True)
+        mapping_new, mapping_semi, mapping_sub = extract_mappings(mapping_df)
         
         # === 构建主计划 ===
         headers = ["晶圆品名", "规格", "品名", "封装厂", "封装形式", "PC"]
