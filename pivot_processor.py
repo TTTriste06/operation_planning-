@@ -63,7 +63,7 @@ from sheet_add import clean_df, append_all_standardized_sheets
 from pivot_generator import generate_monthly_pivots, standardize_uploaded_keys
 
 class PivotProcessor:
-    def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None, uploaded_cp_files, start_date: date = None):
+    def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None, uploaded_cp_files: dict, start_date: date = None):
         """
         替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
         """
