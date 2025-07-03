@@ -37,7 +37,7 @@ def main():
         buffer = BytesIO()
         processor = PivotProcessor()
         processor.set_additional_data(additional_sheets)
-        processor.process(uploaded_files, buffer, additional_sheets, uploaded_cp_files, start_date=selected_date)
+        processor.process(uploaded_files, uploaded_cp_files, buffer, additional_sheets, start_date=selected_date)
 
         # 下载文件按钮
         file_name = f"运营数据订单-在制-库存汇总报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
