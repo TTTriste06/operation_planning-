@@ -31,14 +31,6 @@ def get_uploaded_files():
         key="all_files"
     )
 
-    st.subheader("📁 上传晶圆文件")
-    all_cp_files = st.file_uploader(
-        "关键字：华虹/先进/DB/上华（支持多选）",
-        type=["xlsx"],
-        accept_multiple_files=True,
-        key="all_cp_files"
-    )
-
     # 将所有文件统一收集到 uploaded_files 字典
     uploaded_files = {}
     if all_files:
@@ -48,6 +40,14 @@ def get_uploaded_files():
         st.write(list(uploaded_files.keys()))
     else:
         st.info("📂 尚未上传文件。")
+
+    st.subheader("📁 上传晶圆文件")
+    all_cp_files = st.file_uploader(
+        "关键字：华虹/先进/DB/上华（支持多选）",
+        type=["xlsx"],
+        accept_multiple_files=True,
+        key="all_cp_files"
+    )
 
     uploaded_cp_files = {}
     if all_cp_files:
