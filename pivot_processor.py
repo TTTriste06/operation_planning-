@@ -68,6 +68,7 @@ class PivotProcessor:
         替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
         """
         # === 标准化上传文件名 ===
+        st.write(uploaded_cp_files)
         self.dataframes = {}
         for filename, file_obj in uploaded_files.items():
             matched = False
