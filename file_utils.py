@@ -1,3 +1,4 @@
+import pandas as pd
 from collections import defaultdict
 
 def merge_cp_files_by_keyword(cp_dataframes: dict) -> dict:
