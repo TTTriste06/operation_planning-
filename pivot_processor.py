@@ -61,6 +61,7 @@ from production_plan import (
 )
 from sheet_add import clean_df, append_all_standardized_sheets
 from pivot_generator import generate_monthly_pivots, standardize_uploaded_keys
+from file_utils import merge_cp_files_by_keyword
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, uploaded_cp_files: dict, output_buffer, additional_sheets: dict = None, start_date: date = None):
@@ -68,6 +69,7 @@ class PivotProcessor:
         替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
         """
         # === 标准化上传文件名 ===
+        # 成品文件
         self.dataframes = {}
         for filename, file_obj in uploaded_files.items():
             matched = False
@@ -79,6 +81,7 @@ class PivotProcessor:
             if not matched:
                 st.warning(f"⚠️ 上传文件 `{filename}` 未识别关键词，跳过")
 
+        # cp文件
         self.cp_dataframes = {}
         cp_keywords = ["华虹", "先进", "DB", "上华"]
         cp_file_counter = {k: 0 for k in cp_keywords}
@@ -95,6 +98,8 @@ class PivotProcessor:
                     break
             if not matched:
                 st.warning(f"⚠️ CP 文件 `{filename}` 未包含关键字，已跳过")
+
+        self.cp_dataframes = merge_cp_files_by_keyword(self.cp_dataframes)
 
         st.write(self.cp_dataframes)
 
