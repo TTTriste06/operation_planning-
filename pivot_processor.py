@@ -338,7 +338,6 @@ class PivotProcessor:
         
             # 冻结
             ws.freeze_panes = "D3"
-            append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
 
             # === 写入 FAB_WIP_汇总 ===
             df_fab_summary.to_excel(writer, sheet_name="FAB_WIP_汇总", index=False, startrow=1)
@@ -375,6 +374,7 @@ class PivotProcessor:
             ws.freeze_panes = "C3"
             
             # === 写入透视表 ===
+            append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
             standardized_files = standardize_uploaded_keys(uploaded_files, RENAME_MAP)
             parsed_dataframes = {
                 filename: pd.read_excel(file)  # 或提前 parse 完成的 DataFrame dict
