@@ -67,7 +67,8 @@ from wafer_utils import(
     append_inventory_columns, 
     append_wafer_inventory_by_warehouse,
     merge_wafer_inventory_columns,
-    append_cp_wip_total
+    append_cp_wip_total,
+    merge_cp_wip_column
 )
 
 class PivotProcessor:
@@ -315,6 +316,7 @@ class PivotProcessor:
 
             merge_safety_header(ws_wafer, df_unique_wafer)
             merge_wafer_inventory_columns(ws_wafer, df_unique_wafer)
+            merge_cp_wip_column(ws_wafer, df_unique_wafer)
             
             adjust_column_width(ws_wafer)
             
