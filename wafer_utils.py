@@ -1,3 +1,4 @@
+import pandas as pd
 
 def extract_wafer_with_grossdie(main_plan_df: pd.DataFrame, df_grossdie: pd.DataFrame) -> pd.DataFrame:
     """
