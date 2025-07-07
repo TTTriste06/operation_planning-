@@ -160,3 +160,19 @@ def append_cp_wip_total(df_unique_wafer: pd.DataFrame, df_cp_wip: pd.DataFrame) 
 
     return df_result
 
+def merge_cp_wip_column(ws: Worksheet, df: pd.DataFrame):
+    """
+    在 Excel 中对“CP在制（Total）”这一列合并上方单元格，写入“在制CP晶圆”标题。
+    
+    参数：
+        ws: openpyxl 的工作表对象
+        df: DataFrame（用于查找列位置）
+    """
+    # 确保列存在
+    if "CP在制（Total）" not in df.columns:
+        return
+
+    # 获取该列在 DataFrame 中的列索引（从 0 开始），转为 Excel 列号（从 1 开始）
+    col_idx = df.columns.get_loc("CP在制（Tot
+
+
