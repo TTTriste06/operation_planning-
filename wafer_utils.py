@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-def extract_wafer_with_grossdie_raw(df_grossdie: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
+def extract_wafer_with_grossdie_raw(main_plan_df: pd.DataFrame, df_grossdie: pd.DataFrame) -> pd.DataFrame:
     """
     直接将晶圆品名与 df_grossdie 的“规格”列做匹配，如果匹配上则取该行的“GROSS DIE”。
 
