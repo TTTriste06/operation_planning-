@@ -305,6 +305,7 @@ class PivotProcessor:
             ws_wafer.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}") 
 
             merge_safety_header(ws_wafer, df_unique_wafer)
+            merge_wafer_inventory_columns(ws_wafer, df_unique_wafer)
             
             adjust_column_width(ws_wafer)
             
