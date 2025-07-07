@@ -62,7 +62,7 @@ from production_plan import (
 from sheet_add import clean_df, append_all_standardized_sheets, append_original_cp_sheets
 from pivot_generator import generate_monthly_pivots, standardize_uploaded_keys
 from cp_file_utils import merge_cp_files_by_keyword, generate_fab_summary, format_fab_summary_month_headers
-from wafer_utils import extract_wafer_with_grossdie
+from wafer_utils import extract_wafer_with_grossdie_raw
 
 
 class PivotProcessor:
@@ -264,7 +264,7 @@ class PivotProcessor:
         df_fab_summary = generate_fab_summary(self.cp_dataframes)
 
         # === 晶圆需求汇总 ===        
-        df_unique_wafer = extract_wafer_with_grossdie(main_plan_df, df_grossdie)
+        df_unique_wafer = extract_wafer_with_grossdie_raw(main_plan_df, df_grossdie)
 
          
         # === 写入 Excel 文件（主计划）===
