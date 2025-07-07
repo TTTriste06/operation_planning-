@@ -62,8 +62,11 @@ from production_plan import (
 from sheet_add import clean_df, append_all_standardized_sheets, append_original_cp_sheets
 from pivot_generator import generate_monthly_pivots, standardize_uploaded_keys
 from cp_file_utils import merge_cp_files_by_keyword, generate_fab_summary, format_fab_summary_month_headers
-from wafer_utils import extract_wafer_with_grossdie_raw, append_inventory_columns
-
+from wafer_utils import(
+    extract_wafer_with_grossdie_raw, 
+    append_inventory_columns, 
+    append_wafer_inventory_by_warehouse
+)
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, uploaded_cp_files: dict, df_grossdie, output_buffer, additional_sheets: dict = None, start_date: date = None):
@@ -266,6 +269,9 @@ class PivotProcessor:
         # === 晶圆需求汇总 ===        
         df_unique_wafer = extract_wafer_with_grossdie_raw(main_plan_df, df_grossdie)
         df_unique_wafer = append_inventory_columns(df_unique_wafer, main_plan_df)
+        wafer_inventory_df = self.dataframes.get("赛卓-晶圆库存")
+        df_unique_wafer = append_wafer_inventory_by_warehouse(df_unique_wafer, wafer_inventory_df)
+
 
 
          
