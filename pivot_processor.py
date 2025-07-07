@@ -66,7 +66,8 @@ from wafer_utils import(
     extract_wafer_with_grossdie_raw, 
     append_inventory_columns, 
     append_wafer_inventory_by_warehouse,
-    merge_wafer_inventory_columns
+    merge_wafer_inventory_columns,
+    append_cp_wip_total
 )
 
 class PivotProcessor:
@@ -270,8 +271,15 @@ class PivotProcessor:
         # === 晶圆需求汇总 ===        
         df_unique_wafer = extract_wafer_with_grossdie_raw(main_plan_df, df_grossdie)
         df_unique_wafer = append_inventory_columns(df_unique_wafer, main_plan_df)
+        
         wafer_inventory_df = self.dataframes.get("赛卓-晶圆库存")
         df_unique_wafer = append_wafer_inventory_by_warehouse(df_unique_wafer, wafer_inventory_df)
+        
+    
+        df_cp_wip = self.dataframes.get("赛卓-CP在制")
+        df_unique_wafer = append_cp_wip_total(df_unique_wafer, df_cp_wip)
+
+
 
 
 
