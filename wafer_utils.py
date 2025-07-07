@@ -1,19 +1,18 @@
 import pandas as pd
 import streamlit as st
 
-def extract_wafer_with_grossdie_raw(main_plan_df: pd.DataFrame, df_grossdie: pd.DataFrame) -> pd.DataFrame:
+def extract_grossdie_by_wafername_match(df_grossdie: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
-    从主计划提取唯一晶圆品名，通过“规格”去 df_grossdie 中直接匹配 GROSS DIE，不清理 df_grossdie。
+    直接将晶圆品名与 df_grossdie 的“规格”列做匹配，如果匹配上则取该行的“GROSS DIE”。
 
     参数：
-        main_plan_df: 包含“晶圆品名”和“规格”的主计划表
-        df_grossdie: 原始 grossdie 表，必须包含“规格”和“GROSS DIE”
+        df_grossdie: 原始 grossdie 表（不可清洗）
+        main_plan_df: 主计划表，包含“晶圆品名”
 
     返回：
         DataFrame: 包含“晶圆品名”和“单片数量”的 DataFrame
     """
-    st.write(df_grossdie)
-    # 获取唯一晶圆品名
+    # 提取唯一晶圆品名
     wafer_names = (
         main_plan_df["晶圆品名"]
         .dropna()
@@ -22,35 +21,15 @@ def extract_wafer_with_grossdie_raw(main_plan_df: pd.DataFrame, df_grossdie: pd.
         .drop_duplicates()
         .reset_index(drop=True)
     )
-    df_unique_wafer = pd.DataFrame({"晶圆品名": wafer_names})
+    df_result = pd.DataFrame({"晶圆品名": wafer_names})
 
-    st.write(df_unique_wafer)
-
-    # 获取 晶圆品名 → 所有规格
-    wafer_spec_map = (
-        main_plan_df[["晶圆品名", "规格"]]
-        .dropna()
-        .astype(str)
-        .apply(lambda x: x.str.strip())
-        .drop_duplicates()
-        .groupby("晶圆品名")["规格"]
-        .apply(list)
-        .to_dict()
-    )
-    st.write(wafer_spec_map)
-
-    # 不处理 df_grossdie，直接遍历查找 GROSS DIE
-    def find_grossdie(wafer_name: str):
-        specs = wafer_spec_map.get(wafer_name, [])
-        for spec in specs:
-            # 在 df_grossdie 中查找第一个匹配的规格
-            match_row = df_grossdie[df_grossdie["规格"] == spec]
-            if not match_row.empty:
-                return match_row.iloc[0]["GROSS DIE"]
+    # 匹配逻辑：晶圆品名是否出现在 grossdie 的规格列中
+    def match_grossdie(wafer_name):
+        matched = df_grossdie[df_grossdie["规格"] == wafer_name]
+        if not matched.empty:
+            return matched.iloc[0]["GROSS DIE"]
         return None
 
-    # 匹配
-    df_unique_wafer["单片数量"] = df_unique_wafer["晶圆品名"].apply(find_grossdie)
+    df_result["单片数量"] = df_result["晶圆品名"].apply(match_grossdie)
 
-    st.write(df_unique_wafer)
-    return df_unique_wafer
+    return df_result
