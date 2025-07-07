@@ -19,6 +19,7 @@ FILENAME_KEYS = {
     "order": "下单明细.xlsx",
     "sales": "销货明细.xlsx",
     "pc": "供应商-PC.xlsx",
+    "grossdie": "grossdie.xlsx",
 }
 
 def upload_to_github(file_obj, filename):
