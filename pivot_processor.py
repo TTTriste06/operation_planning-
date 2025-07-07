@@ -264,7 +264,7 @@ class PivotProcessor:
         df_fab_summary = generate_fab_summary(self.cp_dataframes)
 
         # === 晶圆需求汇总 ===        
-        df_wafer_gross = extract_wafer_with_grossdie(main_plan_df, df_grossdie)
+        df_unique_wafer = extract_wafer_with_grossdie(main_plan_df, df_grossdie)
 
          
         # === 写入 Excel 文件（主计划）===
