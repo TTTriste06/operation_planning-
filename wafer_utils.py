@@ -213,6 +213,7 @@ def append_fab_warehouse_quantity(df_unique_wafer: pd.DataFrame, sh_fabout_dict:
         for partname, qty in grouped.items():
             total_fabout[partname] = total_fabout.get(partname, 0) + qty
 
+    st.write(total_fabout)
     # 转换为 DataFrame 以合并
     fab_df = pd.DataFrame(list(total_fabout.items()), columns=["晶圆品名", "Fab warehouse"])
 
