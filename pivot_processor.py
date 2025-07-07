@@ -70,7 +70,8 @@ from wafer_utils import(
     append_cp_wip_total,
     merge_cp_wip_column,
     append_fab_warehouse_quantity,
-    merge_fab_warehouse_column
+    merge_fab_warehouse_column,
+    append_monthly_wo_from_fab
 )
 
 class PivotProcessor:
@@ -284,12 +285,13 @@ class PivotProcessor:
 
         df_unique_wafer = append_fab_warehouse_quantity(df_unique_wafer, self.SH_fabout)
 
+        df_unique_wafer = append_monthly_wo_from_fab(df_unique_wafer, df_fab_summary)
+        
+
+        
 
 
 
-
-
-         
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
