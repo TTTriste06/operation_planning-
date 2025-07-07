@@ -64,3 +64,40 @@ def append_inventory_columns(df_unique_wafer: pd.DataFrame, main_plan_df: pd.Dat
     df_merged = pd.merge(df_unique_wafer, inventory_sum, on="晶圆品名", how="left")
 
     return df_merged
+
+
+def append_wafer_inventory_by_warehouse(df_unique_wafer: pd.DataFrame, wafer_inventory_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    根据“晶圆品名”匹配 wafer_inventory_df 中的“WAFER品名”，
+    并将其数量按“仓库名称”展开成多列，汇总填入 df_unique_wafer。
+    """
+    # 标准化字段
+    wafer_inventory_df = wafer_inventory_df.copy()
+    wafer_inventory_df["WAFER品名"] = wafer_inventory_df["WAFER品名"].astype(str).str.strip()
+    wafer_inventory_df["仓库名称"] = wafer_inventory_df["仓库名称"].astype(str).str.strip()
+
+    # 过滤出匹配的晶圆品名
+    matched_inventory = wafer_inventory_df[
+        wafer_inventory_df["WAFER品名"].isin(df_unique_wafer["晶圆品名"])
+    ].copy()
+
+    # 将“数量”确保是数字
+    matched_inventory["数量"] = pd.to_numeric(matched_inventory["数量"], errors="coerce").fillna(0)
+
+    # 透视表：按“晶圆品名”和“仓库名称”聚合数量
+    pivot_inventory = matched_inventory.pivot_table(
+        index="WAFER品名",
+        columns="仓库名称",
+        values="数量",
+        aggfunc="sum",
+        fill_value=0
+    ).reset_index()
+
+    # 重命名 WAFER品名 → 晶圆品名，方便 merge
+    pivot_inventory = pivot_inventory.rename(columns={"WAFER品名": "晶圆品名"})
+
+    # 合并到原表
+    df_result = pd.merge(df_unique_wafer, pivot_inventory, on="晶圆品名", how="left")
+
+    return df_result
+
