@@ -59,8 +59,10 @@ from production_plan import (
     highlight_production_plan_cells,
     drop_last_forecast_month_columns
 )
-from sheet_add import clean_df, append_all_standardized_sheets
+from sheet_add import clean_df, append_all_standardized_sheets, append_original_cp_sheets
 from pivot_generator import generate_monthly_pivots, standardize_uploaded_keys
+from cp_file_utils import merge_cp_files_by_keyword, generate_fab_summary, format_fab_summary_month_headers
+
 
 class PivotProcessor:
     def process(self, uploaded_files: dict, uploaded_cp_files: dict, output_buffer, additional_sheets: dict = None, start_date: date = None):
