@@ -217,6 +217,30 @@ def append_fab_warehouse_quantity(df_unique_wafer: pd.DataFrame, sh_fabout_dict:
 
     # 合并
     df_result = pd.merge(df_unique_wafer, fab_df, on="晶圆品名", how="left")
-
-    print("✅ 成功合并 Fab warehouse 列，总条目数:", len(df_result))
+    
     return df_result
+
+def merge_fab_warehouse_column(ws: Worksheet, df: pd.DataFrame):
+    """
+    在 Excel 中对“Fab warehouse”列合并第一行并写入“Fabout”作为分组标题。
+
+    参数：
+        ws: openpyxl 工作表对象
+        df: DataFrame，用于定位该列位置
+    """
+    if "Fab warehouse" not in df.columns:
+        return  # 列不存在，跳过
+
+    # 获取该列索引（Excel 从 1 开始）
+    col_idx = df.columns.get_loc("Fab warehouse") + 1
+    col_letter = get_column_letter(col_idx)
+
+    # 合并单元格（仅 1 列）
+    ws.merge_cells(start_row=1, start_column=col_idx, end_row=1, end_column=col_idx)
+
+    # 写入标题
+    cell = ws.cell(row=1, column=col_idx)
+    cell.value = "Fabout"
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+
+
