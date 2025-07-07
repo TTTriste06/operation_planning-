@@ -65,7 +65,7 @@ from cp_file_utils import merge_cp_files_by_keyword, generate_fab_summary, forma
 
 
 class PivotProcessor:
-    def process(self, uploaded_files: dict, uploaded_cp_files: dict, output_buffer, additional_sheets: dict = None, df_grossdie, start_date: date = None):
+    def process(self, uploaded_files: dict, uploaded_cp_files: dict, df_grossdie, output_buffer, additional_sheets: dict = None, start_date: date = None):
         """
         替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
         """
