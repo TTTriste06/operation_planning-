@@ -261,10 +261,31 @@ class PivotProcessor:
 
         # === FAB_WIP_汇总 ===
         df_fab_summary = generate_fab_summary(self.cp_dataframes)
+
+        # === 晶圆需求汇总 ===
+        # 提取“晶圆品名”列，去除空值和重复项
+        unique_wafer_names = (
+            main_plan_df["晶圆品名"]
+            .dropna()
+            .astype(str)
+            .str.strip()
+            .drop_duplicates()
+            .reset_index(drop=True)
+        )
+        
+        # 创建新的 DataFrame
+        df_unique_wafer = pd.DataFrame({"晶圆品名": unique_wafer_names})
+        
+        # 显示前几行以确认
+        st.dataframe(df_unique_wafer.head())
+
          
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
+            # 获取 workbook
+            wb = writer.book
+            
             # === 写入Summary ===
             summary_data = [
                 ["", "超链接", "备注"],
@@ -280,13 +301,21 @@ class PivotProcessor:
             ]
             df_summary = pd.DataFrame(summary_data[1:], columns=summary_data[0])
             df_summary.to_excel(writer, sheet_name="Summary", index=False)
-                    
+
+            # === 写入晶圆需求汇总 ===
+            df_unique_wafer.to_excel(writer, sheet_name="晶圆需求汇总", index=False, startrow=1)
+            ws_wafer = wb["晶圆需求汇总"]
+        
+            # 写时间戳和说明
+            ws_wafer.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}") 
+            
+            adjust_column_width(ws_wafer)
+            
             # === 写入主计划 ===
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
         
-            # 获取 workbook 和 worksheet
-            wb = writer.book
+            # 获取 worksheet
             ws = wb["主计划"]
         
             # 写时间戳和说明
