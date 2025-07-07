@@ -65,7 +65,8 @@ from cp_file_utils import merge_cp_files_by_keyword, generate_fab_summary, forma
 from wafer_utils import(
     extract_wafer_with_grossdie_raw, 
     append_inventory_columns, 
-    append_wafer_inventory_by_warehouse
+    append_wafer_inventory_by_warehouse,
+    merge_wafer_inventory_columns
 )
 
 class PivotProcessor:
