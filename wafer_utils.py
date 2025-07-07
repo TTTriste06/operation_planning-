@@ -173,6 +173,11 @@ def merge_cp_wip_column(ws: Worksheet, df: pd.DataFrame):
         return
 
     # 获取该列在 DataFrame 中的列索引（从 0 开始），转为 Excel 列号（从 1 开始）
-    col_idx = df.columns.get_loc("CP在制（Tot
+    col_idx = df.columns.get_loc("CP在制（Total）") + 1
+    col_letter = get_column_letter(col_idx)
 
-
+    # 合并第一行并写入标题
+    ws.merge_cells(start_row=1, start_column=col_idx, end_row=1, end_column=col_idx)
+    cell = ws.cell(row=1, column=col_idx)
+    cell.value = "在制CP晶圆"
+    cell.alignment = Alignment(horizontal="center", vertical="center")
