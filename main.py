@@ -13,7 +13,7 @@ def main():
     setup_sidebar()
 
     # 获取上传文件
-    uploaded_files, forecast_file, safety_file, mapping_file, pc_file, selected_date, uploaded_cp_files, start = get_uploaded_files()
+    uploaded_files, forecast_file, safety_file, mapping_file, pc_file, selected_date, start = get_uploaded_files()
     
     if start:            
         if len(uploaded_files) < 8:
