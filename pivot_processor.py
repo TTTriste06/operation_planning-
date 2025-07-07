@@ -63,7 +63,7 @@ from sheet_add import clean_df, append_all_standardized_sheets
 from pivot_generator import generate_monthly_pivots, standardize_uploaded_keys
 
 class PivotProcessor:
-    def process(self, uploaded_files: dict, output_buffer, additional_sheets: dict = None, start_date: date = None):
+    def process(self, uploaded_files: dict, uploaded_cp_files: dict, output_buffer, additional_sheets: dict = None, start_date: date = None):
         """
         替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
         """
@@ -80,6 +80,33 @@ class PivotProcessor:
             if not matched:
                 st.warning(f"⚠️ 上传文件 `{filename}` 未识别关键词，跳过")
 
+        # 晶圆文件
+        self.cp_dataframes = {}
+        self.SH_fabout = {}
+        cp_keywords = ["华虹", "先进", "DB", "上华1厂", "上华2厂", "上华5厂"]
+        cp_file_counter = {k: 0 for k in cp_keywords}
+        
+        for filename, file_obj in uploaded_cp_files.items():
+            matched = False
+            for keyword in cp_keywords:
+                if keyword in filename:
+                    cp_file_counter[keyword] += 1
+                    suffix = str(cp_file_counter[keyword])
+                    new_key = f"{keyword}{suffix}" if cp_file_counter[keyword] > 1 else keyword
+                    if keyword == "DB":
+                        self.cp_dataframes[new_key] = pd.read_excel(file_obj, header=1)
+                    elif keyword.startswith("上华"):
+                        self.cp_dataframes[new_key] = pd.read_excel(file_obj, sheet_name = "wip")
+                        self.SH_fabout[new_key] = pd.read_excel(file_obj, sheet_name = "fabout")
+                    else:
+                        self.cp_dataframes[new_key] = pd.read_excel(file_obj)
+                    matched = True
+                    break
+            if not matched:
+                st.warning(f"⚠️ CP 文件 `{filename}` 未包含关键字，已跳过")
+
+        self.cp_dataframes = merge_cp_files_by_keyword(self.cp_dataframes)
+        self.SH_fabout = merge_cp_files_by_keyword(self.SH_fabout)
 
         # === 标准化新旧料号表 ===
         self.additional_sheets = additional_sheets
@@ -229,11 +256,14 @@ class PivotProcessor:
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
         
         st.success("✅ 已合并投单计划")
+
+        # === FAB_WIP_汇总 ===
+        df_fab_summary = generate_fab_summary(self.cp_dataframes)
          
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
         with pd.ExcelWriter(output_buffer, engine="openpyxl") as writer:
-            # 写入Summary
+            # === 写入Summary ===
             summary_data = [
                 ["", "超链接", "备注"],
                 ["数据汇总", "主计划", ""],
@@ -249,7 +279,7 @@ class PivotProcessor:
             df_summary = pd.DataFrame(summary_data[1:], columns=summary_data[0])
             df_summary.to_excel(writer, sheet_name="Summary", index=False)
                     
-            # 写入主计划表
+            # === 写入主计划 ===
             main_plan_df = clean_df(main_plan_df)
             main_plan_df.to_excel(writer, sheet_name="主计划", index=False, startrow=1)
         
@@ -307,8 +337,42 @@ class PivotProcessor:
             # 冻结
             ws.freeze_panes = "D3"
             append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
+
+            # === 写入 FAB_WIP_汇总 ===
+            df_fab_summary.to_excel(writer, sheet_name="FAB_WIP_汇总", index=False, startrow=1)
+        
+            # 获取 worksheet
+            ws = wb["FAB_WIP_汇总"]
             
-            # 透视表
+            format_fab_summary_month_headers(ws)
+            append_original_cp_sheets(writer, self.cp_dataframes)
+
+            # 写时间戳和说明
+            ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")            
+    
+            # 格式调整
+            adjust_column_width(ws)
+
+            # 设置字体加粗，行高也调高一点
+            bold_font = Font(bold=True)
+            ws.row_dimensions[2].height = 35
+    
+            # 遍历这一行所有已用到的列，对单元格字体加粗、居中、垂直居中
+            max_col = ws.max_column
+            for col_idx in range(1, max_col + 1):
+                cell = ws.cell(row=2, column=col_idx)
+                cell.font = bold_font
+                # 垂直水平居中
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            # 自动筛选
+            last_col_letter = get_column_letter(ws.max_column)
+            ws.auto_filter.ref = f"A2:{last_col_letter}2"
+        
+            # 冻结
+            ws.freeze_panes = "C3"
+            
+            # === 写入透视表 ===
             standardized_files = standardize_uploaded_keys(uploaded_files, RENAME_MAP)
             parsed_dataframes = {
                 filename: pd.read_excel(file)  # 或提前 parse 完成的 DataFrame dict
@@ -333,7 +397,7 @@ class PivotProcessor:
                     adjusted_width = max_length * 1.2 + 10
                     ws.column_dimensions[col_letter].width = min(adjusted_width, 50)
 
-            # 获取 workbook 和 worksheet
+            # === 加入超链接 ===
             ws_summary = wb["Summary"]
             add_sheet_hyperlinks(ws_summary, wb.sheetnames)
             
