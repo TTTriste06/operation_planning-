@@ -108,33 +108,30 @@ def append_wafer_inventory_by_warehouse(df_unique_wafer: pd.DataFrame, wafer_inv
 
 def merge_wafer_inventory_columns(ws: Worksheet, df: pd.DataFrame):
     """
-    在 Excel 工作表中合并“晶圆库存”相关列，并在第一行写上标题。
+    查找所有以“仓”结尾的列，在第一行合并并写入“晶圆库存”。
 
     参数：
         ws: openpyxl 的 Worksheet 对象（例如“主计划”sheet）
-        df: 包含多个“仓库名称”列的 DataFrame
+        df: 对应 DataFrame，用于定位列位置
     """
-    # 从 df 中识别出“仓库名称”列（不包括前面常规字段）
-    known_columns = {"晶圆品名", "单片数量", "InvWaf", "InvPart"}
-    inventory_cols = [col for col in df.columns if col not in known_columns]
-
+    # 1. 找出所有以“仓”结尾的列名
+    inventory_cols = [col for col in df.columns if str(col).strip().endswith("仓")]
     if not inventory_cols:
-        return  # 无需处理
+        return  # 没有匹配到“仓”列，无需处理
 
-    # 找出这些列在 Excel 中的列号（注意 openpyxl 是从 1 开始）
+    # 2. 获取这些列在 DataFrame 中的索引位置（从0开始）转为 Excel 列号（从1开始）
     start_col_idx = df.columns.get_loc(inventory_cols[0]) + 1
     end_col_idx = df.columns.get_loc(inventory_cols[-1]) + 1
 
+    # 3. 获取列字母（如 E, F）
     start_letter = get_column_letter(start_col_idx)
     end_letter = get_column_letter(end_col_idx)
 
-    # 合并单元格并写入“晶圆库存”标题
+    # 4. 合并单元格并写入标题“晶圆库存”
     title_cell = ws.cell(row=1, column=start_col_idx, value="晶圆库存")
     ws.merge_cells(start_row=1, start_column=start_col_idx, end_row=1, end_column=end_col_idx)
 
-    # 设置样式：居中 & 填色
+    # 5. 样式设置
     title_cell.alignment = Alignment(horizontal="center", vertical="center")
     title_cell.font = Font(bold=True)
     title_cell.fill = PatternFill(start_color="D9EAD3", end_color="D9EAD3", fill_type="solid")
-
-
