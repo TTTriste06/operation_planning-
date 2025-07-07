@@ -246,36 +246,31 @@ def merge_fab_warehouse_column(ws: Worksheet, df: pd.DataFrame):
 
 def append_monthly_wo_from_fab(df_unique_wafer: pd.DataFrame, df_fab_summary: pd.DataFrame) -> pd.DataFrame:
     """
-    从 df_fab_summary 中提取每月产出量，并添加到 df_unique_wafer 中（列名格式为“x月WO”）。
-
-    参数：
-        df_unique_wafer: 包含“晶圆品名”的 DataFrame
-        df_fab_summary: 包含“晶圆品名” + 各月列（如“7月”, “8月”, ...）的 DataFrame
-
-    返回：
-        df_unique_wafer 添加每月“x月WO”列后的结果
+    从 df_fab_summary 中提取每月晶圆产出量，并添加到 df_unique_wafer（以“x月WO”命名）中。
+    df_fab_summary 的品名列为“晶圆型号”，df_unique_wafer 为“晶圆品名”。
     """
-    # 拷贝防止修改原数据
     df = df_unique_wafer.copy()
 
-    # 标准化晶圆品名字段
-    df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
+    # 清洗列名
     df_fab = df_fab_summary.copy()
-    df_fab.columns = df_fab.columns.astype(str).str.strip()
-    if "晶圆品名" not in df_fab.columns and "CUST_PARTNAME" in df_fab.columns:
-        df_fab = df_fab.rename(columns={"CUST_PARTNAME": "晶圆品名"})
-    df_fab["晶圆品名"] = df_fab["晶圆品名"].astype(str).str.strip()
+    df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
+    df_fab["晶圆型号"] = df_fab["晶圆型号"].astype(str).str.strip()
 
-    # 筛选所有“月份”列（以“月”结尾，不含“WO”）
+    # 找出月份列（以“月”结尾）
     month_cols = [col for col in df_fab.columns if col.endswith("月")]
 
+    if not month_cols:
+        raise ValueError("❌ df_fab_summary 中未找到任何以“月”结尾的字段")
+
+    # 提取必要字段
+    df_fab_filtered = df_fab[["晶圆型号"] + month_cols].copy()
+    df_fab_filtered = df_fab_filtered.rename(columns={"晶圆型号": "晶圆品名"})
+
     # 重命名为“x月WO”
-    df_fab_renamed = df_fab[["晶圆品名"] + month_cols].copy()
     rename_dict = {col: f"{col}WO" for col in month_cols}
-    df_fab_renamed = df_fab_renamed.rename(columns=rename_dict)
+    df_fab_filtered = df_fab_filtered.rename(columns=rename_dict)
 
     # 合并
-    df_result = pd.merge(df, df_fab_renamed, on="晶圆品名", how="left")
+    df_result = pd.merge(df, df_fab_filtered, on="晶圆品名", how="left")
 
     return df_result
-
