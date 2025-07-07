@@ -276,9 +276,6 @@ class PivotProcessor:
         # 创建新的 DataFrame
         df_unique_wafer = pd.DataFrame({"晶圆品名": unique_wafer_names})
         
-        # 显示前几行以确认
-        st.dataframe(df_unique_wafer.head())
-
          
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
