@@ -185,40 +185,38 @@ def merge_cp_wip_column(ws: Worksheet, df: pd.DataFrame):
 
 def append_fab_warehouse_quantity(df_unique_wafer: pd.DataFrame, sh_fabout_dict: dict) -> pd.DataFrame:
     """
-    将 self.SH_fabout 中每张表的 CUST_PARTNAME 和 FABOUT_QTY 累加后，按晶圆品名合并入 df_unique_wafer。
-
-    参数：
-        df_unique_wafer: 包含“晶圆品名”的 DataFrame
-        sh_fabout_dict: 包含多个 DataFrame 的 dict，每个表含 CUST_PARTNAME 和 FABOUT_QTY 字段
-
-    返回：
-        添加“Fab warehouse”列后的 DataFrame
+    从 SH_fabout 中提取所有晶圆品名的 FABOUT_QTY 总和，合并入 df_unique_wafer 的 'Fab warehouse' 列。
     """
-    # 临时汇总表
-    total_fabout = {}
+    from collections import defaultdict
+
+    # 初始化总量累加器
+    total_fabout = defaultdict(float)
 
     for sheet_name, df in sh_fabout_dict.items():
-        df = df.copy()
         if "CUST_PARTNAME" not in df.columns or "FABOUT_QTY" not in df.columns:
+            print(f"❌ 表 {sheet_name} 缺少必要字段，跳过")
             continue
 
-        # 清洗字段
+        # 标准化
+        df = df.copy()
         df["CUST_PARTNAME"] = df["CUST_PARTNAME"].astype(str).str.strip()
         df["FABOUT_QTY"] = pd.to_numeric(df["FABOUT_QTY"], errors="coerce").fillna(0)
 
-        # 分组汇总
         grouped = df.groupby("CUST_PARTNAME")["FABOUT_QTY"].sum()
 
-        # 累加进 total_fabout
         for partname, qty in grouped.items():
-            total_fabout[partname] = total_fabout.get(partname, 0) + qty
+            total_fabout[partname] += qty
 
-    st.write(total_fabout)
-    # 转换为 DataFrame 以合并
+    # 转换为 DataFrame
     fab_df = pd.DataFrame(list(total_fabout.items()), columns=["晶圆品名", "Fab warehouse"])
+    fab_df["晶圆品名"] = fab_df["晶圆品名"].astype(str).str.strip()
 
-    # 合并进 df_unique_wafer
+    # 匹配目标列也做清洗
+    df_unique_wafer = df_unique_wafer.copy()
+    df_unique_wafer["晶圆品名"] = df_unique_wafer["晶圆品名"].astype(str).str.strip()
+
+    # 合并
     df_result = pd.merge(df_unique_wafer, fab_df, on="晶圆品名", how="left")
 
+    print("✅ 成功合并 Fab warehouse 列，总条目数:", len(df_result))
     return df_result
-
