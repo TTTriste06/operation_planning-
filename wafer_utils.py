@@ -1,5 +1,10 @@
 import pandas as pd
 import streamlit as st
+from openpyxl.worksheet.worksheet import Worksheet
+from openpyxl.styles import Alignment
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import PatternFill, Font
+
 
 def extract_wafer_with_grossdie_raw(main_plan_df: pd.DataFrame, df_grossdie: pd.DataFrame) -> pd.DataFrame:
     """
@@ -100,4 +105,36 @@ def append_wafer_inventory_by_warehouse(df_unique_wafer: pd.DataFrame, wafer_inv
     df_result = pd.merge(df_unique_wafer, pivot_inventory, on="晶圆品名", how="left")
 
     return df_result
+
+def merge_wafer_inventory_columns(ws: Worksheet, df: pd.DataFrame):
+    """
+    在 Excel 工作表中合并“晶圆库存”相关列，并在第一行写上标题。
+
+    参数：
+        ws: openpyxl 的 Worksheet 对象（例如“主计划”sheet）
+        df: 包含多个“仓库名称”列的 DataFrame
+    """
+    # 从 df 中识别出“仓库名称”列（不包括前面常规字段）
+    known_columns = {"晶圆品名", "单片数量", "InvWaf", "InvPart"}
+    inventory_cols = [col for col in df.columns if col not in known_columns]
+
+    if not inventory_cols:
+        return  # 无需处理
+
+    # 找出这些列在 Excel 中的列号（注意 openpyxl 是从 1 开始）
+    start_col_idx = df.columns.get_loc(inventory_cols[0]) + 1
+    end_col_idx = df.columns.get_loc(inventory_cols[-1]) + 1
+
+    start_letter = get_column_letter(start_col_idx)
+    end_letter = get_column_letter(end_col_idx)
+
+    # 合并单元格并写入“晶圆库存”标题
+    title_cell = ws.cell(row=1, column=start_col_idx, value="晶圆库存")
+    ws.merge_cells(start_row=1, start_column=start_col_idx, end_row=1, end_column=end_col_idx)
+
+    # 设置样式：居中 & 填色
+    title_cell.alignment = Alignment(horizontal="center", vertical="center")
+    title_cell.font = Font(bold=True)
+    title_cell.fill = PatternFill(start_color="D9EAD3", end_color="D9EAD3", fill_type="solid")
+
 
