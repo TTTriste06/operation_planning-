@@ -68,7 +68,8 @@ from wafer_utils import(
     append_wafer_inventory_by_warehouse,
     merge_wafer_inventory_columns,
     append_cp_wip_total,
-    merge_cp_wip_column
+    merge_cp_wip_column,
+    append_fab_warehouse_quantity
 )
 
 class PivotProcessor:
@@ -279,6 +280,9 @@ class PivotProcessor:
     
         df_cp_wip = self.dataframes.get("赛卓-CP在制")
         df_unique_wafer = append_cp_wip_total(df_unique_wafer, df_cp_wip)
+
+        df_unique_wafer = append_fab_warehouse_quantity(df_unique_wafer, self.SH_fabout)
+
 
 
 
