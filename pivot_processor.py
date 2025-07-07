@@ -285,6 +285,7 @@ class PivotProcessor:
 
         df_unique_wafer = append_fab_warehouse_quantity(df_unique_wafer, self.SH_fabout)
 
+        st.write(df_fab_summary)
         df_unique_wafer = append_monthly_wo_from_fab(df_unique_wafer, df_fab_summary)
         
 
