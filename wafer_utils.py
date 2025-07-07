@@ -133,3 +133,30 @@ def merge_wafer_inventory_columns(ws: Worksheet, df: pd.DataFrame):
     
     # 5. 样式设置
     title_cell.alignment = Alignment(horizontal="center", vertical="center")
+
+
+def append_cp_wip_total(df_unique_wafer: pd.DataFrame, df_cp_wip: pd.DataFrame) -> pd.DataFrame:
+    """
+    将 CP 在制表中的“未交”总数按“晶圆型号”匹配到 df_unique_wafer 的“晶圆品名”列。
+
+    参数：
+        df_unique_wafer: 包含唯一“晶圆品名”的 DataFrame
+        df_cp_wip: CP 在制表，必须包含“晶圆型号”和“未交”
+
+    返回：
+        带有“CP在制（Total）”列的新 DataFrame
+    """
+    # 清理字段
+    df_cp_wip = df_cp_wip.copy()
+    df_cp_wip["晶圆型号"] = df_cp_wip["晶圆型号"].astype(str).str.strip()
+    df_cp_wip["未交"] = pd.to_numeric(df_cp_wip["未交"], errors="coerce").fillna(0)
+
+    # 按“晶圆型号”汇总未交数量
+    cp_total = df_cp_wip.groupby("晶圆型号", as_index=False)["未交"].sum()
+    cp_total = cp_total.rename(columns={"晶圆型号": "晶圆品名", "未交": "CP在制（Total）"})
+
+    # 合并回 df_unique_wafer
+    df_result = pd.merge(df_unique_wafer, cp_total, on="晶圆品名", how="left")
+
+    return df_result
+
