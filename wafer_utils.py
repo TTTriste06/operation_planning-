@@ -130,3 +130,6 @@ def merge_wafer_inventory_columns(ws: Worksheet, df: pd.DataFrame):
     # 4. 合并单元格并写入标题“晶圆库存”
     title_cell = ws.cell(row=1, column=start_col_idx, value="晶圆库存")
     ws.merge_cells(start_row=1, start_column=start_col_idx, end_row=1, end_column=end_col_idx)
+    
+    # 5. 样式设置
+    title_cell.alignment = Alignment(horizontal="center", vertical="center")
