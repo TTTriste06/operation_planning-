@@ -1,4 +1,5 @@
 import pandas as pd
+import streamlit as st
 
 def extract_wafer_with_grossdie_raw(main_plan_df: pd.DataFrame, df_grossdie: pd.DataFrame) -> pd.DataFrame:
     """
@@ -11,6 +12,7 @@ def extract_wafer_with_grossdie_raw(main_plan_df: pd.DataFrame, df_grossdie: pd.
     返回：
         DataFrame: 包含“晶圆品名”和“单片数量”的 DataFrame
     """
+    st.write(df_grossdie)
     # 获取唯一晶圆品名
     wafer_names = (
         main_plan_df["晶圆品名"]
@@ -21,6 +23,8 @@ def extract_wafer_with_grossdie_raw(main_plan_df: pd.DataFrame, df_grossdie: pd.
         .reset_index(drop=True)
     )
     df_unique_wafer = pd.DataFrame({"晶圆品名": wafer_names})
+
+    st.write(df_unique_wafer)
 
     # 获取 晶圆品名 → 所有规格
     wafer_spec_map = (
@@ -33,6 +37,7 @@ def extract_wafer_with_grossdie_raw(main_plan_df: pd.DataFrame, df_grossdie: pd.
         .apply(list)
         .to_dict()
     )
+    st.write(wafer_spec_map)
 
     # 不处理 df_grossdie，直接遍历查找 GROSS DIE
     def find_grossdie(wafer_name: str):
@@ -47,4 +52,5 @@ def extract_wafer_with_grossdie_raw(main_plan_df: pd.DataFrame, df_grossdie: pd.
     # 匹配
     df_unique_wafer["单片数量"] = df_unique_wafer["晶圆品名"].apply(find_grossdie)
 
+    st.write(df_unique_wafer)
     return df_unique_wafer
