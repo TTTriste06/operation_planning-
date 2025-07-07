@@ -346,7 +346,7 @@ class PivotProcessor:
             ws = wb["FAB_WIP_汇总"]
             
             format_fab_summary_month_headers(ws)
-            append_original_cp_sheets(writer, self.cp_dataframes)
+            # append_original_cp_sheets(writer, self.cp_dataframes)
 
             # 写时间戳和说明
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")            
@@ -373,8 +373,10 @@ class PivotProcessor:
             # 冻结
             ws.freeze_panes = "C3"
             
+            # === 写入原表 ===
+            # append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
+
             # === 写入透视表 ===
-            append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
             standardized_files = standardize_uploaded_keys(uploaded_files, RENAME_MAP)
             parsed_dataframes = {
                 filename: pd.read_excel(file)  # 或提前 parse 完成的 DataFrame dict
