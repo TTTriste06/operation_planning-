@@ -429,21 +429,29 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
                     row.get("未测晶圆仓", 0) +
                     row.get("Fab warehouse", 0)
                 )
+                st.write(total_available)
+                st.write("0")
             else:
                 prev_wo_col = wo_cols[i - 1]
                 wo = row.get(prev_wo_col, 0)
                 total_available = total_rest + wo
+                st.write(total_available)
+                st.write("1")
                 
 
             delta = total_available - demand
-            if delta >= 0:
+            st.write(delta)
+            st.write("delta")
+            if delta > 0:
                 allocated = demand
                 total_rest = delta
-                
+                st.write(allocated)
+                st.write("00")
             else:
                 allocated = total_available
                 total_rest = 0
-                
+                st.write(allocated)
+                st.write("11")
 
             df.at[idx, alloc_col] = round(allocated, 3)
 
