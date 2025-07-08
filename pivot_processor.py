@@ -75,7 +75,8 @@ from wafer_utils import(
     merge_monthly_fab_wo_columns,
     append_monthly_demand_from_unfulfilled,
     merge_monthly_demand_columns,
-    append_monthly_demand_from_forecast
+    append_monthly_demand_from_forecast,
+    merge_monthly_demand_columns
 )
 
 class PivotProcessor:
