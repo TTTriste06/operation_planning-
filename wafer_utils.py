@@ -1,3 +1,4 @@
+import re
 import pandas as pd
 import streamlit as st
 from openpyxl.worksheet.worksheet import Worksheet
@@ -243,28 +244,40 @@ def merge_fab_warehouse_column(ws: Worksheet, df: pd.DataFrame):
     cell.value = "Fabout"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
-
-def append_monthly_wo_from_fab(df_unique_wafer: pd.DataFrame, df_fab_summary: pd.DataFrame) -> pd.DataFrame:
+def append_monthly_wo_from_weekly_fab(df_unique_wafer: pd.DataFrame, df_fab_summary: pd.DataFrame) -> pd.DataFrame:
     """
-    从 df_fab_summary 中提取所有非“晶圆型号”/“FAB”的列作为预计产出量，并添加到 df_unique_wafer。
-    所有产出列重命名为“列名 WO”。
+    将 df_fab_summary 中的周产出列按月份汇总为“yyyy-mm WO”列，并合并到 df_unique_wafer。
     """
     df = df_unique_wafer.copy()
     df_fab = df_fab_summary.copy()
 
-    # 标准化品名字段
+    # 标准化晶圆品名列
     df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
     df_fab["晶圆型号"] = df_fab["晶圆型号"].astype(str).str.strip()
 
-    # 识别产出列（排除前两列）
+    # 识别周列（排除“晶圆型号”, “FAB”等）
     known_cols = ["晶圆型号", "FAB"]
-    wo_cols = [col for col in df_fab.columns if col not in known_cols]
+    week_cols = [col for col in df_fab.columns if col not in known_cols]
 
-    # 重命名成“列名 WO”
-    rename_dict = {col: f"{col} WO" for col in wo_cols}
-    df_fab = df_fab.rename(columns={"晶圆型号": "晶圆品名", **rename_dict})
+    # 提取“yyyy-mm” → { "2025-07": ["2025-07 WK1(1–7)", ...] }
+    month_to_weeks = {}
+    for col in week_cols:
+        match = re.match(r"(\d{4}-\d{2})", col)
+        if match:
+            month = match.group(1)
+            month_to_weeks.setdefault(month, []).append(col)
 
-    # 合并
-    df_result = pd.merge(df, df_fab, on="晶圆品名", how="left")
+    # 计算每个月的总 WO 列
+    monthly_agg = pd.DataFrame()
+    monthly_agg["晶圆型号"] = df_fab["晶圆型号"]
+
+    for month, cols in month_to_weeks.items():
+        monthly_agg[f"{month} WO"] = df_fab[cols].sum(axis=1)
+
+    # 重命名用于合并
+    monthly_agg = monthly_agg.rename(columns={"晶圆型号": "晶圆品名"})
+
+    # 合并到 df
+    df_result = pd.merge(df, monthly_agg, on="晶圆品名", how="left")
 
     return df_result
