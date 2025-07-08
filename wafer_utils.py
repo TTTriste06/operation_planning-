@@ -400,14 +400,16 @@ def fill_columns_c_and_right_with_zero(df: pd.DataFrame) -> pd.DataFrame:
 
 def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
     """
-    分配晶圆：将每月成品投单计划（x月需求）按 Total_available_wafer 分配为 x月分配。
-    第一个月 Total_available = 分片仓+工程仓+已测+未测+Fab，
-    后续月份 Total_available = 上月余量 + 上月WO
-    并输出 st.write 每行每月的公式。
+    按 Excel 模拟分配逻辑更新晶圆投单计划：
+    - 第一个月使用分片仓 + 工程仓 + Fab 等计算 Total_available
+    - 后续月份使用上月剩余 + 上月WO 来计算 Total_available
+    - 分配值 = IF(Delta > 0, 当前月需求, Total_available)
     """
+    import re
+
     df = df_unique_wafer.copy()
 
-    # 提取所有“x月需求”列并按月份排序
+    # 提取并排序所有“x月需求”列
     pattern = re.compile(r"^(\d{1,2})月需求$")
     demand_cols = [col for col in df.columns if pattern.match(str(col))]
     if not demand_cols:
@@ -418,20 +420,22 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
     wo_cols = [col.replace("需求", "WO") for col in sorted_demand_cols]
     allocation_cols = [col.replace("需求", "分配") for col in sorted_demand_cols]
 
-    for alloc_col in allocation_cols:
-        df[alloc_col] = 0.0
+    # 初始化结果列
+    for col in allocation_cols:
+        df[col] = 0.0
 
     for idx, row in df.iterrows():
         st.write(f"🔹 第 {idx+1} 行：晶圆品名 = {row.get('晶圆品名', '')}")
-        total_rest = 0
+        delta_prev = 0
+        rest_prev = 0
 
         for i, demand_col in enumerate(sorted_demand_cols):
-            demand = row.get(demand_col, 0)
             month = demand_col.replace("需求", "")
-            alloc_col = f"{month}分配"
+            wo_col = wo_cols[i - 1] if i > 0 else None
+            alloc_col = allocation_cols[i]
+            demand = row.get(demand_col, 0)
 
             if i == 0:
-                # 第一个月的晶圆总量
                 total_available = (
                     row.get("分片晶圆仓", 0) +
                     row.get("工程晶圆仓", 0) +
@@ -440,21 +444,22 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
                     row.get("Fab warehouse", 0)
                 )
                 delta = total_available - demand
+                rest_prev = delta if delta > 0 else 0
                 allocated = demand if delta > 0 else total_available
-                total_rest = max(delta, 0)
-                st.write(f"📦 初始: Total_available = 分片({row.get('分片晶圆仓', 0)}) + 工程({row.get('工程晶圆仓', 0)}) + 已测({row.get('已测晶圆仓', 0)}) + 未测({row.get('未测晶圆仓', 0)}) + Fab({row.get('Fab warehouse', 0)}) = {total_available}")
-                st.write(f"📐 Delta = Total_available({total_available}) - 需求({demand}) = {delta}")
-                st.write(f"➡️ 分配 = {'需求' if delta > 0 else 'Total_available'} ➜ {allocated}, 剩余 = {total_rest}")
-            else:
-                prev_wo_col = wo_cols[i - 1]
-                wo = row.get(prev_wo_col, 0)
-                total_available = total_rest + wo
-                delta = total_available - demand
-                allocated = demand if delta > 0 else total_available
-                total_rest = max(delta, 0)
-                st.write(f"📦 月 {month}: Total_available = 上月余量({total_rest}) + 上月WO({wo}) = {total_available}")
+
+                st.write(f"📦 初始月 {month}: Total_available = F+G+H+I+K = {total_available}")
                 st.write(f"📐 Delta = {total_available} - 需求({demand}) = {delta}")
-                st.write(f"➡️ 分配 = {'需求' if delta > 0 else 'Total_available'} ➜ {allocated}, 剩余 = {total_rest}")
+                st.write(f"📌 分配 = IF(Delta>0, 需求, Total_available) = {allocated}")
+            else:
+                prev_wo = row.get(wo_col, 0)
+                total_available = rest_prev + prev_wo
+                delta = total_available - demand
+                rest_prev = delta if delta > 0 else 0
+                allocated = demand if delta > 0 else total_available
+
+                st.write(f"📦 月 {month}: Total_available = 上月余量({rest_prev}) + 上月WO({prev_wo}) = {total_available}")
+                st.write(f"📐 Delta = {total_available} - 需求({demand}) = {delta}")
+                st.write(f"📌 分配 = IF(Delta>0, 需求, Total_available) = {allocated}")
 
             df.at[idx, alloc_col] = round(allocated, 3)
 
