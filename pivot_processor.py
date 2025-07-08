@@ -71,7 +71,8 @@ from wafer_utils import(
     merge_cp_wip_column,
     append_fab_warehouse_quantity,
     merge_fab_warehouse_column,
-    append_monthly_wo_from_weekly_fab
+    append_monthly_wo_from_weekly_fab,
+    merge_monthly_fab_wo_columns
 )
 
 class PivotProcessor:
@@ -325,6 +326,11 @@ class PivotProcessor:
             merge_wafer_inventory_columns(ws_wafer, df_unique_wafer)
             merge_cp_wip_column(ws_wafer, df_unique_wafer)
             merge_fab_warehouse_column(ws_wafer, df_unique_wafer)
+            merge_monthly_fab_wo_columns(ws_wafer, df_unique_wafer)
+
+
+
+            
             
             adjust_column_width(ws_wafer)
             
