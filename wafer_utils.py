@@ -389,54 +389,30 @@ def merge_fg_plan_columns(ws: Worksheet, df: pd.DataFrame):
     cell.value = "成品投单计划"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
-def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
+def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
     """
-    根据df_unique_wafer中的晶圆仓库存和Fab warehouse数量，结合main_plan_df中的“x月成品投单计划”与“x月WO”列，
-    逐月按需求分配晶圆，生成“x月分配”列。
+    使用 df_unique_wafer 中已存在的“x月需求”和“x月WO”列，结合晶圆库存字段，
+    按顺序计算每月的实际晶圆分配，并添加“x月分配”列。
     """
     df = df_unique_wafer.copy()
-    df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
-    main_plan_df["晶圆品名"] = main_plan_df["晶圆品名"].astype(str).str.strip()
 
-    # 提取“x月成品投单计划”列并排序
-    pattern = re.compile(r"^(\d{1,2})月成品投单计划$")
-    plan_cols = [col for col in main_plan_df.columns if pattern.match(col)]
-    if not plan_cols:
-        raise ValueError("❌ main_plan_df 中未找到任何“x月成品投单计划”字段")
+    # 提取所有“x月需求”列，按月份排序
+    pattern = re.compile(r"^(\d{1,2})月需求$")
+    demand_cols = [col for col in df.columns if pattern.match(str(col))]
+    if not demand_cols:
+        raise ValueError("❌ df_unique_wafer 中未找到任何“x月需求”列")
 
-    # 排序月份列
-    month_keys = [(col, int(pattern.match(col).group(1))) for col in plan_cols]
-    sorted_plan_cols = [col for col, _ in sorted(month_keys, key=lambda x: x[1])]
+    month_keys = [(col, int(pattern.match(col).group(1))) for col in demand_cols]
+    sorted_demand_cols = [col for col, _ in sorted(month_keys, key=lambda x: x[1])]
+    wo_cols = [f"{col.replace('需求', 'WO')}" for col in sorted_demand_cols]
+    allocation_cols = [col.replace("需求", "分配") for col in sorted_demand_cols]
 
-    # 按晶圆品名聚合原始值
-    grouped = main_plan_df[["晶圆品名"] + sorted_plan_cols].copy()
-    grouped[sorted_plan_cols] = grouped[sorted_plan_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
-    grouped = grouped.groupby("晶圆品名", as_index=False)[sorted_plan_cols].sum()
-
-    # 差分为需求（允许负值）
-    diff_df = grouped[["晶圆品名"]].copy()
-    for i, col in enumerate(sorted_plan_cols):
-        if i == 0:
-            diff_df[col] = grouped[col]
-        else:
-            prev_col = sorted_plan_cols[i - 1]
-            diff_df[col] = grouped[col] - grouped[prev_col]
-    rename_dict = {col: f"{int(re.match(r'(\d{1,2})月', col).group(1))}月需求" for col in sorted_plan_cols}
-    demand_df = diff_df.rename(columns=rename_dict)
-
-    # 合并需求数据
-    df = pd.merge(df, demand_df, on="晶圆品名", how="left")
-
-    # 分配逻辑
-    demand_months = [rename_dict[col] for col in sorted_plan_cols]
-    st.write(demand_months)
-    wo_cols = [f"{m.replace('需求', 'WO')}" for m in demand_months]
-    allocation_cols = [m.replace("需求", "分配") for m in demand_months]
-    
-    for m in allocation_cols:
-        df[m] = 0.0
+    # 初始化结果列
+    for alloc_col in allocation_cols:
+        df[alloc_col] = 0.0
 
     for idx, row in df.iterrows():
+        # 初始晶圆数量（五仓库存 + fab warehouse）
         total_rest = (
             row.get("分片晶圆仓", 0) +
             row.get("工程晶圆仓", 0) +
@@ -444,13 +420,17 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, main_plan_df: pd.D
             row.get("未测晶圆仓", 0) +
             row.get("Fab warehouse", 0)
         )
-        for i, month in enumerate(demand_months):
-            demand = row.get(month, 0)
-            if i == 0:
-                available = total_rest
-            else:
-                wo = row.get(wo_cols[i], 0)
-                available = total_rest + wo
+
+        for i, demand_col in enumerate(sorted_demand_cols):
+            month = demand_col.replace("需求", "")
+            wo_col = f"{month}WO"
+            alloc_col = f"{month}分配"
+
+            demand = row.get(demand_col, 0)
+            available = total_rest
+            if i > 0:
+                available += row.get(wo_col, 0)
+
             delta = available - demand
             if delta >= 0:
                 allocated = demand
@@ -458,7 +438,7 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, main_plan_df: pd.D
             else:
                 allocated = available
                 total_rest = 0
-            df.at[idx, month.replace("需求", "分配")] = round(allocated, 3)
+
+            df.at[idx, alloc_col] = round(allocated, 3)
 
     return df
-
