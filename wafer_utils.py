@@ -244,7 +244,7 @@ def merge_fab_warehouse_column(ws: Worksheet, df: pd.DataFrame):
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
-def append_weekly_wo_from_fab(df_unique_wafer: pd.DataFrame, df_fab_summary: pd.DataFrame) -> pd.DataFrame:
+def append_monthly_wo_from_fab(df_unique_wafer: pd.DataFrame, df_fab_summary: pd.DataFrame) -> pd.DataFrame:
     """
     从 df_fab_summary 中提取所有非“晶圆型号”/“FAB”的列作为预计产出量，并添加到 df_unique_wafer。
     所有产出列重命名为“列名 WO”。
