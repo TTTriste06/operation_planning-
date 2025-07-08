@@ -491,6 +491,3 @@ def merge_fg_plan_columns(ws: Worksheet, df: pd.DataFrame):
     cell = ws.cell(row=1, column=start_col)
     cell.value = "成品投单计划"
     cell.alignment = Alignment(horizontal="center", vertical="center")
-    cell.font = Font(bold=True)
-    cell.fill = PatternFill(start_color="C9DAF8", end_color="C9DAF8", fill_type="solid")
-
