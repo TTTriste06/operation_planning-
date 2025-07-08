@@ -281,3 +281,30 @@ def append_monthly_wo_from_weekly_fab(df_unique_wafer: pd.DataFrame, df_fab_summ
     df_result = pd.merge(df, monthly_agg, on="晶圆品名", how="left")
 
     return df_result
+
+def merge_monthly_fab_wo_columns(ws: Worksheet, df: pd.DataFrame):
+    """
+    对所有“xxxx-xx WO”结尾的列，在第一行合并并写“Fab预计晶圆产出数量”。
+
+    参数：
+        ws: openpyxl 的 worksheet
+        df: DataFrame 用于定位列索引
+    """
+    # 识别所有“xxx WO”结尾的列
+    wo_cols = [col for col in df.columns if str(col).strip().endswith(" WO")]
+    if not wo_cols:
+        return
+
+    start_col_idx = df.columns.get_loc(wo_cols[0]) + 1
+    end_col_idx = df.columns.get_loc(wo_cols[-1]) + 1
+
+    # 合并
+    ws.merge_cells(start_row=1, start_column=start_col_idx, end_row=1, end_column=end_col_idx)
+    cell = ws.cell(row=1, column=start_col_idx)
+    cell.value = "Fab预计晶圆产出数量"
+
+    # 样式设置
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+    cell.font = Font(bold=True)
+    cell.fill = PatternFill(start_color="CFE2F3", end_color="CFE2F3", fill_type="solid")
+
