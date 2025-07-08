@@ -73,10 +73,6 @@ from wafer_utils import(
     merge_fab_warehouse_column,
     append_monthly_wo_from_weekly_fab,
     merge_monthly_fab_wo_columns,
-    append_monthly_demand_from_unfulfilled,
-    merge_monthly_demand_columns,
-    append_monthly_demand_from_forecast,
-    merge_monthly_demand_columns,
     append_monthly_demand_from_fg_plan,
     merge_fg_plan_columns
 )
