@@ -77,7 +77,8 @@ from wafer_utils import(
     merge_monthly_demand_columns,
     append_monthly_demand_from_forecast,
     merge_monthly_demand_columns,
-    append_monthly_demand_from_fg_plan
+    append_monthly_demand_from_fg_plan,
+    merge_fg_plan_columns
 )
 
 class PivotProcessor:
@@ -331,6 +332,7 @@ class PivotProcessor:
             merge_cp_wip_column(ws_wafer, df_unique_wafer)
             merge_fab_warehouse_column(ws_wafer, df_unique_wafer)
             merge_monthly_fab_wo_columns(ws_wafer, df_unique_wafer)
+            merge_fg_plan_columns(ws_wafer, df_unique_wafer)
 
 
 
