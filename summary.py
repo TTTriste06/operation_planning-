@@ -62,7 +62,8 @@ def append_unfulfilled_summary_columns_by_date( main_plan_df: pd.DataFrame, df_u
     max_date = pd.to_datetime(df_unfulfilled["预交货日"], errors="coerce").max()
     if pd.isna(max_date):
         max_date = today
-    final_month = (max_date + pd.offsets.MonthBegin(1)).replace(day=1)
+    final_month = max_date.replace(day=1)
+
     
     future_months = pd.period_range(today.to_period("M"), final_month.to_period("M"), freq="M")
     future_cols = [f"未交订单 {str(p)}" for p in future_months]
