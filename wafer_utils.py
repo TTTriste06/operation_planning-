@@ -366,6 +366,39 @@ def merge_monthly_demand_columns(ws: Worksheet, df: pd.DataFrame):
 
     # 设置样式
     cell.alignment = Alignment(horizontal="center", vertical="center")
-    cell.font = Font(bold=True)
-    cell.fill = PatternFill(start_color="FFE699", end_color="FFE699", fill_type="solid")
+
+def append_monthly_demand_from_forecast(df_unique_wafer: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    提取 main_plan_df 中的所有“yyyy-mm 预测”列，按晶圆品名汇总后除以“单片数量”，
+    添加“yyyy-mm 需求”列到 df_unique_wafer 中，结果保留三位小数。
+    """
+    df = df_unique_wafer.copy()
+    df["单片数量"] = pd.to_numeric(df["单片数量"], errors="coerce")
+    df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
+    main_plan_df["晶圆品名"] = main_plan_df["晶圆品名"].astype(str).str.strip()
+
+    # 匹配“yyyy-mm 预测”列
+    pattern = re.compile(r"^(\d{4}-\d{2}) 预测$")
+    forecast_cols = [col for col in main_plan_df.columns if pattern.match(str(col))]
+
+    if not forecast_cols:
+        raise ValueError("❌ main_plan_df 中未找到任何“yyyy-mm 预测”列")
+
+    # 按晶圆品名聚合预测值
+    grouped = main_plan_df[["晶圆品名"] + forecast_cols].copy()
+    grouped[forecast_cols] = grouped[forecast_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+    grouped = grouped.groupby("晶圆品名", as_index=False)[forecast_cols].sum()
+
+    # 合并
+    merged = pd.merge(df, grouped, on="晶圆品名", how="left")
+
+    # 除以单片数量，重命名为“yyyy-mm 需求”
+    for col in forecast_cols:
+        month = pattern.match(col).group(1)
+        demand_col = f"{month} 需求"
+        merged[demand_col] = (merged[col] / merged["单片数量"]).round(3)
+
+    # 只保留原始列和“需求”列
+    final_cols = list(df.columns) + [f"{pattern.match(col).group(1)} 需求" for col in forecast_cols]
+    return merged[final_cols]
 
