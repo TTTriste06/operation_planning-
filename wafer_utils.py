@@ -5,6 +5,8 @@ from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import PatternFill, Font
+from calendar import monthrange
+from datetime import datetime
 
 
 def extract_wafer_with_grossdie_raw(main_plan_df: pd.DataFrame, df_grossdie: pd.DataFrame) -> pd.DataFrame:
@@ -398,18 +400,20 @@ def fill_columns_c_and_right_with_zero(df: pd.DataFrame) -> pd.DataFrame:
     df_copy.iloc[:, start_col:] = df_copy.iloc[:, start_col:].fillna(0)
     return df_copy
 
-def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
-    """
-    按 Excel 模拟分配逻辑更新晶圆投单计划：
-    - 第一个月使用分片仓 + 工程仓 + Fab 等计算 Total_available
-    - 后续月份使用上月剩余 + 上月WO 来计算 Total_available
-    - 分配值 = IF(Delta > 0, 当前月需求, Total_available)
-    """
-    import re
 
+def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) -> pd.DataFrame:
+    """
+    根据分配逻辑逐月计算“x月分配”，使用“x月需求”列，
+    并从“yyyy-mm WO”列中匹配上月的WO。
+    参数:
+        df_unique_wafer: 包含各项仓库存、需求、WO等的DataFrame
+        year: 用于推断WO列前缀的年份，默认为2025
+    返回:
+        更新后的df_unique_wafer，包含所有“x月分配”列
+    """
     df = df_unique_wafer.copy()
 
-    # 提取并排序所有“x月需求”列
+    # 获取所有“x月需求”列
     pattern = re.compile(r"^(\d{1,2})月需求$")
     demand_cols = [col for col in df.columns if pattern.match(str(col))]
     if not demand_cols:
@@ -417,25 +421,23 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
 
     month_keys = [(col, int(pattern.match(col).group(1))) for col in demand_cols]
     sorted_demand_cols = [col for col, _ in sorted(month_keys, key=lambda x: x[1])]
-    wo_cols = [col.replace("需求", "WO") for col in sorted_demand_cols]
-    allocation_cols = [col.replace("需求", "分配") for col in sorted_demand_cols]
+    sorted_months = [month for _, month in sorted(month_keys, key=lambda x: x[1])]
+    allocation_cols = [f"{month}月分配" for month in sorted_months]
 
-    # 初始化结果列
     for col in allocation_cols:
         df[col] = 0.0
 
     for idx, row in df.iterrows():
         st.write(f"🔹 第 {idx+1} 行：晶圆品名 = {row.get('晶圆品名', '')}")
-        delta_prev = 0
         rest_prev = 0
 
-        for i, demand_col in enumerate(sorted_demand_cols):
-            month = demand_col.replace("需求", "")
-            wo_col = wo_cols[i - 1] if i > 0 else None
-            alloc_col = allocation_cols[i]
+        for i, month in enumerate(sorted_months):
+            demand_col = f"{month}月需求"
+            alloc_col = f"{month}月分配"
             demand = row.get(demand_col, 0)
 
             if i == 0:
+                # 初始月使用五仓总和作为 Total_available
                 total_available = (
                     row.get("分片晶圆仓", 0) +
                     row.get("工程晶圆仓", 0) +
@@ -444,18 +446,23 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
                     row.get("Fab warehouse", 0)
                 )
                 delta = total_available - demand
-                rest_prev = delta if delta > 0 else 0
                 allocated = demand if delta > 0 else total_available
+                rest_prev = max(delta, 0)
             else:
-                prev_wo = row.get(wo_col, 0)
-                total_available = rest_prev + prev_wo
-                delta = total_available - demand
-                rest_prev = delta if delta > 0 else 0
-                allocated = demand if delta > 0 else total_available
+                # 找上一个月的 datetime 对象
+                prev_month = sorted_months[i - 1]
+                prev_date = datetime(year, prev_month, 1)
+                wo_col = f"{prev_date.strftime('%Y-%m')} WO"
 
-                st.write(f"📦 月 {month}: Total_available = 上月余量({rest_prev}) + 上月WO({prev_wo}) = {total_available}")
+                wo = row.get(wo_col, 0)
+                total_available = rest_prev + wo
+                delta = total_available - demand
+                allocated = demand if delta > 0 else total_available
+                rest_prev = max(delta, 0)
+
+                st.write(f"📦 月 {month}月: Total_available = 上月余量({rest_prev}) + 上月WO({wo}) = {total_available}")
                 st.write(f"📐 Delta = {total_available} - 需求({demand}) = {delta}")
-                st.write(f"📌 分配 = IF(Delta>0, 需求, Total_available) = {allocated}")
+                st.write(f"📌 分配 = {'需求' if delta > 0 else 'Total_available'} ➜ {allocated}")
 
             df.at[idx, alloc_col] = round(allocated, 3)
 
