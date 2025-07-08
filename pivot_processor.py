@@ -74,7 +74,8 @@ from wafer_utils import(
     append_monthly_wo_from_weekly_fab,
     merge_monthly_fab_wo_columns,
     append_monthly_demand_from_unfulfilled,
-    merge_monthly_demand_columns
+    merge_monthly_demand_columns,
+    append_monthly_demand_from_forecast
 )
 
 class PivotProcessor:
@@ -290,6 +291,8 @@ class PivotProcessor:
         df_unique_wafer = append_monthly_wo_from_weekly_fab(df_unique_wafer, df_fab_summary)
 
         df_unique_wafer = append_monthly_demand_from_unfulfilled(df_unique_wafer, main_plan_df)
+        df_unique_wafer = append_monthly_demand_from_forecast(df_unique_wafer, main_plan_df)
+
 
         
         
