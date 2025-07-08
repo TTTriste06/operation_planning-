@@ -398,15 +398,16 @@ def fill_columns_c_and_right_with_zero(df: pd.DataFrame) -> pd.DataFrame:
     df_copy.iloc[:, start_col:] = df_copy.iloc[:, start_col:].fillna(0)
     return df_copy
 
-
 def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
     """
-    使用 df_unique_wafer 中的“x月需求”和“x月WO”列进行晶圆库存分配，
-    并添加“x月分配”列，同时 st.write 输出每一行每月的分配公式。
+    分配晶圆：将每月成品投单计划（x月需求）按 Total_available_wafer 分配为 x月分配。
+    第一个月 Total_available = 分片仓+工程仓+已测+未测+Fab，
+    后续月份 Total_available = 上月余量 + 上月WO
+    并输出 st.write 每行每月的公式。
     """
     df = df_unique_wafer.copy()
 
-    # 提取并排序“x月需求”列
+    # 提取所有“x月需求”列并按月份排序
     pattern = re.compile(r"^(\d{1,2})月需求$")
     demand_cols = [col for col in df.columns if pattern.match(str(col))]
     if not demand_cols:
@@ -414,7 +415,7 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
 
     month_keys = [(col, int(pattern.match(col).group(1))) for col in demand_cols]
     sorted_demand_cols = [col for col, _ in sorted(month_keys, key=lambda x: x[1])]
-    wo_cols = [f"{col.replace('需求', 'WO')}" for col in sorted_demand_cols]
+    wo_cols = [col.replace("需求", "WO") for col in sorted_demand_cols]
     allocation_cols = [col.replace("需求", "分配") for col in sorted_demand_cols]
 
     for alloc_col in allocation_cols:
@@ -423,14 +424,14 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
     for idx, row in df.iterrows():
         st.write(f"🔹 第 {idx+1} 行：晶圆品名 = {row.get('晶圆品名', '')}")
         total_rest = 0
+
         for i, demand_col in enumerate(sorted_demand_cols):
             demand = row.get(demand_col, 0)
             month = demand_col.replace("需求", "")
-            wo_col = f"{month}WO"
             alloc_col = f"{month}分配"
-            st.write(month)
 
             if i == 0:
+                # 第一个月的晶圆总量
                 total_available = (
                     row.get("分片晶圆仓", 0) +
                     row.get("工程晶圆仓", 0) +
@@ -438,29 +439,22 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
                     row.get("未测晶圆仓", 0) +
                     row.get("Fab warehouse", 0)
                 )
-                st.write(total_available)
-                st.write("0")
+                delta = total_available - demand
+                allocated = demand if delta > 0 else total_available
+                total_rest = max(delta, 0)
+                st.write(f"📦 初始: Total_available = 分片({row.get('分片晶圆仓', 0)}) + 工程({row.get('工程晶圆仓', 0)}) + 已测({row.get('已测晶圆仓', 0)}) + 未测({row.get('未测晶圆仓', 0)}) + Fab({row.get('Fab warehouse', 0)}) = {total_available}")
+                st.write(f"📐 Delta = Total_available({total_available}) - 需求({demand}) = {delta}")
+                st.write(f"➡️ 分配 = {'需求' if delta > 0 else 'Total_available'} ➜ {allocated}, 剩余 = {total_rest}")
             else:
                 prev_wo_col = wo_cols[i - 1]
                 wo = row.get(prev_wo_col, 0)
                 total_available = total_rest + wo
-                st.write(total_available)
-                st.write("1")
-                
-
-            delta = total_available - demand
-            st.write(delta)
-            st.write("delta")
-            if delta > 0:
-                allocated = demand
-                total_rest = delta
-                st.write(allocated)
-                st.write("00")
-            else:
-                allocated = total_available
-                total_rest = 0
-                st.write(allocated)
-                st.write("11")
+                delta = total_available - demand
+                allocated = demand if delta > 0 else total_available
+                total_rest = max(delta, 0)
+                st.write(f"📦 月 {month}: Total_available = 上月余量({total_rest}) + 上月WO({wo}) = {total_available}")
+                st.write(f"📐 Delta = {total_available} - 需求({demand}) = {delta}")
+                st.write(f"➡️ 分配 = {'需求' if delta > 0 else 'Total_available'} ➜ {allocated}, 剩余 = {total_rest}")
 
             df.at[idx, alloc_col] = round(allocated, 3)
 
