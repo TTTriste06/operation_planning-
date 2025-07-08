@@ -72,7 +72,8 @@ from wafer_utils import(
     append_fab_warehouse_quantity,
     merge_fab_warehouse_column,
     append_monthly_wo_from_weekly_fab,
-    merge_monthly_fab_wo_columns
+    merge_monthly_fab_wo_columns,
+    append_monthly_demand
 )
 
 class PivotProcessor:
@@ -285,9 +286,10 @@ class PivotProcessor:
         df_unique_wafer = append_cp_wip_total(df_unique_wafer, df_cp_wip)
 
         df_unique_wafer = append_fab_warehouse_quantity(df_unique_wafer, self.SH_fabout)
-
-        st.write(df_fab_summary)
         df_unique_wafer = append_monthly_wo_from_weekly_fab(df_unique_wafer, df_fab_summary)
+
+        df_unique_wafer = append_monthly_demand(df_unique_wafer, main_plan_df)
+
         
         
 
