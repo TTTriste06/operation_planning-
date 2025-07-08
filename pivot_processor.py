@@ -293,9 +293,10 @@ class PivotProcessor:
 
         st.write(main_plan_df)
         df_unique_wafer = append_monthly_demand_from_fg_plan(df_unique_wafer, main_plan_df)
-        df_unique_wafer = allocate_fg_demand_monthly(df_unique_wafer)
+
         
         df_unique_wafer = fill_columns_c_and_right_with_zero(df_unique_wafer)
+        df_unique_wafer = allocate_fg_demand_monthly(df_unique_wafer)
 
 
 
