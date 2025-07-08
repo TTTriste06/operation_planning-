@@ -441,3 +441,37 @@ def append_monthly_demand_from_fg_plan(df_unique_wafer: pd.DataFrame, main_plan_
         df_result[col] = df_result[col].round(3)
 
     return df_result
+
+def merge_fg_plan_columns(ws: Worksheet, df: pd.DataFrame):
+    """
+    将所有“x月需求”列中来源于成品投单计划的部分合并在第1行，写入“成品投单计划”。
+    默认以 df 中最后一批“x月需求”列为该类型的列。
+    """
+    import re
+
+    # 所有“x月需求”列
+    demand_cols = [col for col in df.columns if re.match(r"^\d{1,2}月需求$", str(col))]
+
+    if not demand_cols:
+        return
+
+    # 默认将这些列中“最晚追加”的部分视为成品投单计划（按顺序）
+    # 如果你有标记哪些列来自“成品投单计划”，也可以通过标记列表更明确
+    # 这里假设最后连续的一组“x月需求”是成品投单计划
+
+    # 从后往前找到连续的“x月需求”列
+    end_idx = df.columns.get_loc(demand_cols[-1])
+    start_idx = end_idx
+    for i in reversed(range(end_idx)):
+        if str(df.columns[i]).endswith("需求"):
+            start_idx = i
+        else:
+            break
+
+    start_col = start_idx + 1
+    end_col = end_idx + 1
+
+    ws.merge_cells(start_row=1, start_column=start_col, end_row=1, end_column=end_col)
+    cell = ws.cell(row=1, column=start_col)
+    cell.value = "成品投单计划"
+    cell.alignment = Alignment(horizontal="center", vertical="center")
