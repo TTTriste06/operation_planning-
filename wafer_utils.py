@@ -306,40 +306,34 @@ def merge_monthly_fab_wo_columns(ws: Worksheet, df: pd.DataFrame):
     # 样式设置
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
+
 def append_monthly_demand_from_unfulfilled(df_unique_wafer: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
     从 main_plan_df 中提取“未交订单 yyyy-mm”列，除以“单片数量”，添加“yyyy-mm 需求”列到 df_unique_wafer。
-
-    参数：
-        df_unique_wafer: 包含“晶圆品名”和“单片数量”的 DataFrame
-        main_plan_df: 包含“未交订单 yyyy-mm”字段的主计划 DataFrame
-
-    返回：
-        添加“yyyy-mm 需求”列后的 DataFrame
+    不引入原始未交订单列，结果保留三位小数。
     """
     df = df_unique_wafer.copy()
     df["单片数量"] = pd.to_numeric(df["单片数量"], errors="coerce")
     df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
     main_plan_df["晶圆品名"] = main_plan_df["晶圆品名"].astype(str).str.strip()
 
-    # 找出所有“未交订单 yyyy-mm”列
+    # 匹配“未交订单 yyyy-mm”
     pattern = re.compile(r"^未交订单 (\d{4}-\d{2})$")
     unfulfilled_cols = [col for col in main_plan_df.columns if pattern.match(str(col))]
 
     if not unfulfilled_cols:
         raise ValueError("❌ main_plan_df 中未找到任何“未交订单 yyyy-mm”列")
 
-    # 提取未交订单 DataFrame
+    # 提取未交订单部分
     order_df = main_plan_df[["晶圆品名"] + unfulfilled_cols].copy()
-
-    # 合并
     merged = pd.merge(df, order_df, on="晶圆品名", how="left")
 
-    # 计算每月需求列
+    # 计算需求列（保留三位小数），仅添加需求列
     for col in unfulfilled_cols:
-        match = pattern.match(col)
-        month = match.group(1)  # 提取 yyyy-mm
+        month = pattern.match(col).group(1)
         demand_col = f"{month} 需求"
-        merged[demand_col] = merged[col] / merged["单片数量"]
+        merged[demand_col] = (merged[col] / merged["单片数量"]).round(3)
 
-    return merged
+    # 删除原始未交订单列，仅保留 df_unique_wafer + 新需求列
+    final_cols = list(df.columns) + [f"{pattern.match(col).group(1)} 需求" for col in unfulfilled_cols]
+    return merged[final_cols]
