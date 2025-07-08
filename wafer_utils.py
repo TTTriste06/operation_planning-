@@ -428,7 +428,6 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
         df[col] = 0.0
 
     for idx, row in df.iterrows():
-        st.write(f"🔹 第 {idx+1} 行：晶圆品名 = {row.get('晶圆品名', '')}")
         rest_prev = 0
 
         for i, month in enumerate(sorted_months):
@@ -485,5 +484,7 @@ def merge_allocation_header(ws: Worksheet):
     end_letter = get_column_letter(end_col)
 
     ws.merge_cells(f"{start_letter}1:{end_letter}1")
-    ws[f"{start_letter}1"] = "晶圆分配（颗）"
+    cell = ws.cell(row=1, column=start_col)
+    cell.value = "晶圆分配（颗）"
+    cell.alignment = Alignment(horizontal="center", vertical="center")
 
