@@ -244,33 +244,27 @@ def merge_fab_warehouse_column(ws: Worksheet, df: pd.DataFrame):
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
-def append_monthly_wo_from_fab(df_unique_wafer: pd.DataFrame, df_fab_summary: pd.DataFrame) -> pd.DataFrame:
+def append_weekly_wo_from_fab(df_unique_wafer: pd.DataFrame, df_fab_summary: pd.DataFrame) -> pd.DataFrame:
     """
-    从 df_fab_summary 中提取每月晶圆产出量，并添加到 df_unique_wafer（以“x月WO”命名）中。
-    df_fab_summary 的品名列为“晶圆型号”，df_unique_wafer 为“晶圆品名”。
+    从 df_fab_summary 中提取所有非“晶圆型号”/“FAB”的列作为预计产出量，并添加到 df_unique_wafer。
+    所有产出列重命名为“列名 WO”。
     """
     df = df_unique_wafer.copy()
-
-    # 清洗列名
     df_fab = df_fab_summary.copy()
+
+    # 标准化品名字段
     df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
     df_fab["晶圆型号"] = df_fab["晶圆型号"].astype(str).str.strip()
 
-    # 找出月份列（以“月”结尾）
-    month_cols = [col for col in df_fab.columns if col.endswith("月")]
+    # 识别产出列（排除前两列）
+    known_cols = ["晶圆型号", "FAB"]
+    wo_cols = [col for col in df_fab.columns if col not in known_cols]
 
-    if not month_cols:
-        raise ValueError("❌ df_fab_summary 中未找到任何以“月”结尾的字段")
-
-    # 提取必要字段
-    df_fab_filtered = df_fab[["晶圆型号"] + month_cols].copy()
-    df_fab_filtered = df_fab_filtered.rename(columns={"晶圆型号": "晶圆品名"})
-
-    # 重命名为“x月WO”
-    rename_dict = {col: f"{col}WO" for col in month_cols}
-    df_fab_filtered = df_fab_filtered.rename(columns=rename_dict)
+    # 重命名成“列名 WO”
+    rename_dict = {col: f"{col} WO" for col in wo_cols}
+    df_fab = df_fab.rename(columns={"晶圆型号": "晶圆品名", **rename_dict})
 
     # 合并
-    df_result = pd.merge(df, df_fab_filtered, on="晶圆品名", how="left")
+    df_result = pd.merge(df, df_fab, on="晶圆品名", how="left")
 
     return df_result
