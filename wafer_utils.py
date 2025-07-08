@@ -389,6 +389,15 @@ def merge_fg_plan_columns(ws: Worksheet, df: pd.DataFrame):
     cell.value = "成品投单计划"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
+def fill_columns_c_and_right_with_zero(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    将 DataFrame 中第3列及其右侧所有空单元格填入0。
+    """
+    df_copy = df.copy()
+    start_col = 2  # 第3列的索引（从0开始）
+    df_copy.iloc[:, start_col:] = df_copy.iloc[:, start_col:].fillna(0)
+    return df_copy
+
 
 def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
     """
