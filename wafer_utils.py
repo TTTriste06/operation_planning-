@@ -412,39 +412,6 @@ def merge_monthly_demand_columns(ws: Worksheet, df: pd.DataFrame):
 def append_monthly_demand_from_fg_plan(df_unique_wafer: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
     提取“x月成品投单计划”列，按晶圆品名汇总后，重命名为“x月需求”，添加到 df_unique_wafer。
-    """
-    df = df_unique_wafer.copy()
-    df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
-    main_plan_df["晶圆品名"] = main_plan_df["晶圆品名"].astype(str).str.strip()
-
-    # 匹配所有“x月成品投单计划”列
-    pattern = re.compile(r"^(\d{1,2})月成品投单计划$")
-    plan_cols = [col for col in main_plan_df.columns if pattern.match(str(col))]
-
-    if not plan_cols:
-        raise ValueError("❌ main_plan_df 中未找到任何“x月成品投单计划”字段")
-
-    # 汇总这些列（按晶圆品名聚合）
-    grouped = main_plan_df[["晶圆品名"] + plan_cols].copy()
-    grouped[plan_cols] = grouped[plan_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
-    grouped = grouped.groupby("晶圆品名", as_index=False)[plan_cols].sum()
-
-    # 重命名为“x月需求”
-    rename_dict = {col: f"{pattern.match(col).group(1)}月需求" for col in plan_cols}
-    grouped = grouped.rename(columns=rename_dict)
-
-    # 合并进 df_unique_wafer
-    df_result = pd.merge(df, grouped, on="晶圆品名", how="left")
-
-    # 保留三位小数
-    for col in rename_dict.values():
-        df_result[col] = df_result[col].round(3)
-
-    return df_result
-
-def append_monthly_demand_from_fg_plan(df_unique_wafer: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    提取“x月成品投单计划”列，按晶圆品名汇总后，重命名为“x月需求”，添加到 df_unique_wafer。
     差分逻辑：
         第一个月 = 原始值；
         后续月份 = 当前月原值 - 上月原值（允许为负）
@@ -490,3 +457,40 @@ def append_monthly_demand_from_fg_plan(df_unique_wafer: pd.DataFrame, main_plan_
         df_result[col] = df_result[col].round(3)
 
     return df_result
+
+def merge_fg_plan_columns(ws: Worksheet, df: pd.DataFrame):
+    """
+    将所有“x月需求”列中来源于成品投单计划的部分合并在第1行，写入“成品投单计划”。
+    默认以 df 中最后一批“x月需求”列为该类型的列。
+    """
+    import re
+
+    # 所有“x月需求”列
+    demand_cols = [col for col in df.columns if re.match(r"^\d{1,2}月需求$", str(col))]
+
+    if not demand_cols:
+        return
+
+    # 默认将这些列中“最晚追加”的部分视为成品投单计划（按顺序）
+    # 如果你有标记哪些列来自“成品投单计划”，也可以通过标记列表更明确
+    # 这里假设最后连续的一组“x月需求”是成品投单计划
+
+    # 从后往前找到连续的“x月需求”列
+    end_idx = df.columns.get_loc(demand_cols[-1])
+    start_idx = end_idx
+    for i in reversed(range(end_idx)):
+        if str(df.columns[i]).endswith("需求"):
+            start_idx = i
+        else:
+            break
+
+    start_col = start_idx + 1
+    end_col = end_idx + 1
+
+    ws.merge_cells(start_row=1, start_column=start_col, end_row=1, end_column=end_col)
+    cell = ws.cell(row=1, column=start_col)
+    cell.value = "成品投单计划"
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+    cell.font = Font(bold=True)
+    cell.fill = PatternFill(start_color="C9DAF8", end_color="C9DAF8", fill_type="solid")
+
