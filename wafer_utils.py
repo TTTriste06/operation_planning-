@@ -419,6 +419,7 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
             month = demand_col.replace("需求", "")
             wo_col = f"{month}WO"
             alloc_col = f"{month}分配"
+            st.write(month)
 
             if i == 0:
                 total_available = (
@@ -428,22 +429,21 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
                     row.get("未测晶圆仓", 0) +
                     row.get("Fab warehouse", 0)
                 )
-                st.write(f"📦 初始 Total_available = 分片({row.get('分片晶圆仓', 0)}) + 工程({row.get('工程晶圆仓', 0)}) + 已测({row.get('已测晶圆仓', 0)}) + 未测({row.get('未测晶圆仓', 0)}) + Fab({row.get('Fab warehouse', 0)}) = {total_available}")
             else:
                 prev_wo_col = wo_cols[i - 1]
                 wo = row.get(prev_wo_col, 0)
                 total_available = total_rest + wo
-                st.write(f"📦 月 {month} Total_available = 上月余量({total_rest}) + 上月WO({wo}) = {total_available}")
+                
 
             delta = total_available - demand
             if delta >= 0:
                 allocated = demand
                 total_rest = delta
-                st.write(f"✅ 分配：需求({demand}) 满足 ➜ 分配={allocated}, 剩余={total_rest}")
+                
             else:
                 allocated = total_available
                 total_rest = 0
-                st.write(f"⚠️ 分配：需求({demand}) 不足 ➜ 分配={allocated}, 剩余=0")
+                
 
             df.at[idx, alloc_col] = round(allocated, 3)
 
