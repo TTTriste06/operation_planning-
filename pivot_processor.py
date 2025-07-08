@@ -329,6 +329,7 @@ class PivotProcessor:
             merge_cp_wip_column(ws_wafer, df_unique_wafer)
             merge_fab_warehouse_column(ws_wafer, df_unique_wafer)
             merge_monthly_fab_wo_columns(ws_wafer, df_unique_wafer)
+            merge_monthly_demand_columns(ws_wafer, df_unique_wafer)
 
 
 
