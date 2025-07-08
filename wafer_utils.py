@@ -446,10 +446,6 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
                 delta = total_available - demand
                 rest_prev = delta if delta > 0 else 0
                 allocated = demand if delta > 0 else total_available
-
-                st.write(f"📦 初始月 {month}: Total_available = F+G+H+I+K = {total_available}")
-                st.write(f"📐 Delta = {total_available} - 需求({demand}) = {delta}")
-                st.write(f"📌 分配 = IF(Delta>0, 需求, Total_available) = {allocated}")
             else:
                 prev_wo = row.get(wo_col, 0)
                 total_available = rest_prev + prev_wo
