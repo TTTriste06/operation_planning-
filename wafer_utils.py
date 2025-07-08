@@ -341,33 +341,6 @@ def append_monthly_demand_from_unfulfilled(df_unique_wafer: pd.DataFrame, main_p
     final_cols = list(df.columns) + [f"{pattern.match(col).group(1)} 需求" for col in unfulfilled_cols]
     return merged[final_cols]
 
-
-def merge_monthly_demand_columns(ws: Worksheet, df: pd.DataFrame):
-    """
-    在 Excel 中合并所有“需求”列的上方单元格，并写入“订单需求计算”。
-
-    参数：
-        ws: openpyxl worksheet 对象
-        df: 对应 DataFrame（用于定位“需求”列）
-    """
-    # 找出所有“xxx 需求”列
-    demand_cols = [col for col in df.columns if str(col).strip().endswith("需求")]
-    if not demand_cols:
-        return  # 无需处理
-
-    # 获取首列与末列在 Excel 中的列索引
-    start_col_idx = df.columns.get_loc(demand_cols[0]) + 1
-    end_col_idx = df.columns.get_loc(demand_cols[-1]) + 1
-
-    # 合并单元格
-    ws.merge_cells(start_row=1, start_column=start_col_idx, end_row=1, end_column=end_col_idx)
-    cell = ws.cell(row=1, column=start_col_idx)
-    cell.value = "订单需求计算"
-
-    # 设置样式
-    cell.alignment = Alignment(horizontal="center", vertical="center")
-
-
 def append_monthly_demand_from_forecast(df_unique_wafer: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
     从 main_plan_df 中提取“x月预测”列，按晶圆品名聚合后除以单片数量，生成“x月需求”列。
@@ -401,3 +374,37 @@ def append_monthly_demand_from_forecast(df_unique_wafer: pd.DataFrame, main_plan
     # 返回只包含原始列和“x月需求”列
     final_cols = list(df.columns) + [f"{pattern.match(col).group(1)}月需求" for col in forecast_cols]
     return merged[final_cols]
+
+
+def merge_monthly_demand_columns(ws: Worksheet, df: pd.DataFrame):
+    """
+    合并“yyyy-mm 需求”列为“订单需求计算”，合并“x月需求”列为“预测需求计算”。
+
+    参数：
+        ws: openpyxl worksheet
+        df: DataFrame 用于识别列位置
+    """
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Alignment, Font, PatternFill
+    import re
+
+    # 正则分类
+    pattern_order = re.compile(r"^\d{4}-\d{2} 需求$")
+    pattern_forecast = re.compile(r"^\d{1,2}月需求$")
+
+    order_cols = [col for col in df.columns if pattern_order.match(str(col).strip())]
+    forecast_cols = [col for col in df.columns if pattern_forecast.match(str(col).strip())]
+
+    def apply_merge(cols, label):
+        if not cols:
+            return
+        start_col = df.columns.get_loc(cols[0]) + 1
+        end_col = df.columns.get_loc(cols[-1]) + 1
+        ws.merge_cells(start_row=1, start_column=start_col, end_row=1, end_column=end_col)
+        cell = ws.cell(row=1, column=start_col)
+        cell.value = label
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    # 合并两个区域
+    apply_merge(order_cols, "订单需求计算")
+    apply_merge(forecast_cols, "预测需求计算")
