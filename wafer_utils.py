@@ -88,13 +88,13 @@ def append_wafer_inventory_by_warehouse(df_unique_wafer: pd.DataFrame, wafer_inv
     ].copy()
 
     # 将“数量”确保是数字
-    matched_inventory["数量"] = pd.to_numeric(matched_inventory["数量"], errors="coerce").fillna(0)
+    matched_inventory["第二数量"] = pd.to_numeric(matched_inventory["第二数量"], errors="coerce").fillna(0)
 
     # 透视表：按“晶圆品名”和“仓库名称”聚合数量
     pivot_inventory = matched_inventory.pivot_table(
         index="WAFER品名",
         columns="仓库名称",
-        values="数量",
+        values="第二数量",
         aggfunc="sum",
         fill_value=0
     ).reset_index()
