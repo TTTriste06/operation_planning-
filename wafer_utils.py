@@ -459,11 +459,31 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
                 delta = total_available - demand
                 allocated = demand if delta > 0 else total_available
                 rest_prev = max(delta, 0)
-
-                st.write(f"📦 月 {month}月: Total_available = 上月余量({rest_prev}) + 上月WO({wo}) = {total_available}")
-                st.write(f"📐 Delta = {total_available} - 需求({demand}) = {delta}")
-                st.write(f"📌 分配 = {'需求' if delta > 0 else 'Total_available'} ➜ {allocated}")
-
             df.at[idx, alloc_col] = round(allocated, 3)
 
     return df
+
+
+def merge_allocation_header(ws: Worksheet):
+    """
+    将所有“x月分配”列的标题行合并，并写上“晶圆分配（颗）”
+    """
+    pattern = re.compile(r"^\d{1,2}月分配$")
+    header_row = 2  # 数据从第2行开始，第1行为合并标题行
+    matched_cols = []
+
+    for col_idx, cell in enumerate(ws[header_row], start=1):
+        if cell.value and pattern.match(str(cell.value)):
+            matched_cols.append(col_idx)
+
+    if not matched_cols:
+        return  # 没有匹配列
+
+    start_col = matched_cols[0]
+    end_col = matched_cols[-1]
+    start_letter = get_column_letter(start_col)
+    end_letter = get_column_letter(end_col)
+
+    ws.merge_cells(f"{start_letter}1:{end_letter}1")
+    ws[f"{start_letter}1"] = "晶圆分配（颗）"
+
