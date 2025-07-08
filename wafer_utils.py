@@ -306,34 +306,37 @@ def merge_monthly_fab_wo_columns(ws: Worksheet, df: pd.DataFrame):
     # 样式设置
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
-
 def append_monthly_demand_from_unfulfilled(df_unique_wafer: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
-    从 main_plan_df 中提取“未交订单 yyyy-mm”列，除以“单片数量”，添加“yyyy-mm 需求”列到 df_unique_wafer。
-    不引入原始未交订单列，结果保留三位小数。
+    从 main_plan_df 中提取“未交订单 yyyy-mm”列，按晶圆品名聚合求和后除以单片数量，结果保留三位小数，
+    添加“yyyy-mm 需求”列到 df_unique_wafer。
     """
     df = df_unique_wafer.copy()
     df["单片数量"] = pd.to_numeric(df["单片数量"], errors="coerce")
     df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
     main_plan_df["晶圆品名"] = main_plan_df["晶圆品名"].astype(str).str.strip()
 
-    # 匹配“未交订单 yyyy-mm”
+    # 提取所有“未交订单 yyyy-mm”列
     pattern = re.compile(r"^未交订单 (\d{4}-\d{2})$")
     unfulfilled_cols = [col for col in main_plan_df.columns if pattern.match(str(col))]
 
     if not unfulfilled_cols:
-        raise ValueError("❌ main_plan_df 中未找到任何“未交订单 yyyy-mm”列")
+        raise ValueError("❌ 未找到任何“未交订单 yyyy-mm”列")
 
-    # 提取未交订单部分
-    order_df = main_plan_df[["晶圆品名"] + unfulfilled_cols].copy()
-    merged = pd.merge(df, order_df, on="晶圆品名", how="left")
+    # 聚合未交订单总量：按晶圆品名分组相加
+    grouped = main_plan_df[["晶圆品名"] + unfulfilled_cols].copy()
+    grouped[unfulfilled_cols] = grouped[unfulfilled_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+    grouped = grouped.groupby("晶圆品名", as_index=False)[unfulfilled_cols].sum()
 
-    # 计算需求列（保留三位小数），仅添加需求列
+    # 合并回 df_unique_wafer
+    merged = pd.merge(df, grouped, on="晶圆品名", how="left")
+
+    # 计算需求列，保留三位小数
     for col in unfulfilled_cols:
         month = pattern.match(col).group(1)
         demand_col = f"{month} 需求"
         merged[demand_col] = (merged[col] / merged["单片数量"]).round(3)
 
-    # 删除原始未交订单列，仅保留 df_unique_wafer + 新需求列
+    # 最终保留原始列 + 需求列（不保留原始“未交订单 yyyy-mm”列）
     final_cols = list(df.columns) + [f"{pattern.match(col).group(1)} 需求" for col in unfulfilled_cols]
     return merged[final_cols]
