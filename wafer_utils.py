@@ -305,3 +305,43 @@ def merge_monthly_fab_wo_columns(ws: Worksheet, df: pd.DataFrame):
 
     # 样式设置
     cell.alignment = Alignment(horizontal="center", vertical="center")
+
+def append_monthly_demand(df_unique_wafer: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    提取 main_plan_df 中的所有未交订单月度列，除以单片数量，生成“yyyy-mm 需求”列添加到 df_unique_wafer。
+    
+    参数：
+        df_unique_wafer: 包含“晶圆品名”和“单片数量”的 DataFrame
+        main_plan_df: 包含月度未交订单数据的主计划 DataFrame
+    
+    返回：
+        添加“yyyy-mm 需求”列后的 DataFrame
+    """
+    df = df_unique_wafer.copy()
+
+    # 确保“单片数量”为数值
+    df["单片数量"] = pd.to_numeric(df["单片数量"], errors="coerce")
+
+    # 标准化晶圆品名
+    df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
+    main_plan_df["晶圆品名"] = main_plan_df["晶圆品名"].astype(str).str.strip()
+
+    # 提取所有“yyyy-mm”格式列
+    month_pattern = re.compile(r"^\d{4}-\d{2}$")
+    month_cols = [col for col in main_plan_df.columns if month_pattern.match(str(col))]
+
+    if not month_cols:
+        raise ValueError("❌ main_plan_df 中未找到任何符合 yyyy-mm 格式的月份列")
+
+    # 提取“晶圆品名” + 月份列
+    order_df = main_plan_df[["晶圆品名"] + month_cols].copy()
+
+    # 合并
+    merged = pd.merge(df, order_df, on="晶圆品名", how="left")
+
+    # 用每个“yyyy-mm” 列除以 单片数量，生成“yyyy-mm 需求”
+    for month in month_cols:
+        demand_col = f"{month} 需求"
+        merged[demand_col] = merged[month] / merged["单片数量"]
+
+    return merged
