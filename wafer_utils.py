@@ -305,6 +305,3 @@ def merge_monthly_fab_wo_columns(ws: Worksheet, df: pd.DataFrame):
 
     # 样式设置
     cell.alignment = Alignment(horizontal="center", vertical="center")
-    cell.font = Font(bold=True)
-    cell.fill = PatternFill(start_color="CFE2F3", end_color="CFE2F3", fill_type="solid")
-
