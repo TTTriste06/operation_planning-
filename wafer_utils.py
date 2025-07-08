@@ -429,6 +429,7 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, main_plan_df: pd.D
 
     # 分配逻辑
     demand_months = [rename_dict[col] for col in sorted_plan_cols]
+    st.write(demand_months)
     wo_cols = [f"{m.replace('需求', 'WO')}" for m in demand_months]
     allocation_cols = [m.replace("需求", "分配") for m in demand_months]
     
