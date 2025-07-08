@@ -408,3 +408,36 @@ def merge_monthly_demand_columns(ws: Worksheet, df: pd.DataFrame):
     # 合并两个区域
     apply_merge(order_cols, "订单需求计算")
     apply_merge(forecast_cols, "预测需求计算")
+
+def append_monthly_demand_from_fg_plan(df_unique_wafer: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    提取“x月成品投单计划”列，按晶圆品名汇总后，重命名为“x月需求”，添加到 df_unique_wafer。
+    """
+    df = df_unique_wafer.copy()
+    df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
+    main_plan_df["晶圆品名"] = main_plan_df["晶圆品名"].astype(str).str.strip()
+
+    # 匹配所有“x月成品投单计划”列
+    pattern = re.compile(r"^(\d{1,2})月成品投单计划$")
+    plan_cols = [col for col in main_plan_df.columns if pattern.match(str(col))]
+
+    if not plan_cols:
+        raise ValueError("❌ main_plan_df 中未找到任何“x月成品投单计划”字段")
+
+    # 汇总这些列（按晶圆品名聚合）
+    grouped = main_plan_df[["晶圆品名"] + plan_cols].copy()
+    grouped[plan_cols] = grouped[plan_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+    grouped = grouped.groupby("晶圆品名", as_index=False)[plan_cols].sum()
+
+    # 重命名为“x月需求”
+    rename_dict = {col: f"{pattern.match(col).group(1)}月需求" for col in plan_cols}
+    grouped = grouped.rename(columns=rename_dict)
+
+    # 合并进 df_unique_wafer
+    df_result = pd.merge(df, grouped, on="晶圆品名", how="left")
+
+    # 保留三位小数
+    for col in rename_dict.values():
+        df_result[col] = df_result[col].round(3)
+
+    return df_result
