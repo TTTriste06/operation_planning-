@@ -340,3 +340,32 @@ def append_monthly_demand_from_unfulfilled(df_unique_wafer: pd.DataFrame, main_p
     # 最终保留原始列 + 需求列（不保留原始“未交订单 yyyy-mm”列）
     final_cols = list(df.columns) + [f"{pattern.match(col).group(1)} 需求" for col in unfulfilled_cols]
     return merged[final_cols]
+
+
+def merge_monthly_demand_columns(ws: Worksheet, df: pd.DataFrame):
+    """
+    在 Excel 中合并所有“需求”列的上方单元格，并写入“订单需求计算”。
+
+    参数：
+        ws: openpyxl worksheet 对象
+        df: 对应 DataFrame（用于定位“需求”列）
+    """
+    # 找出所有“xxx 需求”列
+    demand_cols = [col for col in df.columns if str(col).strip().endswith("需求")]
+    if not demand_cols:
+        return  # 无需处理
+
+    # 获取首列与末列在 Excel 中的列索引
+    start_col_idx = df.columns.get_loc(demand_cols[0]) + 1
+    end_col_idx = df.columns.get_loc(demand_cols[-1]) + 1
+
+    # 合并单元格
+    ws.merge_cells(start_row=1, start_column=start_col_idx, end_row=1, end_column=end_col_idx)
+    cell = ws.cell(row=1, column=start_col_idx)
+    cell.value = "订单需求计算"
+
+    # 设置样式
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+    cell.font = Font(bold=True)
+    cell.fill = PatternFill(start_color="FFE699", end_color="FFE699", fill_type="solid")
+
