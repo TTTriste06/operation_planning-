@@ -74,7 +74,8 @@ from wafer_utils import(
     append_monthly_wo_from_weekly_fab,
     merge_monthly_fab_wo_columns,
     append_monthly_demand_from_fg_plan,
-    merge_fg_plan_columns
+    merge_fg_plan_columns,
+    allocate_fg_demand_monthly
 )
 
 class PivotProcessor:
@@ -291,6 +292,8 @@ class PivotProcessor:
 
         st.write(main_plan_df)
         df_unique_wafer = append_monthly_demand_from_fg_plan(df_unique_wafer, main_plan_df)
+        df_unique_wafer = allocate_fg_demand_monthly(df_unique_wafer, main_plan_df)
+
 
 
 
