@@ -315,6 +315,7 @@ class PivotProcessor:
             summary_data = [
                 ["", "超链接", "备注"],
                 ["数据汇总", "主计划", ""],
+                ["晶圆需求汇总", "晶圆需求汇总", ""],
                 ["赛卓-未交订单-汇总", "赛卓-未交订单-汇总", ""],
                 ["赛卓-成品库存-汇总", "赛卓-成品库存-汇总", "关注“hold仓”“成品仓”"],
                 ["赛卓-晶圆库存-汇总", "赛卓-晶圆库存-汇总", "晶圆片数已转换为对应的Die数量"],
@@ -434,7 +435,7 @@ class PivotProcessor:
             ws = wb["FAB_WIP_汇总"]
             
             format_fab_summary_month_headers(ws)
-            # append_original_cp_sheets(writer, self.cp_dataframes)
+            append_original_cp_sheets(writer, self.cp_dataframes)
 
             # 写时间戳和说明
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")            
@@ -462,7 +463,7 @@ class PivotProcessor:
             ws.freeze_panes = "C3"
             
             # === 写入原表 ===
-            # append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
+            append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
 
             # === 写入透视表 ===
             standardized_files = standardize_uploaded_keys(uploaded_files, RENAME_MAP)
