@@ -485,7 +485,7 @@ def merge_fab_warehouse_column(ws: Worksheet, df: pd.DataFrame):
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
-def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) -> pd.DataFrame:
+def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, start_date) -> pd.DataFrame:
     """
     根据分配逻辑逐月计算“x月分配”，使用“x月需求”列，
     并从“yyyy-mm WO”列中匹配上月的WO。
@@ -495,6 +495,7 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
     返回:
         更新后的df_unique_wafer，包含所有“x月分配”列
     """
+    first_date = start_date.replace(day=1)
     df = df_unique_wafer.copy()
 
     # 获取所有“x月需求”列
