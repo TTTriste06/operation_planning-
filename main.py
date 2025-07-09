@@ -21,8 +21,6 @@ def main():
             return
             
         # 加载辅助表
-        uploaded_files = load_file_with_github_fallback("uploaded_files", uploaded_files)
-        uploaded_cp_files = load_file_with_github_fallback("uploaded_cp_files", uploaded_cp_files)
         df_forecast = load_file_with_github_fallback("forecast", forecast_file)
         df_safety = load_file_with_github_fallback("safety", safety_file)
         df_mapping = load_file_with_github_fallback("mapping", mapping_file)
