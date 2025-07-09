@@ -78,7 +78,8 @@ from wafer_utils import(
     allocate_fg_demand_monthly,
     fill_columns_c_and_right_with_zero,
     merge_allocation_header,
-    append_monthly_gap_columns
+    append_monthly_gap_columns,
+    merge_monthly_gap_columns
 )
 
 class PivotProcessor:
@@ -340,6 +341,7 @@ class PivotProcessor:
             merge_monthly_fab_wo_columns(ws_wafer, df_unique_wafer)
             merge_fg_plan_columns(ws_wafer, df_unique_wafer)
             merge_allocation_header(ws_wafer)
+            merge_monthly_gap_columns(ws_wafer)
 
 
 
