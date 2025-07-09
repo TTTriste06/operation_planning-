@@ -186,65 +186,87 @@ def merge_cp_wip_column(ws: Worksheet, df: pd.DataFrame):
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
-def append_fab_warehouse_quantity(df_unique_wafer: pd.DataFrame, sh_fabout_dict: dict) -> pd.DataFrame:
+def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) -> pd.DataFrame:
     """
-    从 SH_fabout 中提取所有晶圆品名的 FABOUT_QTY 总和，合并入 df_unique_wafer 的 'Fab warehouse' 列。
+    根据分配逻辑逐月计算“x月分配”，使用“x月需求”列，
+    并从“yyyy-mm WO”列中匹配上月的WO。
+    参数:
+        df_unique_wafer: 包含各项仓库存、需求、WO等的DataFrame
+        year: 用于推断WO列前缀的年份，默认为2025
+    返回:
+        更新后的df_unique_wafer，包含所有“x月分配”列
     """
-    from collections import defaultdict
+    df = df_unique_wafer.copy()
 
-    # 初始化总量累加器
-    total_fabout = defaultdict(float)
+    # 获取所有“x月需求”列
+    pattern = re.compile(r"^(\d{1,2})月需求$")
+    demand_cols = [col for col in df.columns if pattern.match(str(col))]
+    if not demand_cols:
+        raise ValueError("❌ 未找到任何“x月需求”列")
 
-    for sheet_name, df in sh_fabout_dict.items():
-        if "CUST_PARTNAME" not in df.columns or "FABOUT_QTY" not in df.columns:
-            print(f"❌ 表 {sheet_name} 缺少必要字段，跳过")
-            continue
+    month_keys = [(col, int(pattern.match(col).group(1))) for col in demand_cols]
+    sorted_demand_cols = [col for col, _ in sorted(month_keys, key=lambda x: x[1])]
+    sorted_months = [month for _, month in sorted(month_keys, key=lambda x: x[1])]
+    allocation_cols = [f"{month}月分配" for month in sorted_months]
 
-        # 标准化
-        df = df.copy()
-        df["CUST_PARTNAME"] = df["CUST_PARTNAME"].astype(str).str.strip()
-        df["FABOUT_QTY"] = pd.to_numeric(df["FABOUT_QTY"], errors="coerce").fillna(0)
+    for col in allocation_cols:
+        df[col] = 0.0
 
-        grouped = df.groupby("CUST_PARTNAME")["FABOUT_QTY"].sum()
+    wo_pattern = re.compile(r"^(\d{4})-(\d{2}) WO$")
+    wo_cols = []
+    for col in df.columns:
+        match = wo_pattern.match(str(col))
+        if match:
+            y, m = int(match.group(1)), int(match.group(2))
+            wo_cols.append((col, datetime(y, m, 1)))
+    wo_cols.sort(key=lambda x: x[1])  # 日期升序
 
-        for partname, qty in grouped.items():
-            total_fabout[partname] += qty
 
-    # 转换为 DataFrame
-    fab_df = pd.DataFrame(list(total_fabout.items()), columns=["晶圆品名", "Fab warehouse"])
-    fab_df["晶圆品名"] = fab_df["晶圆品名"].astype(str).str.strip()
+    for idx, row in df.iterrows():
+        rest_prev = 0
+        wafer_unit = pd.to_numeric(row.get("单片数量", 1.0), errors="coerce") or 1.0
 
-    # 匹配目标列也做清洗
-    df_unique_wafer = df_unique_wafer.copy()
-    df_unique_wafer["晶圆品名"] = df_unique_wafer["晶圆品名"].astype(str).str.strip()
+        for i, month in enumerate(sorted_months):
+            demand_col = f"{month}月需求"
+            alloc_col = f"{month}月分配"
+            demand = row.get(demand_col, 0)
 
-    # 合并
-    df_result = pd.merge(df_unique_wafer, fab_df, on="晶圆品名", how="left")
-    
-    return df_result
+            if i == 0:
+                wo_before_dict = {
+                    col: pd.to_numeric(row.get(col, 0), errors="coerce") or 0
+                    for col, wo_date in wo_cols if wo_date < first_date
+                }
+                wo_before_sum = sum(wo_before_dict.values())
+                
+                # 初始月使用五仓总和作为 Total_available
+                total_available = (
+                    row.get("分片晶圆仓", 0) +
+                    row.get("工程晶圆仓", 0) +
+                    row.get("已测晶圆仓", 0) +
+                    row.get("未测晶圆仓", 0) +
+                    row.get("CP在制（Total）", 0) +
+                    row.get("Fab warehouse", 0) * wafer_unit +
+                    wo_before_sum * wafer_unit 
+                )
+                delta = total_available - demand
+                allocated = demand if delta > 0 else total_available
+                rest_prev = max(delta, 0)
+            else:
+                # 找上一个月的 datetime 对象
+                prev_month = sorted_months[i - 1]
+                prev_date = datetime(year, prev_month, 1)
+                wo_col = f"{prev_date.strftime('%Y-%m')} WO"
 
-def merge_fab_warehouse_column(ws: Worksheet, df: pd.DataFrame):
-    """
-    在 Excel 中对“Fab warehouse”列合并第一行并写入“Fabout”作为分组标题。
+                wo = row.get(wo_col, 0)
+                total_available = rest_prev + wo * wafer_unit
+                delta = total_available - demand
+                allocated = demand if delta > 0 else total_available
+                rest_prev = max(delta, 0)
+            df.at[idx, alloc_col] = round(allocated, 3)
 
-    参数：
-        ws: openpyxl 工作表对象
-        df: DataFrame，用于定位该列位置
-    """
-    if "Fab warehouse" not in df.columns:
-        return  # 列不存在，跳过
+    return df
 
-    # 获取该列索引（Excel 从 1 开始）
-    col_idx = df.columns.get_loc("Fab warehouse") + 1
-    col_letter = get_column_letter(col_idx)
 
-    # 合并单元格（仅 1 列）
-    ws.merge_cells(start_row=1, start_column=col_idx, end_row=1, end_column=col_idx)
-
-    # 写入标题
-    cell = ws.cell(row=1, column=col_idx)
-    cell.value = "Fabout"
-    cell.alignment = Alignment(horizontal="center", vertical="center")
 
 def append_monthly_wo_from_weekly_fab(df_unique_wafer: pd.DataFrame, df_fab_summary: pd.DataFrame) -> pd.DataFrame:
     """
