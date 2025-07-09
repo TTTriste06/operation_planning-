@@ -473,6 +473,9 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
                 )
 
                 total_available = fab_qty * wafer_unit + cp_qty + wo_before * wafer_unit
+                st.write("total_available")
+                st.write(total_available)
+
             else:
                 prev_month = sorted_months[i - 1]
                 prev_date = datetime(year, prev_month, 1)
@@ -481,7 +484,11 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
                 total_available = prev_rest + (wo or 0.0)
 
             delta = total_available - demand
+            st.write("delta")
+            st.write(delta)
             allocated = demand if delta > 0 else total_available
+            st.write("allocated")
+            st.write(allocated)
             df.at[idx, alloc_col] = round(allocated, 3)
             prev_rest = max(delta, 0.0)
 
