@@ -423,6 +423,7 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
     sorted_demand_cols = [col for col, _ in sorted(month_keys, key=lambda x: x[1])]
     sorted_months = [month for _, month in sorted(month_keys, key=lambda x: x[1])]
     allocation_cols = [f"{month}月分配" for month in sorted_months]
+    wafer_unit = pd.to_numeric(df.at[idx, "单片数量"], errors='coerce')
 
     for col in allocation_cols:
         df[col] = 0.0
@@ -435,6 +436,11 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
             alloc_col = f"{month}月分配"
             demand = row.get(demand_col, 0)
 
+            wo_before = sum(
+                (pd.to_numeric(df.at[idx, col], errors='coerce') or 0.0)
+                for col, wo_date in wo_cols if wo_date < first_date
+            )
+
             if i == 0:
                 # 初始月使用五仓总和作为 Total_available
                 total_available = (
@@ -442,7 +448,9 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
                     row.get("工程晶圆仓", 0) +
                     row.get("已测晶圆仓", 0) +
                     row.get("未测晶圆仓", 0) +
-                    row.get("Fab warehouse", 0)
+                    row.get("Fab warehouse", 0) * wafer_unit +
+                    row.get("CP在制（Total）", 0) +
+                    wo_before * wafer_unit
                 )
                 delta = total_available - demand
                 allocated = demand if delta > 0 else total_available
@@ -454,7 +462,7 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
                 wo_col = f"{prev_date.strftime('%Y-%m')} WO"
 
                 wo = row.get(wo_col, 0)
-                total_available = rest_prev + wo
+                total_available = rest_prev + wo * wafer_unit
                 delta = total_available - demand
                 allocated = demand if delta > 0 else total_available
                 rest_prev = max(delta, 0)
