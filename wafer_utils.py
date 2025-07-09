@@ -488,3 +488,28 @@ def merge_allocation_header(ws: Worksheet):
     cell.value = "晶圆分配（颗）"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
+def append_monthly_gap_columns(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
+    """
+    在 df_unique_wafer 后面添加每个月的 “x月缺口” 列：
+    缺口 = 需求 - 分配
+    """
+    df = df_unique_wafer.copy()
+
+    # 匹配所有 "x月需求" 列
+    pattern = re.compile(r"^(\d{1,2})月需求$")
+    demand_cols = [col for col in df.columns if pattern.match(str(col))]
+
+    for demand_col in demand_cols:
+        month = pattern.match(demand_col).group(1)
+        allocation_col = f"{month}月分配"
+        gap_col = f"{month}月缺口"
+
+        if allocation_col in df.columns:
+            df[gap_col] = df[demand_col] - df[allocation_col]
+            df[gap_col] = df[gap_col].round(3)
+        else:
+            raise ValueError(f"❌ 缺少对应的分配列：{allocation_col}")
+
+    return df
+
+
