@@ -401,72 +401,89 @@ def fill_columns_c_and_right_with_zero(df: pd.DataFrame) -> pd.DataFrame:
     return df_copy
 
 
+import pandas as pd
+import re
+from datetime import datetime
+
 def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) -> pd.DataFrame:
     """
-    根据分配逻辑逐月计算“x月分配”，使用“x月需求”列，
-    并从“yyyy-mm WO”列中匹配上月的WO。
+    根据“x月需求”列与“yyyy-mm WO”列逐月分配晶圆数量，生成“x月分配”列。
+    初始月份使用：
+        Fab warehouse * 单片数量 + CP在制（Total） + 第一个月前所有WO * 单片数量
+
     参数:
-        df_unique_wafer: 包含各项仓库存、需求、WO等的DataFrame
-        year: 用于推断WO列前缀的年份，默认为2025
+        df_unique_wafer: 包含库存、需求、WO 等列的 DataFrame
+        year: 用于构造 WO 列名称，默认为 2025
+    
     返回:
-        更新后的df_unique_wafer，包含所有“x月分配”列
+        添加了“x月分配”列的 DataFrame
     """
     df = df_unique_wafer.copy()
 
-    # 获取所有“x月需求”列
+    # 匹配所有“x月需求”列
     pattern = re.compile(r"^(\d{1,2})月需求$")
-    demand_cols = [col for col in df.columns if pattern.match(str(col))]
-    if not demand_cols:
+    month_keys = [(col, int(pattern.match(col).group(1))) for col in df.columns if pattern.match(str(col))]
+    if not month_keys:
         raise ValueError("❌ 未找到任何“x月需求”列")
 
-    month_keys = [(col, int(pattern.match(col).group(1))) for col in demand_cols]
-    sorted_demand_cols = [col for col, _ in sorted(month_keys, key=lambda x: x[1])]
+    # 排序月份
     sorted_months = [month for _, month in sorted(month_keys, key=lambda x: x[1])]
-    allocation_cols = [f"{month}月分配" for month in sorted_months]
-    wafer_unit = pd.to_numeric(df.at[idx, "单片数量"], errors='coerce')
+    demand_cols = [f"{m}月需求" for m in sorted_months]
+    allocation_cols = [f"{m}月分配" for m in sorted_months]
 
+    # 初始化分配列为 0.0
     for col in allocation_cols:
         df[col] = 0.0
 
-    for idx, row in df.iterrows():
-        rest_prev = 0
+    # 匹配所有 WO 列
+    wo_pattern = re.compile(r"^(\d{4})-(\d{2}) WO$")
+    wo_cols = []
+    for col in df.columns:
+        match = wo_pattern.match(str(col))
+        if match:
+            y, m = int(match.group(1)), int(match.group(2))
+            wo_cols.append((col, datetime(y, m, 1)))
+    wo_cols.sort(key=lambda x: x[1])  # 按日期排序
+
+    # 遍历每一行数据
+    for idx in df.index:
+        prev_rest = 0.0
+        wafer_unit = pd.to_numeric(df.at[idx, "单片数量"], errors='coerce') or 1.0
 
         for i, month in enumerate(sorted_months):
             demand_col = f"{month}月需求"
             alloc_col = f"{month}月分配"
-            demand = row.get(demand_col, 0)
-
-            wo_before = sum(
-                (pd.to_numeric(df.at[idx, col], errors='coerce') or 0.0)
-                for col, wo_date in wo_cols if wo_date < first_date
-            )
+            demand = pd.to_numeric(df.at[idx, demand_col], errors='coerce') or 0.0
 
             if i == 0:
-                # 初始月使用五仓总和作为 Total_available
-                total_available = (
-                    row.get("分片晶圆仓", 0) +
-                    row.get("工程晶圆仓", 0) +
-                    row.get("已测晶圆仓", 0) +
-                    row.get("未测晶圆仓", 0) +
-                    row.get("Fab warehouse", 0) * wafer_unit +
-                    row.get("CP在制（Total）", 0) +
-                    wo_before * wafer_unit
+                # 初始月份日期对象
+                try:
+                    first_date = datetime(year, month, 1)
+                except ValueError:
+                    continue
+
+                # 计算可用晶圆总量
+                fab_qty = pd.to_numeric(df.at[idx, "Fab warehouse"], errors='coerce') or 0.0
+                cp_qty = pd.to_numeric(df.at[idx, "CP在制（Total）"], errors='coerce') or 0.0
+
+                # 第一个月之前的所有 WO × 单片数量
+                wo_before = sum(
+                    (pd.to_numeric(df.at[idx, col], errors='coerce') or 0.0)
+                    for col, wo_date in wo_cols if wo_date < first_date
                 )
-                delta = total_available - demand
-                allocated = demand if delta > 0 else total_available
-                rest_prev = max(delta, 0)
+
+                total_available = fab_qty * wafer_unit + cp_qty + wo_before * wafer_unit
             else:
-                # 找上一个月的 datetime 对象
                 prev_month = sorted_months[i - 1]
                 prev_date = datetime(year, prev_month, 1)
                 wo_col = f"{prev_date.strftime('%Y-%m')} WO"
+                wo = pd.to_numeric(df.at[idx, wo_col], errors='coerce') if wo_col in df.columns else 0.0
+                total_available = prev_rest + (wo or 0.0)
 
-                wo = row.get(wo_col, 0)
-                total_available = rest_prev + wo * wafer_unit
-                delta = total_available - demand
-                allocated = demand if delta > 0 else total_available
-                rest_prev = max(delta, 0)
+            delta = total_available - demand
+            allocated = demand if delta > 0 else total_available
             df.at[idx, alloc_col] = round(allocated, 3)
+            prev_rest = max(delta, 0.0)
 
     return df
 
