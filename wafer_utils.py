@@ -534,7 +534,10 @@ def merge_monthly_gap_columns(ws: Worksheet):
     end_letter = get_column_letter(end_col)
 
     ws.merge_cells(f"{start_letter}1:{end_letter}1")
-    ws[f"{start_letter}1"] = "晶圆缺口（颗）"
+    cell = ws.cell(row=1, column=start_col)
+    cell.value = "晶圆缺口计算（片）"
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+
 
 
 
