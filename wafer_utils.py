@@ -513,3 +513,28 @@ def append_monthly_gap_columns(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def merge_monthly_gap_columns(ws: Worksheet):
+    """
+    将所有“x月缺口”列合并为一个上层标题“晶圆缺口（颗）”，位于第一行
+    """
+    pattern = re.compile(r"^\d{1,2}月缺口$")
+    header_row = 2  # 标题行在第2行（数据行从第3行开始）
+    matched_cols = []
+
+    for col_idx, cell in enumerate(ws[header_row], start=1):
+        if cell.value and pattern.match(str(cell.value)):
+            matched_cols.append(col_idx)
+
+    if not matched_cols:
+        return  # 没有匹配列就直接返回
+
+    start_col = matched_cols[0]
+    end_col = matched_cols[-1]
+    start_letter = get_column_letter(start_col)
+    end_letter = get_column_letter(end_col)
+
+    ws.merge_cells(f"{start_letter}1:{end_letter}1")
+    ws[f"{start_letter}1"] = "晶圆缺口（颗）"
+
+
+
