@@ -77,7 +77,8 @@ from wafer_utils import(
     merge_fg_plan_columns,
     allocate_fg_demand_monthly,
     fill_columns_c_and_right_with_zero,
-    merge_allocation_header
+    merge_allocation_header,
+    append_monthly_gap_columns
 )
 
 class PivotProcessor:
@@ -298,6 +299,7 @@ class PivotProcessor:
         
         df_unique_wafer = fill_columns_c_and_right_with_zero(df_unique_wafer)
         df_unique_wafer = allocate_fg_demand_monthly(df_unique_wafer)
+        df_unique_wafer = append_monthly_gap_columns(df_unique_wafer)
 
 
 
