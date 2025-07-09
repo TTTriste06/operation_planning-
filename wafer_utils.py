@@ -503,6 +503,44 @@ def merge_monthly_gap_columns(ws: Worksheet):
     cell.value = "晶圆缺口计算（片）"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
+def append_fab_warehouse_quantity(df_unique_wafer: pd.DataFrame, sh_fabout_dict: dict) -> pd.DataFrame:
+    """
+    从 SH_fabout 中提取所有晶圆品名的 FABOUT_QTY 总和，合并入 df_unique_wafer 的 'Fab warehouse' 列。
+    """
+    from collections import defaultdict
+
+    # 初始化总量累加器
+    total_fabout = defaultdict(float)
+
+    for sheet_name, df in sh_fabout_dict.items():
+        if "CUST_PARTNAME" not in df.columns or "FABOUT_QTY" not in df.columns:
+            print(f"❌ 表 {sheet_name} 缺少必要字段，跳过")
+            continue
+
+        # 标准化
+        df = df.copy()
+        df["CUST_PARTNAME"] = df["CUST_PARTNAME"].astype(str).str.strip()
+        df["FABOUT_QTY"] = pd.to_numeric(df["FABOUT_QTY"], errors="coerce").fillna(0)
+
+        grouped = df.groupby("CUST_PARTNAME")["FABOUT_QTY"].sum()
+
+        for partname, qty in grouped.items():
+            total_fabout[partname] += qty
+
+    # 转换为 DataFrame
+    fab_df = pd.DataFrame(list(total_fabout.items()), columns=["晶圆品名", "Fab warehouse"])
+    fab_df["晶圆品名"] = fab_df["晶圆品名"].astype(str).str.strip()
+
+    # 匹配目标列也做清洗
+    df_unique_wafer = df_unique_wafer.copy()
+    df_unique_wafer["晶圆品名"] = df_unique_wafer["晶圆品名"].astype(str).str.strip()
+
+    # 合并
+    df_result = pd.merge(df_unique_wafer, fab_df, on="晶圆品名", how="left")
+
+    print("✅ 成功合并 Fab warehouse 列，总条目数:", len(df_result))
+    return df_result
+
 
 def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) -> pd.DataFrame:
     df = df_unique_wafer.copy()
