@@ -346,8 +346,29 @@ class PivotProcessor:
 
 
             
-            
+        
+
+            # 格式调整
             adjust_column_width(ws_wafer)
+
+            # 设置字体加粗，行高也调高一点
+            bold_font = Font(bold=True)
+            ws_wafer.row_dimensions[2].height = 35
+    
+            # 遍历这一行所有已用到的列，对单元格字体加粗、居中、垂直居中
+            max_col = ws_wafer.max_column
+            for col_idx in range(1, max_col + 1):
+                cell = ws_wafer.cell(row=2, column=col_idx)
+                cell.font = bold_font
+                # 垂直水平居中
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            # 自动筛选
+            last_col_letter = get_column_letter(ws_wafer.max_column)
+            ws_wafer.auto_filter.ref = f"A2:{last_col_letter}2"
+        
+            # 冻结
+            ws_wafer.freeze_panes = "C3"
             
             # === 写入主计划 ===
             main_plan_df = clean_df(main_plan_df)
