@@ -402,19 +402,8 @@ def fill_columns_c_and_right_with_zero(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) -> pd.DataFrame:
-    """
-    根据分配逻辑逐月计算“x月分配”，使用“x月需求”列，
-    第一个月使用 Fab warehouse * 单片数量 + CP在制（Total） + 第一个月前所有WO * 单片数量
-    
-    参数:
-        df_unique_wafer: 包含各项仓库存、需求、WO等的DataFrame
-        year: 用于推断WO列前缀的年份，默认为2025
-    返回:
-        更新后的df_unique_wafer，包含所有“x月分配”列
-    """
     df = df_unique_wafer.copy()
 
-    # 获取所有“x月需求”列
     pattern = re.compile(r"^(\d{1,2})月需求$")
     demand_cols = [col for col in df.columns if pattern.match(str(col))]
     if not demand_cols:
@@ -428,7 +417,6 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
     for col in allocation_cols:
         df[col] = 0.0
 
-    # 匹配所有 WO 列及其日期
     wo_pattern = re.compile(r"^(\d{4})-(\d{2}) WO$")
     wo_cols = []
     for col in df.columns:
@@ -436,11 +424,13 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
         if match:
             y, m = int(match.group(1)), int(match.group(2))
             wo_cols.append((col, datetime(y, m, 1)))
-    wo_cols.sort(key=lambda x: x[1])  # 排序日期
+    wo_cols.sort(key=lambda x: x[1])  # 日期升序
 
     for idx, row in df.iterrows():
         rest_prev = 0
         wafer_unit = pd.to_numeric(row.get("单片数量", 1.0), errors="coerce") or 1.0
+
+        st.write(f"🔍 第 {idx+2} 行分配逻辑开始（品名：{row.get('品名', '')}）")
 
         for i, month in enumerate(sorted_months):
             demand_col = f"{month}月需求"
@@ -448,7 +438,6 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
             demand = pd.to_numeric(row.get(demand_col, 0), errors="coerce") or 0.0
 
             if i == 0:
-                # 找第一个月日期
                 try:
                     first_date = datetime(year, month, 1)
                 except ValueError:
@@ -457,18 +446,24 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
                 fab_qty = pd.to_numeric(row.get("Fab warehouse", 0), errors="coerce") or 0
                 cp_qty = pd.to_numeric(row.get("CP在制（Total）", 0), errors="coerce") or 0
 
-                # 累计所有早于首月的WO × 单片数量
-                wo_before = sum(
-                    (pd.to_numeric(row.get(col, 0), errors="coerce") or 0)
+                wo_before_dict = {
+                    col: pd.to_numeric(row.get(col, 0), errors="coerce") or 0
                     for col, wo_date in wo_cols if wo_date < first_date
-                )
+                }
+                wo_before_sum = sum(wo_before_dict.values())
 
-                total_available = fab_qty * wafer_unit + cp_qty + wo_before * wafer_unit
+                total_available = fab_qty * wafer_unit + cp_qty + wo_before_sum * wafer_unit
                 delta = total_available - demand
                 allocated = demand if delta > 0 else total_available
                 rest_prev = max(delta, 0)
+
+                # ✅ 输出调试信息
+                st.write(f"📅 第一个月 = {month}月")
+                st.write(f"Fab warehouse: {fab_qty}, 单片数量: {wafer_unit}, CP在制: {cp_qty}")
+                st.write(f"前置 WO 列及值: {wo_before_dict}")
+                st.write(f"Total available: {total_available}, Demand: {demand}, Allocated: {allocated}, Rest: {rest_prev}")
+
             else:
-                # 从上月分配后剩余 + 上月WO
                 prev_month = sorted_months[i - 1]
                 prev_date = datetime(year, prev_month, 1)
                 wo_col = f"{prev_date.strftime('%Y-%m')} WO"
@@ -477,6 +472,10 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, year: int = 2025) 
                 delta = total_available - demand
                 allocated = demand if delta > 0 else total_available
                 rest_prev = max(delta, 0)
+
+                # ✅ 输出调试信息
+                st.write(f"📅 当前月份 = {month}月, 上月: {prev_month}月")
+                st.write(f"WO: {wo}, 上月剩余: {rest_prev}, Demand: {demand}, Allocated: {allocated}")
 
             df.at[idx, alloc_col] = round(allocated, 3)
 
