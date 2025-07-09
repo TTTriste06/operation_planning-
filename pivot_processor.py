@@ -87,7 +87,6 @@ class PivotProcessor:
         """
         替换品名、新建主计划表，并直接写入 Excel 文件（含列宽调整、标题行）。
         """
-        st.write(start_date)
         # === 标准化上传文件名 ===
         # 成品文件
         self.dataframes = {}
@@ -300,7 +299,7 @@ class PivotProcessor:
 
         
         df_unique_wafer = fill_columns_c_and_right_with_zero(df_unique_wafer)
-        df_unique_wafer = allocate_fg_demand_monthly(df_unique_wafer)
+        df_unique_wafer = allocate_fg_demand_monthly(df_unique_wafer, start_date)
         df_unique_wafer = append_monthly_gap_columns(df_unique_wafer)
 
 
