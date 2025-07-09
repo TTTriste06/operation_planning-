@@ -351,6 +351,7 @@ class PivotProcessor:
 
             # 格式调整
             adjust_column_width(ws_wafer)
+            format_thousands_separator(ws_wafer)
 
             # 设置字体加粗，行高也调高一点
             bold_font = Font(bold=True)
@@ -436,6 +437,8 @@ class PivotProcessor:
             
             format_fab_summary_month_headers(ws)
             append_original_cp_sheets(writer, self.cp_dataframes)
+            
+            df_grossdie.to_excel(writer, sheet_name="赛卓-GROSSDIE", index=False)
 
             # 写时间戳和说明
             ws.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}")            
