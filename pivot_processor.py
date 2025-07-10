@@ -282,32 +282,30 @@ class PivotProcessor:
         # === FAB_WIP_汇总 ===
         df_fab_summary = generate_fab_summary(self.cp_dataframes)
 
-        # === 晶圆需求汇总 ===        
+        # === 晶圆需求汇总 ===
+        ## == 单片数量 ==
         df_unique_wafer = extract_wafer_with_grossdie_raw(main_plan_df, df_grossdie)
+        ## == 安全库存 ==
         df_unique_wafer = append_inventory_columns(df_unique_wafer, main_plan_df)
-        
+        ## == 晶圆库存 ==
         wafer_inventory_df = self.dataframes.get("赛卓-晶圆库存")
         df_unique_wafer = append_wafer_inventory_by_warehouse(df_unique_wafer, wafer_inventory_df)
-        
-    
+        ## == 在制CP晶圆 ==
         df_cp_wip = self.dataframes.get("赛卓-CP在制")
         df_unique_wafer = append_cp_wip_total(df_unique_wafer, df_cp_wip)
-
+        ## == Fabout ==
         df_unique_wafer = append_fab_warehouse_quantity(df_unique_wafer, self.SH_fabout)
+        ## == Fab预计晶圆产出数量 ==
         df_unique_wafer = append_monthly_wo_from_weekly_fab(df_unique_wafer, df_fab_summary)
-
+        ## == 成品投单需求 ==
         df_unique_wafer = append_monthly_demand_from_fg_plan(df_unique_wafer, main_plan_df)
-
-        
+        ## == 晶圆分配（颗） ==
         df_unique_wafer = fill_columns_c_and_right_with_zero(df_unique_wafer)
         df_unique_wafer = allocate_fg_demand_monthly(df_unique_wafer, start_date)
+        ## == 晶圆缺口计算（片） ==
         df_unique_wafer = append_monthly_gap_columns(df_unique_wafer)
+        ## == 晶圆缺口累加（片） ==
         df_unique_wafer = append_cumulative_gap_columns(df_unique_wafer, start_date)
-
-        
-
-
-
 
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
@@ -335,10 +333,7 @@ class PivotProcessor:
             # === 写入晶圆需求汇总 ===
             df_unique_wafer.to_excel(writer, sheet_name="晶圆需求汇总", index=False, startrow=1)
             ws_wafer = wb["晶圆需求汇总"]
-        
-            # 写时间戳和说明
             ws_wafer.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}") 
-
             merge_safety_header(ws_wafer, df_unique_wafer)
             merge_wafer_inventory_columns(ws_wafer, df_unique_wafer)
             merge_cp_wip_column(ws_wafer, df_unique_wafer)
@@ -349,16 +344,9 @@ class PivotProcessor:
             merge_monthly_gap_columns(ws_wafer)
             merge_cumulative_gap_header(ws_wafer, df_unique_wafer)
 
-
-
-            
-        
-
             # 格式调整
             adjust_column_width(ws_wafer)
             format_thousands_separator(ws_wafer)
-
-            # 设置字体加粗，行高也调高一点
             bold_font = Font(bold=True)
             ws_wafer.row_dimensions[2].height = 35
     
@@ -441,7 +429,6 @@ class PivotProcessor:
             ws = wb["FAB_WIP_汇总"]
             
             format_fab_summary_month_headers(ws)
-            append_original_cp_sheets(writer, self.cp_dataframes)
             
             df_grossdie.to_excel(writer, sheet_name="赛卓-GROSSDIE", index=False)
 
@@ -470,9 +457,6 @@ class PivotProcessor:
             # 冻结
             ws.freeze_panes = "C3"
             
-            # === 写入原表 ===
-            append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
-
             # === 写入透视表 ===
             standardized_files = standardize_uploaded_keys(uploaded_files, RENAME_MAP)
             parsed_dataframes = {
@@ -497,6 +481,10 @@ class PivotProcessor:
                             pass
                     adjusted_width = max_length * 1.2 + 10
                     ws.column_dimensions[col_letter].width = min(adjusted_width, 50)
+
+            # === 写入原表 ===
+            append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
+            append_original_cp_sheets(writer, self.cp_dataframes)
 
             # === 加入超链接 ===
             ws_summary = wb["Summary"]
