@@ -679,7 +679,6 @@ def merge_cumulative_gap_header(ws, df):
     ws.merge_cells(merge_range)
 
     cell = ws.cell(row=1, column=start_col)
-    cell.value = "晶圆缺口计算（片）"
-    cell.font = Font(bold=True, color="FFFFFF")
+    cell.value = "晶圆缺口累加（片）"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
