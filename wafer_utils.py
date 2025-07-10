@@ -682,5 +682,4 @@ def merge_cumulative_gap_header(ws, df):
     cell.value = "晶圆缺口计算（片）"
     cell.font = Font(bold=True, color="FFFFFF")
     cell.alignment = Alignment(horizontal="center", vertical="center")
-    cell.fill = PatternFill(fill_type="solid", fgColor="4F81BD")  # 蓝底白字
 
