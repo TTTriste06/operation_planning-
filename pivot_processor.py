@@ -329,41 +329,6 @@ class PivotProcessor:
             ]
             df_summary = pd.DataFrame(summary_data[1:], columns=summary_data[0])
             df_summary.to_excel(writer, sheet_name="Summary", index=False)
-
-            # === 写入晶圆需求汇总 ===
-            df_unique_wafer.to_excel(writer, sheet_name="晶圆需求汇总", index=False, startrow=1)
-            ws_wafer = wb["晶圆需求汇总"]
-            ws_wafer.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}") 
-            merge_safety_header(ws_wafer, df_unique_wafer)
-            merge_wafer_inventory_columns(ws_wafer, df_unique_wafer)
-            merge_cp_wip_column(ws_wafer, df_unique_wafer)
-            merge_fab_warehouse_column(ws_wafer, df_unique_wafer)
-            merge_monthly_fab_wo_columns(ws_wafer, df_unique_wafer)
-            merge_fg_plan_columns(ws_wafer, df_unique_wafer)
-            merge_allocation_header(ws_wafer)
-            merge_monthly_gap_columns(ws_wafer)
-            merge_cumulative_gap_header(ws_wafer, df_unique_wafer)
-
-            # 格式调整
-            adjust_column_width(ws_wafer)
-            format_thousands_separator(ws_wafer)
-            bold_font = Font(bold=True)
-            ws_wafer.row_dimensions[2].height = 35
-    
-            # 遍历这一行所有已用到的列，对单元格字体加粗、居中、垂直居中
-            max_col = ws_wafer.max_column
-            for col_idx in range(1, max_col + 1):
-                cell = ws_wafer.cell(row=2, column=col_idx)
-                cell.font = bold_font
-                # 垂直水平居中
-                cell.alignment = Alignment(horizontal="center", vertical="center")
-
-            # 自动筛选
-            last_col_letter = get_column_letter(ws_wafer.max_column)
-            ws_wafer.auto_filter.ref = f"A2:{last_col_letter}2"
-        
-            # 冻结
-            ws_wafer.freeze_panes = "C3"
             
             # === 写入主计划 ===
             main_plan_df = clean_df(main_plan_df)
@@ -421,6 +386,41 @@ class PivotProcessor:
         
             # 冻结
             ws.freeze_panes = "D3"
+
+            # === 写入晶圆需求汇总 ===
+            df_unique_wafer.to_excel(writer, sheet_name="晶圆需求汇总", index=False, startrow=1)
+            ws_wafer = wb["晶圆需求汇总"]
+            ws_wafer.cell(row=1, column=1, value=f"主计划生成时间：{timestamp}") 
+            merge_safety_header(ws_wafer, df_unique_wafer)
+            merge_wafer_inventory_columns(ws_wafer, df_unique_wafer)
+            merge_cp_wip_column(ws_wafer, df_unique_wafer)
+            merge_fab_warehouse_column(ws_wafer, df_unique_wafer)
+            merge_monthly_fab_wo_columns(ws_wafer, df_unique_wafer)
+            merge_fg_plan_columns(ws_wafer, df_unique_wafer)
+            merge_allocation_header(ws_wafer)
+            merge_monthly_gap_columns(ws_wafer)
+            merge_cumulative_gap_header(ws_wafer, df_unique_wafer)
+
+            # 格式调整
+            adjust_column_width(ws_wafer)
+            format_thousands_separator(ws_wafer)
+            bold_font = Font(bold=True)
+            ws_wafer.row_dimensions[2].height = 35
+    
+            # 遍历这一行所有已用到的列，对单元格字体加粗、居中、垂直居中
+            max_col = ws_wafer.max_column
+            for col_idx in range(1, max_col + 1):
+                cell = ws_wafer.cell(row=2, column=col_idx)
+                cell.font = bold_font
+                # 垂直水平居中
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            # 自动筛选
+            last_col_letter = get_column_letter(ws_wafer.max_column)
+            ws_wafer.auto_filter.ref = f"A2:{last_col_letter}2"
+        
+            # 冻结
+            ws_wafer.freeze_panes = "C3"
 
             # === 写入 FAB_WIP_汇总 ===
             df_fab_summary.to_excel(writer, sheet_name="FAB_WIP_汇总", index=False, startrow=1)
@@ -481,9 +481,9 @@ class PivotProcessor:
                     ws.column_dimensions[col_letter].width = min(adjusted_width, 50)
 
             # === 写入原表 ===
+            df_grossdie.to_excel(writer, sheet_name="赛卓-GROSSDIE", index=False)
             append_all_standardized_sheets(writer, uploaded_files, self.additional_sheets)
             append_original_cp_sheets(writer, self.cp_dataframes)
-            df_grossdie.to_excel(writer, sheet_name="赛卓-GROSSDIE", index=False)
 
             # === 加入超链接 ===
             ws_summary = wb["Summary"]
