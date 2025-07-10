@@ -36,7 +36,7 @@ def adjust_column_width(writer, sheet_name: str, df):
 def append_all_standardized_sheets(writer: pd.ExcelWriter, 
                                    uploaded_files: dict, 
                                    additional_sheets: dict):
-    all_files = {**uploaded_files, **additional_sheets}
+    all_files = {**additional_sheets, **uploaded_files}
     rename_map = {
         "未交订单": "赛卓-未交订单",
         "成品在制": "赛卓-成品在制",
