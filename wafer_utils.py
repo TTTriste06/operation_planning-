@@ -586,9 +586,6 @@ def append_cumulative_gap_columns(
     计算方式：
         累积缺口 = 截至当前月所有“x月需求”总和 - InvPart - total_available
     """
-    from datetime import datetime
-    import re
-
     first_date = datetime(start_date.year, start_date.month, 1)
 
     df = df_unique_wafer.copy()
@@ -659,6 +656,7 @@ def append_cumulative_gap_columns(
                 total_available += wo * wafer_unit
 
             gap = demand_sum - total_available
+            gap = gap/wafer_unit
             df.at[idx, gap_col] = round(gap, 3)
 
     return df
