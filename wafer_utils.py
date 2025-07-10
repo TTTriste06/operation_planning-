@@ -185,9 +185,6 @@ def merge_cp_wip_column(ws: Worksheet, df: pd.DataFrame):
     cell.value = "在制CP晶圆"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
-
-
-
 def append_monthly_wo_from_weekly_fab(df_unique_wafer: pd.DataFrame, df_fab_summary: pd.DataFrame) -> pd.DataFrame:
     """
     将 df_fab_summary 中的周产出列按月份汇总为“yyyy-mm WO”列，并合并到 df_unique_wafer。
@@ -350,9 +347,6 @@ def fill_columns_c_and_right_with_zero(df: pd.DataFrame) -> pd.DataFrame:
     return df_copy
 
 
-
-
-
 def merge_allocation_header(ws: Worksheet):
     """
     将所有“x月分配”列的标题行合并，并写上“晶圆分配（颗）”
@@ -403,7 +397,6 @@ def append_monthly_gap_columns(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
             raise ValueError(f"❌ 缺少对应的分配列：{allocation_col}")
 
     return df
-
 
 def merge_monthly_gap_columns(ws: Worksheet):
     """
@@ -464,8 +457,6 @@ def append_fab_warehouse_quantity(df_unique_wafer: pd.DataFrame, sh_fabout_dict:
 
     # 合并
     df_result = pd.merge(df_unique_wafer, fab_df, on="晶圆品名", how="left")
-
-    print("✅ 成功合并 Fab warehouse 列，总条目数:", len(df_result))
     return df_result
 
 def merge_fab_warehouse_column(ws: Worksheet, df: pd.DataFrame):
@@ -656,8 +647,6 @@ def append_cumulative_gap_columns(df_unique_wafer: pd.DataFrame, start_date) -> 
             df.at[idx, gap_col] = round(gap, 3)
 
     return df
-
-
 
 
 def merge_cumulative_gap_header(ws, df):
