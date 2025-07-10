@@ -575,3 +575,87 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, start_date) -> pd.
             df.at[idx, alloc_col] = round(allocated, 3)
 
     return df
+
+
+def allocate_fg_total_demand_monthly(df_unique_wafer: pd.DataFrame, start_date) -> pd.DataFrame:
+    """
+    根据分配逻辑逐月计算“x月分配”，使用“x月需求”列。
+    第一个月可用资源包括五仓 + Fab + CP在制 + 历史WO。
+    delta = “x月成品投单计划” - InvPart - total_available
+
+    参数:
+        df_unique_wafer: 包含各项仓库存、需求、投单计划、WO等字段的 DataFrame
+        start_date: datetime 类型，用于定义“第一个月”
+    返回:
+        包含“x月分配”列的 df
+    """
+    first_date = datetime(start_date.year, start_date.month, 1)
+    df = df_unique_wafer.copy()
+
+    # 获取所有“x月需求”列（用于遍历月份）
+    pattern = re.compile(r"^(\d{1,2})月需求$")
+    demand_cols = [col for col in df.columns if pattern.match(str(col))]
+    if not demand_cols:
+        raise ValueError("❌ 未找到任何“x月需求”列")
+
+    month_keys = [(col, int(pattern.match(col).group(1))) for col in demand_cols]
+    sorted_demand_cols = [col for col, _ in sorted(month_keys, key=lambda x: x[1])]
+    sorted_months = [month for _, month in sorted(month_keys, key=lambda x: x[1])]
+    allocation_cols = [f"{month}月分配" for month in sorted_months]
+
+    for col in allocation_cols:
+        df[col] = 0.0
+
+    # 提取所有 WO 列及其日期
+    wo_pattern = re.compile(r"^(\d{4})-(\d{2}) WO$")
+    wo_cols = []
+    for col in df.columns:
+        match = wo_pattern.match(str(col))
+        if match:
+            y, m = int(match.group(1)), int(match.group(2))
+            wo_cols.append((col, datetime(y, m, 1)))
+    wo_cols.sort(key=lambda x: x[1])  # 日期升序
+
+    for idx, row in df.iterrows():
+        total_available = 0
+        wafer_unit = pd.to_numeric(row.get("单片数量", 1.0), errors="coerce") or 1.0
+
+        for i, month in enumerate(sorted_months):
+            demand_col = f"{month}月需求"
+            alloc_col = f"{month}月分配"
+            demand = pd.to_numeric(row.get(demand_col, 0), errors="coerce") or 0.0
+
+            plan_col = f"{month}月成品投单计划"
+            inv_part = pd.to_numeric(row.get("InvPart", 0), errors="coerce") or 0.0
+            fg_plan = pd.to_numeric(row.get(plan_col, 0), errors="coerce") or 0.0
+
+            if i == 0:
+                # 计算初始 total_available
+                wo_before_sum = sum(
+                    pd.to_numeric(row.get(col, 0), errors="coerce") or 0
+                    for col, wo_date in wo_cols if wo_date < first_date
+                )
+
+                total_available = (
+                    pd.to_numeric(row.get("分片晶圆仓", 0), errors="coerce") +
+                    pd.to_numeric(row.get("工程晶圆仓", 0), errors="coerce") +
+                    pd.to_numeric(row.get("已测晶圆仓", 0), errors="coerce") +
+                    pd.to_numeric(row.get("未测晶圆仓", 0), errors="coerce") +
+                    pd.to_numeric(row.get("CP在制（Total）", 0), errors="coerce") +
+                    pd.to_numeric(row.get("Fab warehouse", 0), errors="coerce") * wafer_unit +
+                    wo_before_sum * wafer_unit
+                )
+            else:
+                # 加上上月 WO 的 wafer 数量
+                prev_month = sorted_months[i - 1]
+                prev_date = datetime(first_date.year, prev_month, 1)
+                wo_col = f"{prev_date.strftime('%Y-%m')} WO"
+                wo = pd.to_numeric(row.get(wo_col, 0), errors="coerce") or 0
+                total_available += wo * wafer_unit
+
+            # ❗ 新逻辑：用 FG 投单计划计算缺口
+            delta = fg_plan - inv_part - total_available
+            allocated = delta/wafer_unit
+            df.at[idx, alloc_col] = round(allocated, 3)
+
+    return df
