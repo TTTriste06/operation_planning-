@@ -276,11 +276,23 @@ class PivotProcessor:
 
         # 检查
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
+
+        # 要添加的列名列表
+        new_headers = ["分析", "数量", "备注"，"本月缺货", "回货计划", "回货实际"，"计划1", "实际1", "计划2", "实际2", "计划3", 
+                       "实际3", "计划4", "实际4", "计划5", "实际5", "差异", "分析", "7月订单可发数量", "7月订单可发金额", "全部订单可发数量", "全部订单可发金额", 
+                       "结余数量", "结余金额", "单价", "7月订单价值", "回货价值", "缺货数量", "缺货价值"]
+        
+        # 将这些列添加到 DataFrame 中（值默认为 NaN）
+        for col in new_headers:
+            if col not in main_plan_df.columns:
+                main_plan_df[col] = pd.NA
+
         
         st.success("✅ 已合并投单计划")
 
         # === FAB_WIP_汇总 ===
         df_fab_summary = generate_fab_summary(self.cp_dataframes)
+        st.success("✅ 已完成FAB_WIP_汇总")
 
         # === 晶圆需求汇总 ===
         ## == 单片数量 ==
@@ -306,6 +318,7 @@ class PivotProcessor:
         df_unique_wafer = append_monthly_gap_columns(df_unique_wafer)
         ## == 晶圆缺口累加（片） ==
         df_unique_wafer = append_cumulative_gap_columns(df_unique_wafer, start_date)
+        st.success("✅ 已完成晶圆需求汇总")
 
         # === 写入 Excel 文件（主计划）===
         timestamp = datetime.now().strftime("%Y%m%d")
