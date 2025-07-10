@@ -577,70 +577,60 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, start_date) -> pd.
     return df
 
 
-def append_cumulative_gap_columns(
-    df_unique_wafer: pd.DataFrame,
-    start_date
-) -> pd.DataFrame:
+def append_cumulative_gap_columns(df_unique_wafer: pd.DataFrame, start_date) -> pd.DataFrame:
     """
-    为 df_unique_wafer 增加“x月累积缺口”列（追加到末尾），
-    每月缺口 = 截至当月累计需求 - InvPart - total_available
+    为 df_unique_wafer 增加“x月累积缺口”列。
+    计算方式：
+        累积缺口 = 截至当前月所有“x月需求”总和 - InvPart - total_available
 
     参数:
-        df_unique_wafer: 原始数据表
-        start_date: 分配起始日期（datetime）
-
+        df_unique_wafer: 包含各项仓库存、需求、WO、InvPart 等信息
+        start_date: 起始日期，datetime 类型
     返回:
-        原表 + 所有“x月累积缺口”列
+        含新增“x月累积缺口”列的 DataFrame
     """
-    from datetime import datetime
-    import re
-
     first_date = datetime(start_date.year, start_date.month, 1)
     df = df_unique_wafer.copy()
 
-    # 去除重复列名（如“晶圆品名”重复）
-    if df.columns.duplicated().sum() > 0:
-        df = df.loc[:, ~df.columns.duplicated()]
-
-    df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
-
-    # 匹配所有“x月需求”列
+    # 获取所有“x月需求”列
     pattern = re.compile(r"^(\d{1,2})月需求$")
-    demand_cols = [col for col in df.columns if pattern.match(col)]
+    demand_cols = [col for col in df.columns if pattern.match(str(col))]
     if not demand_cols:
         raise ValueError("❌ 未找到任何“x月需求”列")
 
     month_keys = [(col, int(pattern.match(col).group(1))) for col in demand_cols]
-    sorted_months = [m for _, m in sorted(month_keys, key=lambda x: x[1])]
+    sorted_months = [month for _, month in sorted(month_keys, key=lambda x: x[1])]
     sorted_demand_cols = [f"{m}月需求" for m in sorted_months]
     gap_cols = [f"{m}月累积缺口" for m in sorted_months]
 
+    # 初始化 gap 列
+    for gap_col in gap_cols:
+        df[gap_col] = 0.0
+
     # 提取所有 WO 列
     wo_pattern = re.compile(r"^(\d{4})-(\d{2}) WO$")
-    wo_cols = [
-        (col, datetime(int(m.group(1)), int(m.group(2)), 1))
-        for col in df.columns
-        if (m := wo_pattern.match(col))
-    ]
+    wo_cols = []
+    for col in df.columns:
+        match = wo_pattern.match(str(col))
+        if match:
+            y, m = int(match.group(1)), int(match.group(2))
+            wo_cols.append((col, datetime(y, m, 1)))
     wo_cols.sort(key=lambda x: x[1])
 
-    # 用来存储每个“x月累积缺口”列的值
-    gap_data = {col: [] for col in gap_cols}
-
-    for _, row in df.iterrows():
+    # 逐行计算缺口并直接写入 df
+    for idx, row in df.iterrows():
         wafer_unit = pd.to_numeric(row.get("单片数量", 1.0), errors="coerce") or 1.0
-        total_available = 0
+        total_available = 0  # 上月剩余
 
         for i, month in enumerate(sorted_months):
-            # 当前及之前所有需求累加
             demand_sum = sum(
                 pd.to_numeric(row.get(f"{m}月需求", 0), errors="coerce") or 0.0
                 for m in sorted_months[:i + 1]
             )
             inv_part = pd.to_numeric(row.get("InvPart", 0), errors="coerce") or 0.0
+            gap_col = f"{month}月累积缺口"
 
             if i == 0:
-                # 初始资源总和
                 wo_before_sum = sum(
                     pd.to_numeric(row.get(col, 0), errors="coerce") or 0
                     for col, wo_date in wo_cols if wo_date < first_date
@@ -661,15 +651,11 @@ def append_cumulative_gap_columns(
                 wo = pd.to_numeric(row.get(wo_col, 0), errors="coerce") or 0
                 total_available += wo * wafer_unit
 
-            gap = demand_sum - inv_part - total_available
-            gap_data[f"{month}月累积缺口"].append(round(gap, 3))
+            gap = demand_sum - total_available
+            gap = gap/wafer_unit
+            df.at[idx, gap_col] = round(gap, 3)
 
-    # 生成缺口 DataFrame
-    df_gap = pd.DataFrame(gap_data)
-
-    # ✅ 正确追加回原始 df_unique_wafer（顺序对齐）
-    df_result = pd.concat([df_unique_wafer.reset_index(drop=True), df_gap], axis=1)
-    return df_result
+    return df
 
 
 
