@@ -583,23 +583,21 @@ def append_cumulative_gap_columns(
     start_date
 ) -> pd.DataFrame:
     """
-    为 df_unique_wafer 增加“x月累积缺口”列，公式为：
+    为 df_unique_wafer 增加“x月累积缺口”列，计算方式为：
         累积缺口 = “x月成品投单计划” - InvPart - total_available
+    并将这些新列追加到 df_unique_wafer 的最后。
 
-    参数:
-        df_unique_wafer: 含库存/WO/需求等的表
-        main_plan_df: 含“x月成品投单计划”列的表
-        start_date: 起始日期（datetime）
-    返回:
-        包含所有“x月累积缺口”的 DataFrame
+    返回: 增加了所有“x月累积缺口”列的原始 DataFrame
     """
     first_date = datetime(start_date.year, start_date.month, 1)
+
+    # 复制用于处理
     df = df_unique_wafer.copy()
     df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
     main_plan_df = main_plan_df.copy()
     main_plan_df["晶圆品名"] = main_plan_df["晶圆品名"].astype(str).str.strip()
 
-    # 获取月份列
+    # 获取所有“x月需求”列
     pattern = re.compile(r"^(\d{1,2})月需求$")
     demand_cols = [col for col in df.columns if pattern.match(col)]
     if not demand_cols:
@@ -610,9 +608,6 @@ def append_cumulative_gap_columns(
     gap_cols = [f"{m}月累积缺口" for m in sorted_months]
     plan_cols = [f"{m}月成品投单计划" for m in sorted_months]
 
-    # 合并计划列
-    df = pd.merge(df, main_plan_df[["晶圆品名"] + plan_cols], on="晶圆品名", how="left")
-
     # 提取所有 WO 列及其日期
     wo_pattern = re.compile(r"^(\d{4})-(\d{2}) WO$")
     wo_cols = [
@@ -622,18 +617,23 @@ def append_cumulative_gap_columns(
     ]
     wo_cols.sort(key=lambda x: x[1])
 
-    # 初始化 gap 列
-    for col in gap_cols:
-        df[col] = 0.0
+    # 合并计划列
+    df_merge = pd.merge(
+        df[["晶圆品名"] + [col for col in df.columns if col not in gap_cols]],
+        main_plan_df[["晶圆品名"] + plan_cols],
+        on="晶圆品名", how="left"
+    )
 
-    # 逐行处理
-    for idx, row in df.iterrows():
+    # 结果字典，用于累积缺口
+    gap_results = {col: [] for col in gap_cols}
+
+    # 逐行计算每月累积缺口
+    for _, row in df_merge.iterrows():
         wafer_unit = pd.to_numeric(row.get("单片数量", 1.0), errors="coerce") or 1.0
         total_available = 0
 
         for i, month in enumerate(sorted_months):
             plan_col = f"{month}月成品投单计划"
-            gap_col = f"{month}月累积缺口"
             inv_part = pd.to_numeric(row.get("InvPart", 0), errors="coerce") or 0.0
             fg_plan = pd.to_numeric(row.get(plan_col, 0), errors="coerce") or 0.0
 
@@ -659,9 +659,12 @@ def append_cumulative_gap_columns(
                 total_available += wo * wafer_unit
 
             gap = fg_plan - inv_part - total_available
-            df.at[idx, gap_col] = round(gap, 3)
+            gap_results[f"{month}月累积缺口"].append(round(gap, 3))
 
-    return df
+    # 将 gap_results 转为 DataFrame
+    df_gap = pd.DataFrame(gap_results)
+    df_result = pd.concat([df_unique_wafer.reset_index(drop=True), df_gap], axis=1)
+    return df_result
 
 
 def merge_cumulative_gap_header(ws, df):
