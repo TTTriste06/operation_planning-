@@ -577,65 +577,71 @@ def allocate_fg_demand_monthly(df_unique_wafer: pd.DataFrame, start_date) -> pd.
     return df
 
 
-def allocate_fg_total_demand_monthly(df_unique_wafer: pd.DataFrame, start_date) -> pd.DataFrame:
+def append_cumulative_gap_columns(
+    df_unique_wafer: pd.DataFrame,
+    main_plan_df: pd.DataFrame,
+    start_date
+) -> pd.DataFrame:
     """
-    根据分配逻辑逐月计算“x月分配”，使用“x月需求”列。
-    第一个月可用资源包括五仓 + Fab + CP在制 + 历史WO。
-    delta = “x月成品投单计划” - InvPart - total_available
+    为 df_unique_wafer 增加“x月累积缺口”列，公式为：
+        累积缺口 = “x月成品投单计划” - InvPart - total_available
 
     参数:
-        df_unique_wafer: 包含各项仓库存、需求、投单计划、WO等字段的 DataFrame
-        start_date: datetime 类型，用于定义“第一个月”
+        df_unique_wafer: 含库存/WO/需求等的表
+        main_plan_df: 含“x月成品投单计划”列的表
+        start_date: 起始日期（datetime）
     返回:
-        包含“x月分配”列的 df
+        包含所有“x月累积缺口”的 DataFrame
     """
     first_date = datetime(start_date.year, start_date.month, 1)
     df = df_unique_wafer.copy()
+    df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
+    main_plan_df = main_plan_df.copy()
+    main_plan_df["晶圆品名"] = main_plan_df["晶圆品名"].astype(str).str.strip()
 
-    # 获取所有“x月需求”列（用于遍历月份）
+    # 获取月份列
     pattern = re.compile(r"^(\d{1,2})月需求$")
-    demand_cols = [col for col in df.columns if pattern.match(str(col))]
+    demand_cols = [col for col in df.columns if pattern.match(col)]
     if not demand_cols:
         raise ValueError("❌ 未找到任何“x月需求”列")
 
     month_keys = [(col, int(pattern.match(col).group(1))) for col in demand_cols]
-    sorted_demand_cols = [col for col, _ in sorted(month_keys, key=lambda x: x[1])]
-    sorted_months = [month for _, month in sorted(month_keys, key=lambda x: x[1])]
-    allocation_cols = [f"{month}月分配" for month in sorted_months]
+    sorted_months = [m for _, m in sorted(month_keys, key=lambda x: x[1])]
+    gap_cols = [f"{m}月累积缺口" for m in sorted_months]
+    plan_cols = [f"{m}月成品投单计划" for m in sorted_months]
 
-    for col in allocation_cols:
-        df[col] = 0.0
+    # 合并计划列
+    df = pd.merge(df, main_plan_df[["晶圆品名"] + plan_cols], on="晶圆品名", how="left")
 
     # 提取所有 WO 列及其日期
     wo_pattern = re.compile(r"^(\d{4})-(\d{2}) WO$")
-    wo_cols = []
-    for col in df.columns:
-        match = wo_pattern.match(str(col))
-        if match:
-            y, m = int(match.group(1)), int(match.group(2))
-            wo_cols.append((col, datetime(y, m, 1)))
-    wo_cols.sort(key=lambda x: x[1])  # 日期升序
+    wo_cols = [
+        (col, datetime(int(m.group(1)), int(m.group(2)), 1))
+        for col in df.columns
+        if (m := wo_pattern.match(col))
+    ]
+    wo_cols.sort(key=lambda x: x[1])
 
+    # 初始化 gap 列
+    for col in gap_cols:
+        df[col] = 0.0
+
+    # 逐行处理
     for idx, row in df.iterrows():
-        total_available = 0
         wafer_unit = pd.to_numeric(row.get("单片数量", 1.0), errors="coerce") or 1.0
+        total_available = 0
 
         for i, month in enumerate(sorted_months):
-            demand_col = f"{month}月需求"
-            alloc_col = f"{month}月分配"
-            demand = pd.to_numeric(row.get(demand_col, 0), errors="coerce") or 0.0
-
             plan_col = f"{month}月成品投单计划"
+            gap_col = f"{month}月累积缺口"
             inv_part = pd.to_numeric(row.get("InvPart", 0), errors="coerce") or 0.0
             fg_plan = pd.to_numeric(row.get(plan_col, 0), errors="coerce") or 0.0
 
             if i == 0:
-                # 计算初始 total_available
                 wo_before_sum = sum(
                     pd.to_numeric(row.get(col, 0), errors="coerce") or 0
                     for col, wo_date in wo_cols if wo_date < first_date
                 )
-
                 total_available = (
                     pd.to_numeric(row.get("分片晶圆仓", 0), errors="coerce") +
                     pd.to_numeric(row.get("工程晶圆仓", 0), errors="coerce") +
@@ -646,16 +652,39 @@ def allocate_fg_total_demand_monthly(df_unique_wafer: pd.DataFrame, start_date) 
                     wo_before_sum * wafer_unit
                 )
             else:
-                # 加上上月 WO 的 wafer 数量
                 prev_month = sorted_months[i - 1]
                 prev_date = datetime(first_date.year, prev_month, 1)
                 wo_col = f"{prev_date.strftime('%Y-%m')} WO"
                 wo = pd.to_numeric(row.get(wo_col, 0), errors="coerce") or 0
                 total_available += wo * wafer_unit
 
-            # ❗ 新逻辑：用 FG 投单计划计算缺口
-            delta = fg_plan - inv_part - total_available
-            allocated = delta/wafer_unit
-            df.at[idx, alloc_col] = round(allocated, 3)
+            gap = fg_plan - inv_part - total_available
+            df.at[idx, gap_col] = round(gap, 3)
 
     return df
+
+
+def merge_cumulative_gap_header(ws, df):
+    """
+    合并“x月累积缺口”列第一行单元格，写入标题“晶圆缺口计算（片）”
+    """
+    # 找出所有“x月累积缺口”列
+    gap_cols = [col for col in df.columns if re.match(r"^\d{1,2}月累积缺口$", str(col))]
+    if not gap_cols:
+        return  # 没有则不处理
+
+    start_col = df.columns.get_loc(gap_cols[0]) + 1  # openpyxl 从 1 开始
+    end_col = df.columns.get_loc(gap_cols[-1]) + 1
+
+    start_letter = get_column_letter(start_col)
+    end_letter = get_column_letter(end_col)
+
+    merge_range = f"{start_letter}1:{end_letter}1"
+    ws.merge_cells(merge_range)
+
+    cell = ws.cell(row=1, column=start_col)
+    cell.value = "晶圆缺口计算（片）"
+    cell.font = Font(bold=True, color="FFFFFF")
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+    cell.fill = PatternFill(fill_type="solid", fgColor="4F81BD")  # 蓝底白字
+
