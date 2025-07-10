@@ -276,17 +276,6 @@ class PivotProcessor:
 
         # 检查
         main_plan_df = drop_last_forecast_month_columns(main_plan_df, forecast_months)
-
-        # 要添加的列名列表
-        new_headers = ["分析", "数量", "备注", "本月缺货", "回货计划", "回货实际", "计划1", "实际1", "计划2", "实际2", "计划3", 
-                       "实际3", "计划4", "实际4", "计划5", "实际5", "差异", "分析", "7月订单可发数量", "7月订单可发金额", "全部订单可发数量", "全部订单可发金额", 
-                       "结余数量", "结余金额", "单价", "7月订单价值", "回货价值", "缺货数量", "缺货价值"]
-        
-        # 将这些列添加到 DataFrame 中（值默认为 NaN）
-        for col in new_headers:
-            if col not in main_plan_df.columns:
-                main_plan_df[col] = pd.NA
-
         
         st.success("✅ 已合并投单计划")
 
@@ -375,6 +364,25 @@ class PivotProcessor:
             format_monthly_grouped_headers(ws)
             highlight_production_plan_cells(ws, main_plan_df)
             highlight_replaced_names_in_main_sheet(ws, all_replaced_names)
+
+            # 添加几个新 header
+            new_headers = ["分析", "数量", "备注", "本月缺货", "回货计划", "回货实际", "计划1", "实际1", "计划2", "实际2", "计划3", 
+                       "实际3", "计划4", "实际4", "计划5", "实际5", "差异", "分析", "7月订单可发数量", "7月订单可发金额", "全部订单可发数量", "全部订单可发金额", 
+                       "结余数量", "结余金额", "单价", "7月订单价值", "回货价值", "缺货数量", "缺货价值"]
+        
+            
+            # 从第2行开始写标题，从已有最大列+1处写入
+            start_col = ws.max_column + 1
+            
+            for i, header in enumerate(new_headers):
+                col_idx = start_col + i
+                ws.cell(row=2, column=col_idx, value=header)
+            
+                # 可选：加粗、居中、设置高度
+                cell = ws.cell(row=2, column=col_idx)
+                cell.font = Font(bold=True)
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+
 
             # 格式调整
             adjust_column_width(ws)
