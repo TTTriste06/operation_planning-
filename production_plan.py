@@ -118,15 +118,15 @@ def generate_monthly_fg_plan(main_plan_df: pd.DataFrame, forecast_months: list[s
                 result = v_prev_plan - v_actual + max(v_forecast_next, v_order_next)
                 df_plan.at[row_idx, col_target] = result
 
-    # 匹配“成品投单计划”列（非“半成品”）
-    plan_cols_in_summary = [col for col in main_plan_df.columns if "成品投单计划" in col and "半成品" not in col]
+    # ✅ 若主计划中没有这些列，先批量添加空列（防止碎片化 + 保证后续写入成功）
+    for col in df_plan.columns:
+        if col not in main_plan_df.columns:
+            main_plan_df[col] = ""
+    
+    # ✅ 写入 df_plan 内容（成品投单计划）
+    for col in df_plan.columns:
+        main_plan_df[col] = df_plan[col]
 
-    # 回填到主计划中
-    if len(plan_cols_in_summary) != df_plan.shape[1]:
-        st.error(f"❌ 写入失败：df_plan 有 {df_plan.shape[1]} 列，summary 中有 {len(plan_cols_in_summary)} 个 '成品投单计划' 列")
-    else:
-        for i, col in enumerate(plan_cols_in_summary):
-            main_plan_df[col] = df_plan.iloc[:, i]
 
     return main_plan_df
 
@@ -194,17 +194,16 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
                 result = prev_plan - actual_prod + max(forecast_next, order_next)
                 df_plan.at[row_idx, col_target] = result
 
-    plan_cols_in_summary = [col for col in main_plan_df.columns if "半成品投单计划" in col]
-
-    if len(plan_cols_in_summary) != df_plan.shape[1]:
-        st.error(f"❌ 写入失败：df_plan 有 {df_plan.shape[1]} 列，summary 中有 {len(plan_cols_in_summary)} 个 '半成品投单计划' 列")
-    else:
-        for i, col in enumerate(plan_cols_in_summary):
+    # ✅ 若主计划中没有这些列，先批量添加空列
+    for col in df_plan.columns:
+        if col not in main_plan_df.columns:
             main_plan_df[col] = ""
-            col_in_df_plan = df_plan.columns[i] if i < len(df_plan.columns) else None
-            if col_in_df_plan:
-                main_plan_df.loc[mask, col] = df_plan.loc[mask, col_in_df_plan]
+    
+    # ✅ 将结果回填（保留原有 mask 过滤）
+    for col in df_plan.columns:
+        main_plan_df.loc[mask, col] = df_plan.loc[mask, col]
 
+    
     return main_plan_df
 
 
