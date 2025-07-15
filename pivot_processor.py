@@ -248,13 +248,9 @@ class PivotProcessor:
         if unfulfilled_df is not None and not unfulfilled_df.empty:
             main_plan_df = append_order_delivery_amount_columns(main_plan_df, unfulfilled_df, start_date)
             st.success("✅ 已合并发货金额")
-            
-            
-        st.write("投单计划之前")
-        st.write(main_plan_df)
         
         # === 投单计划 ===
-        forecast_months = init_monthly_fields(main_plan_df, start_date)
+        main_plan_df, forecast_months = init_monthly_fields(main_plan_df, start_date)
 
         st.write("forecast_months")
         st.write(main_plan_df)
