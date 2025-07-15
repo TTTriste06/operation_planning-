@@ -535,30 +535,31 @@ def merge_order_delivery_amount(sheet):
 
 def append_forecast_accuracy_column(main_plan_df: pd.DataFrame, start_date: datetime = None) -> pd.DataFrame:
     """
-    在“半成品在制”后面插入一列：当月预测准确率(订单/预测)
-    逻辑：
+    添加“当月预测准确率(订单/预测)”列：
     - 若 (未交 + 销售) == 0 且 预测 > 0，则准确率 = -9999
     - 若 (未交 + 销售) > 0 且 预测 == 0，则准确率 = 9999
-    - 若 (未交 + 销售) > 0 且 预测 > 0，则准确率 = (未交 + 销售) / 预测 × 100%
+    - 否则为百分比
     """
     today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
-    current_year = today.strftime("%Y-%m")
-    current_month = str(today.month)  # 输出 "6"
-    forecast_col = f"{current_year}预测"    # 最终是 "2025-07预测"
+    current_year_month = today.strftime("%Y-%m")  # e.g., "2025-07"
 
-    unfulfilled_col = f"未交订单 {current_year}"
-    fulfilled_col = f"{current_month}月销售数量"
+    # 构造列名
+    forecast_col = f"{current_year_month}预测"
+    unfulfilled_col = f"未交订单 {current_year_month}"
+    fulfilled_col = f"{current_year_month}销售数量"
     accuracy_col = "当月预测准确率(订单/预测)"
-    
-    
-    # 填充缺失值为0
-    forecast = main_plan_df[forecast_col].fillna(0)
-    unfulfilled = main_plan_df[unfulfilled_col].fillna(0)
-    fulfilled = main_plan_df[fulfilled_col].fillna(0)
-    
+
+    # 安全提取
+    def safe_get(col):
+        return pd.to_numeric(main_plan_df[col], errors="coerce").fillna(0) if col in main_plan_df.columns \
+            else pd.Series(0, index=main_plan_df.index)
+
+    forecast = safe_get(forecast_col)
+    unfulfilled = safe_get(unfulfilled_col)
+    fulfilled = safe_get(fulfilled_col)
     total_order = unfulfilled + fulfilled
 
-    # 应用逻辑（向量化计算）
+    # 计算准确率
     accuracy = pd.Series(index=main_plan_df.index, dtype=object)
     mask1 = (total_order == 0) & (forecast > 0)
     mask2 = (total_order > 0) & (forecast == 0)
@@ -567,21 +568,20 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame, start_date: date
     accuracy[mask1] = -9999
     accuracy[mask2] = 9999
     accuracy[mask3] = ((total_order[mask3] / forecast[mask3]) * 100).round(1).astype(str) + "%"
-    
-    # 插入到“半成品在制”后面
-    col_names = list(main_plan_df.columns)
+
+    # 插入在“半成品在制”后面
     try:
-        insert_pos = col_names.index("半成品在制") + 1
+        insert_pos = main_plan_df.columns.get_loc("半成品在制") + 1
         main_plan_df = pd.concat([
             main_plan_df.iloc[:, :insert_pos],
-            pd.DataFrame({accuracy_col: accuracy}),
+            pd.DataFrame({accuracy_col: accuracy}, index=main_plan_df.index),
             main_plan_df.iloc[:, insert_pos:]
         ], axis=1)
-    except ValueError:
-        # 若找不到就添加到最后
+    except KeyError:
         main_plan_df[accuracy_col] = accuracy
-        
+
     return main_plan_df
+
 
 def merge_forecast_accuracy(sheet):
     """
