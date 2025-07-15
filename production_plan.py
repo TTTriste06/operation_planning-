@@ -22,7 +22,7 @@ def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None)
         "回货计划", "回货计划调整", "PC回货计划", "回货实际"
     ]
 
-    month_pattern = re.compile(r"^(\d{1,2})月预测$")
+    month_pattern = re.compile(r"^(\d{4})-(\d{2})预测$")
     forecast_months = sorted({
         int(match.group(1)) for col in main_plan_df.columns
         if isinstance(col, str) and (match := month_pattern.match(col.strip()))
