@@ -8,13 +8,14 @@ from collections import defaultdict
 from openpyxl.styles import numbers
 from sheet_add import clean_df
 
-def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None) -> list[int]:
+def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None) -> list[str]:
     """
-    自动识别主计划中预测字段的月份，添加 HEADER_TEMPLATE 中的所有月度字段列。
-    初始化为 ""。
-    
+    自动识别主计划中预测字段的月份（格式为 '2025-07预测'），
+    并为每个预测月添加 HEADER_TEMPLATE 中的所有字段列（若不存在则创建）。
+    所有新增列初始化为 ""。
+
     返回：
-    - forecast_months: 所有识别出的月份列表（升序）
+    - forecast_months: 所有识别出的 "YYYY-MM" 月份列表（升序）
     """
     HEADER_TEMPLATE = [
         "销售数量", "销售金额", "成品投单计划", "半成品投单计划", "投单计划调整",
@@ -22,27 +23,32 @@ def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None)
         "回货计划", "回货计划调整", "PC回货计划", "回货实际"
     ]
 
+    # ✅ 识别所有 “YYYY-MM预测” 列
     month_pattern = re.compile(r"^(\d{4})-(\d{2})预测$")
     forecast_months = sorted({
-        int(match.group(1)) for col in main_plan_df.columns
+        f"{match.group(1)}-{match.group(2)}"
+        for col in main_plan_df.columns
         if isinstance(col, str) and (match := month_pattern.match(col.strip()))
     })
 
     if not forecast_months:
         return []
 
-    today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
-    start_month = today.month
-    end_month = max(forecast_months) - 1
-
-    for m in range(start_month, end_month + 1):
+    # ✅ 批量构造所有需添加的新列
+    new_cols = []
+    for ym in forecast_months:
         for header in HEADER_TEMPLATE:
-            col = f"{m}月{header}"
+            col = f"{ym}{header}"
             if col not in main_plan_df.columns:
-                main_plan_df[col] = ""
+                new_cols.append(col)
+
+    # ✅ 批量添加空列（防止碎片化）
+    if new_cols:
+        empty_df = pd.DataFrame({col: [""] * len(main_plan_df) for col in new_cols})
+        main_plan_df = pd.concat([main_plan_df, empty_df], axis=1)
 
     return forecast_months
-
+    
 def safe_col(df: pd.DataFrame, col: str) -> pd.Series:
     """确保列为数字，若不存在则返回 0"""
     return pd.to_numeric(df[col], errors="coerce").fillna(0) if col in df.columns else pd.Series(0, index=df.index)
