@@ -177,58 +177,66 @@ def merge_unfulfilled_order_header(sheet):
     cell.value = "未交订单"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
+import pandas as pd
+from datetime import datetime
+import streamlit as st
+
 def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFrame, 
                                start_date: datetime = None) -> tuple[pd.DataFrame, list]:
     """
-    从预测表中提取当月及未来的预测信息（仅按“品名”匹配），合并至 summary_df。
-    返回合并后的表格和未匹配的品名列表。
-
-    参数:
-    - summary_df: 主计划 DataFrame（需含 '品名'）
-    - forecast_df: 原始预测表（需含 '生产料号' 及预测列）
-
-    返回:
-    - result: 合并后的 DataFrame
-    - unmatched_keys: list[str]，未匹配的品名
+    从预测表中提取按“品名”匹配的预测信息，合并至 summary_df。
+    - 自动识别“x月预测”列并分配跨年年份。
+    - 返回合并后的表格和未匹配的品名列表。
     """
     today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
-    this_month_int = today.month
+    this_year = today.year
 
-    # ✅ 统一列名
+    # ✅ 统一列名，标准化品名字段
     forecast_df = forecast_df.rename(columns={"生产料号": "品名"}).copy()
     forecast_df["品名"] = forecast_df["品名"].astype(str).str.strip()
+    summary_df["品名"] = summary_df["品名"].astype(str).str.strip()
 
-    # ✅ 识别预测列（仅保留“x月预测”且月份 >= 当前月）    
-    # 获取所有“x月预测”列，且月份合法
+    # ✅ 提取所有“x月预测”列
     month_cols = [
         col for col in forecast_df.columns
         if isinstance(col, str) and col.endswith("月预测") and "月" in col and col[:col.index("月")].isdigit()
     ]
-    
-    # 保留当前月及以后的预测列
-    future_month_cols = [
-        col for col in month_cols
-        if int(col[:col.index("月")]) >= this_month_int
-    ]
 
-    if not future_month_cols:
-        st.warning("⚠️ 未找到当月或未来月份的预测列（格式应为“5月预测”）")
+    if not month_cols:
+        st.warning("⚠️ 未找到任何‘x月预测’字段")
         return summary_df, []
 
-    # ✅ 汇总相同品名的预测值
-    forecast_df[future_month_cols] = forecast_df[future_month_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
-    forecast_grouped = forecast_df.groupby("品名", as_index=False)[future_month_cols].sum()
+    # ✅ 按月份排序并推断年份（跨年处理）
+    sorted_month_cols = sorted(month_cols, key=lambda x: int(x[:x.index("月")]))  # 先按数字排序
+    future_month_cols = []
+    current_year = this_year
+    prev_month = -1
 
-    # ✅ 合并到主计划
-    summary_df["品名"] = summary_df["品名"].astype(str).str.strip()
+    for col in sorted_month_cols:
+        month = int(col[:col.index("月")])
+        if prev_month != -1 and month < prev_month:
+            current_year += 1  # 跨年
+        future_month_cols.append(((current_year, month), col))
+        prev_month = month
+
+    # ✅ 构造带年份的新列名映射
+    renamed_cols = {col: f"{year}-{str(month).zfill(2)}预测" for (year, month), col in future_month_cols}
+    forecast_df = forecast_df.rename(columns=renamed_cols)
+
+
+    # ✅ 汇总相同品名的预测数据
+    numeric_cols = list(renamed_cols.values())
+    forecast_df[numeric_cols] = forecast_df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+    forecast_grouped = forecast_df.groupby("品名", as_index=False)[numeric_cols].sum()
+
+    # ✅ 合并进主计划
     result = summary_df.merge(forecast_grouped, on="品名", how="left")
 
-    # ✅ 填补新预测列中的 NaN 为 0（不影响原有列）
-    for col in future_month_cols:
+    for col in numeric_cols:
         if col in result.columns:
             result[col] = result[col].fillna(0)
 
-    # ✅ 找出未匹配品名
+    # ✅ 找出未匹配的品名
     forecast_keys = set(forecast_grouped["品名"])
     summary_keys = set(summary_df["品名"])
     unmatched_keys = sorted(list(forecast_keys - summary_keys))
