@@ -205,17 +205,11 @@ def generate_monthly_semi_plan(main_plan_df: pd.DataFrame, forecast_months: list
     return main_plan_df
 
 
-def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
+def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame,
+                               df_order: pd.DataFrame,
+                               forecast_months: list[str]) -> pd.DataFrame:
     """
-    从下单明细中抓取“成品实际投单”并写入 main_plan_df，每月写入“X月成品实际投单”列。
-    
-    参数：
-    - main_plan_df: 主计划表，需包含“品名”列
-    - df_order: 下单明细，含“下单日期”、“回货明细_回货品名”、“回货明细_回货数量”
-    - forecast_months: 月份列表，例如 [6, 7, 8]
-
-    返回：
-    - main_plan_df: 添加了成品实际投单列的 DataFrame
+    从下单明细中抓取“成品实际投单”并写入 main_plan_df，每月写入“2025-10成品实际投单”列。
     """
     if df_order.empty or not forecast_months:
         return main_plan_df
@@ -223,51 +217,41 @@ def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFram
     df_order = df_order.copy()
     df_order = df_order[["下单日期", "回货明细_回货品名", "回货明细_回货数量"]].dropna()
     df_order["回货明细_回货品名"] = df_order["回货明细_回货品名"].astype(str).str.strip()
-    df_order["下单月份"] = pd.to_datetime(df_order["下单日期"], errors="coerce").dt.month
+    df_order["下单年月"] = pd.to_datetime(df_order["下单日期"], errors="coerce").dt.strftime("%Y-%m")
 
-    # 筛选出主计划中存在的品名
+    # 过滤品名
     valid_parts = set(main_plan_df["品名"].astype(str))
     df_order = df_order[df_order["回货明细_回货品名"].isin(valid_parts)]
 
     # 初始化结果表
     order_summary = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
-    for m in forecast_months:
-        col = f"{m}成品实际投单"
+    for ym in forecast_months:
+        col = f"{ym}成品实际投单"
         order_summary[col] = 0
 
-    # 累加每一行订单数量至对应月份列
+    # 累加数据
     for _, row in df_order.iterrows():
         part = row["回货明细_回货品名"]
         qty = row["回货明细_回货数量"]
-        month = row["下单月份"]
-        col_name = f"{month}成品实际投单"
-        if month in forecast_months:
-            match_idx = order_summary[order_summary["品名"] == part].index
-            if not match_idx.empty:
-                order_summary.loc[match_idx[0], col_name] += qty
-                
-    # 回填结果到主计划表
+        ym = row["下单年月"]
+        col_name = f"{ym}成品实际投单"
+        if col_name in order_summary.columns:
+            order_summary.loc[order_summary["品名"] == part, col_name] += qty
+
+    # 写入主计划
     for col in order_summary.columns[1:]:
         main_plan_df[col] = order_summary[col]
 
     return main_plan_df
 
+
 def aggregate_actual_sfg_orders(main_plan_df: pd.DataFrame,
                                 df_order: pd.DataFrame,
                                 mapping_df: pd.DataFrame,
-                                forecast_months: list[int]) -> pd.DataFrame:
+                                forecast_months: list[str]) -> pd.DataFrame:
     """
-    提取“半成品实际投单”数据并写入主计划表，依据“赛卓-新旧料号”中“半成品”字段进行反查。
-    同时将数据写入“新品名”和半成品本身（若出现在主计划中）。
-
-    参数：
-    - main_plan_df: 主计划 DataFrame，需包含“品名”列
-    - df_order: 下单明细，含“下单日期”、“回货明细_回货品名”、“回货明细_回货数量”
-    - mapping_df: 新旧料号表，含“半成品”字段和“新品名”
-    - forecast_months: 月份整数列表
-
-    返回：
-    - main_plan_df: 写入了“X月半成品实际投单”的 DataFrame
+    提取“半成品实际投单”数据并写入主计划表（列名为“2025-10半成品实际投单”格式）。
+    同时写入新品名行与半成品行。
     """
     if df_order.empty or mapping_df.empty or not forecast_months:
         return main_plan_df
@@ -275,41 +259,39 @@ def aggregate_actual_sfg_orders(main_plan_df: pd.DataFrame,
     df_order = df_order.copy()
     df_order = df_order[["下单日期", "回货明细_回货品名", "回货明细_回货数量"]].dropna()
     df_order["回货明细_回货品名"] = df_order["回货明细_回货品名"].astype(str).str.strip()
-    df_order["下单月份"] = pd.to_datetime(df_order["下单日期"], errors="coerce").dt.month
+    df_order["下单年月"] = pd.to_datetime(df_order["下单日期"], errors="coerce").dt.strftime("%Y-%m")
 
-    # 半成品 → 新品名映射字典
+    # 映射构造
     semi_mapping = mapping_df[mapping_df["半成品"].notna() & (mapping_df["半成品"] != "")]
-    semi_dict = dict(zip(semi_mapping["半成品"].astype(str).str.strip(),
-                         semi_mapping["新品名"].astype(str).str.strip()))
+    semi_dict = dict(zip(
+        semi_mapping["半成品"].astype(str).str.strip(),
+        semi_mapping["新品名"].astype(str).str.strip()
+    ))
 
-    # 初始化结果 DataFrame
-    sfg_summary = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
-    for m in forecast_months:
-        sfg_summary[f"{m}半成品实际投单"] = 0
+    main_plan_df = main_plan_df.copy()
+    main_plan_df["品名"] = main_plan_df["品名"].astype(str).str.strip()
 
-    # 逐行匹配并写入新品名和半成品行
+    # 初始化列
+    for ym in forecast_months:
+        col = f"{ym}半成品实际投单"
+        if col not in main_plan_df.columns:
+            main_plan_df[col] = 0
+
+    # 分配数据
     for _, row in df_order.iterrows():
         part = row["回货明细_回货品名"]
         qty = row["回货明细_回货数量"]
-        month = row["下单月份"]
-        col_name = f"{month}半成品实际投单"
-        
-        if part in semi_dict and month in forecast_months:
-            new_part = semi_dict[part]
-            # 写入新品名对应行
-            new_idx = sfg_summary[sfg_summary["品名"] == new_part].index
-            if not new_idx.empty:
-                sfg_summary.loc[new_idx[0], col_name] += qty
-            # 若半成品本身也出现在主计划中，也写入
-            semi_idx = sfg_summary[sfg_summary["品名"] == part].index
-            if not semi_idx.empty:
-                sfg_summary.loc[semi_idx[0], col_name] += qty
+        ym = row["下单年月"]
+        col_name = f"{ym}半成品实际投单"
 
-    # 写入主计划
-    for col in sfg_summary.columns[1:]:
-        main_plan_df[col] = sfg_summary[col]
+        if ym in forecast_months and part in semi_dict:
+            new_part = semi_dict[part]
+
+            main_plan_df.loc[main_plan_df["品名"] == new_part, col_name] += qty
+            main_plan_df.loc[main_plan_df["品名"] == part, col_name] += qty
 
     return main_plan_df
+
 
 
 def aggregate_actual_arrivals(main_plan_df: pd.DataFrame, df_arrival: pd.DataFrame, forecast_months: list[str]) -> pd.DataFrame:
