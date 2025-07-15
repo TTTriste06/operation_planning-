@@ -252,9 +252,13 @@ def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFram
 
     return main_plan_df
 
-def aggregate_actual_sfg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFrame, mapping_df: pd.DataFrame, forecast_months: list[int]) -> pd.DataFrame:
+def aggregate_actual_sfg_orders(main_plan_df: pd.DataFrame,
+                                df_order: pd.DataFrame,
+                                mapping_df: pd.DataFrame,
+                                forecast_months: list[int]) -> pd.DataFrame:
     """
     提取“半成品实际投单”数据并写入主计划表，依据“赛卓-新旧料号”中“半成品”字段进行反查。
+    同时将数据写入“新品名”和半成品本身（若出现在主计划中）。
 
     参数：
     - main_plan_df: 主计划 DataFrame，需包含“品名”列
@@ -273,33 +277,40 @@ def aggregate_actual_sfg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFra
     df_order["回货明细_回货品名"] = df_order["回货明细_回货品名"].astype(str).str.strip()
     df_order["下单月份"] = pd.to_datetime(df_order["下单日期"], errors="coerce").dt.month
 
-    # 生成半成品 → 新品名 映射字典
+    # 半成品 → 新品名映射字典
     semi_mapping = mapping_df[mapping_df["半成品"].notna() & (mapping_df["半成品"] != "")]
-    semi_dict = dict(zip(semi_mapping["半成品"].astype(str).str.strip(), semi_mapping["新品名"].astype(str).str.strip()))
+    semi_dict = dict(zip(semi_mapping["半成品"].astype(str).str.strip(),
+                         semi_mapping["新品名"].astype(str).str.strip()))
 
     # 初始化结果 DataFrame
     sfg_summary = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
     for m in forecast_months:
         sfg_summary[f"{m}半成品实际投单"] = 0
 
-    # 逐行分配
+    # 逐行匹配并写入新品名和半成品行
     for _, row in df_order.iterrows():
         part = row["回货明细_回货品名"]
         qty = row["回货明细_回货数量"]
         month = row["下单月份"]
         col_name = f"{month}半成品实际投单"
-
+        
         if part in semi_dict and month in forecast_months:
             new_part = semi_dict[part]
-            match_idx = sfg_summary[sfg_summary["品名"] == new_part].index
-            if not match_idx.empty:
-                sfg_summary.loc[match_idx[0], col_name] += qty
+            # 写入新品名对应行
+            new_idx = sfg_summary[sfg_summary["品名"] == new_part].index
+            if not new_idx.empty:
+                sfg_summary.loc[new_idx[0], col_name] += qty
+            # 若半成品本身也出现在主计划中，也写入
+            semi_idx = sfg_summary[sfg_summary["品名"] == part].index
+            if not semi_idx.empty:
+                sfg_summary.loc[semi_idx[0], col_name] += qty
 
     # 写入主计划
     for col in sfg_summary.columns[1:]:
         main_plan_df[col] = sfg_summary[col]
 
     return main_plan_df
+
 
 def aggregate_actual_arrivals(main_plan_df: pd.DataFrame, df_arrival: pd.DataFrame, forecast_months: list[str]) -> pd.DataFrame:
     """
