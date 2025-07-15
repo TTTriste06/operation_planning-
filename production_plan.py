@@ -245,9 +245,10 @@ def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame,
 def aggregate_actual_sfg_orders(main_plan_df: pd.DataFrame,
                                 df_order: pd.DataFrame,
                                 mapping_df: pd.DataFrame,
-                                forecast_months: list[str]) -> pd.DataFrame:
+                                forecast_months: list[str],
+                                debug: bool = False) -> pd.DataFrame:
     """
-    提取“半成品实际投单”并写入主计划表，包括新品名和半成品自身行。
+    提取“半成品实际投单”并写入主计划表，包括新品名和半成品本身行。
     列格式为 “2025-10半成品实际投单”。
     """
     if df_order.empty or mapping_df.empty or not forecast_months:
@@ -266,27 +267,45 @@ def aggregate_actual_sfg_orders(main_plan_df: pd.DataFrame,
         semi_mapping["新品名"].astype(str).str.strip()
     ))
 
-    # 初始化并强制为数值列
+    # 初始化列并强制为数值
     for ym in forecast_months:
         col = f"{ym}半成品实际投单"
         if col not in main_plan_df.columns:
             main_plan_df[col] = 0
-        else:
-            main_plan_df[col] = pd.to_numeric(main_plan_df[col], errors='coerce').fillna(0)
+        main_plan_df[col] = pd.to_numeric(main_plan_df[col], errors='coerce').fillna(0)
 
-    # 遍历订单写入到新品与半成品本身行
+    # 遍历订单
     for _, row in df_order.iterrows():
         part = row["回货明细_回货品名"]
         qty = row["回货明细_回货数量"]
         ym = row["下单年月"]
         col_name = f"{ym}半成品实际投单"
 
-        if ym in forecast_months and part in semi_dict:
-            new_part = semi_dict[part]
+        if ym not in forecast_months or part not in semi_dict:
+            continue
+
+        new_part = semi_dict[part]
+
+        # 写入新品名
+        if new_part in main_plan_df["品名"].values:
             main_plan_df.loc[main_plan_df["品名"] == new_part, col_name] += qty
+            if debug:
+                print(f"✅ 写入新品名 {new_part} → {col_name} += {qty}")
+        else:
+            if debug:
+                print(f"⚠️ 未找到新品名 {new_part}，跳过")
+
+        # 写入半成品自身
+        if part in main_plan_df["品名"].values:
             main_plan_df.loc[main_plan_df["品名"] == part, col_name] += qty
+            if debug:
+                print(f"✅ 同时写入半成品自身 {part} → {col_name} += {qty}")
+        else:
+            if debug:
+                print(f"⚠️ 半成品 {part} 本身不在主计划中")
 
     return main_plan_df
+
 
 
 
