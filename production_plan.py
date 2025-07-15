@@ -8,10 +8,6 @@ from collections import defaultdict
 from openpyxl.styles import numbers
 from sheet_add import clean_df
 
-import re
-import pandas as pd
-from datetime import datetime
-
 def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None) -> list[str]:
     """
     自动识别主计划中预测字段的月份（格式为 '2025-07预测'），
