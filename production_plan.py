@@ -8,13 +8,14 @@ from collections import defaultdict
 from openpyxl.styles import numbers
 from sheet_add import clean_df
 
-def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None) -> list[str]:
+def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None) -> tuple[pd.DataFrame, list[str]]:
     """
-    自动识别主计划中预测字段的月份（格式如 “2025-10预测”），
-    并添加 HEADER_TEMPLATE 中的所有月度字段列（如“2025-10销售数量”），初始化为 ""。
+    自动识别主计划中预测字段（如“2025-10预测”），添加 HEADER_TEMPLATE 中所有相关字段。
+    初始化为空字符串 ""。
 
     返回：
-    - forecast_months: 所有识别出的 “YYYY-MM” 字符串月份列表（升序）
+    - 修改后的 main_plan_df（带新列）
+    - forecast_months: 所有识别出的月份列表（如 “2025-10”）
     """
     HEADER_TEMPLATE = [
         "销售数量", "销售金额", "成品投单计划", "半成品投单计划", "投单计划调整",
@@ -22,7 +23,6 @@ def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None)
         "回货计划", "回货计划调整", "PC回货计划", "回货实际"
     ]
 
-    # 匹配格式：2025-10预测
     month_pattern = re.compile(r"^(\d{4}-\d{2})预测$")
     forecast_months = sorted({
         match.group(1) for col in main_plan_df.columns
@@ -30,15 +30,17 @@ def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None)
     })
 
     if not forecast_months:
-        return []
+        return main_plan_df, []
+
+    df = main_plan_df.copy()
 
     for ym in forecast_months:
         for header in HEADER_TEMPLATE:
             col = f"{ym}{header}"
-            if col not in main_plan_df.columns:
-                main_plan_df[col] = ""
+            if col not in df.columns:
+                df[col] = ""
 
-    return forecast_months
+    return df, forecast_months
 
     
 def safe_col(df: pd.DataFrame, col: str) -> pd.Series:
