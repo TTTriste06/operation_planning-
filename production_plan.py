@@ -10,12 +10,11 @@ from sheet_add import clean_df
 
 def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None) -> list[str]:
     """
-    自动识别主计划中预测字段的月份（格式为 '2025-07预测'），
-    并为每个预测月添加 HEADER_TEMPLATE 中的所有字段列（若不存在则创建）。
-    所有新增列初始化为 ""。
+    自动识别主计划中预测字段的月份（格式如 “2025-10预测”），
+    并添加 HEADER_TEMPLATE 中的所有月度字段列（如“2025-10销售数量”），初始化为 ""。
 
     返回：
-    - forecast_months: 所有识别出的 "YYYY-MM" 月份列表（升序）
+    - forecast_months: 所有识别出的 “YYYY-MM” 字符串月份列表（升序）
     """
     HEADER_TEMPLATE = [
         "销售数量", "销售金额", "成品投单计划", "半成品投单计划", "投单计划调整",
@@ -23,29 +22,21 @@ def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None)
         "回货计划", "回货计划调整", "PC回货计划", "回货实际"
     ]
 
-    # ✅ 识别所有 “YYYY-MM预测” 列
-    month_pattern = re.compile(r"^(\d{4})-(\d{2})预测$")
+    # 匹配格式：2025-10预测
+    month_pattern = re.compile(r"^(\d{4}-\d{2})预测$")
     forecast_months = sorted({
-        f"{match.group(1)}-{match.group(2)}"
-        for col in main_plan_df.columns
+        match.group(1) for col in main_plan_df.columns
         if isinstance(col, str) and (match := month_pattern.match(col.strip()))
     })
 
     if not forecast_months:
         return []
 
-    # ✅ 批量构造所有需添加的新列
-    new_cols = []
     for ym in forecast_months:
         for header in HEADER_TEMPLATE:
             col = f"{ym}{header}"
             if col not in main_plan_df.columns:
-                new_cols.append(col)
-
-    # ✅ 批量添加空列（防止碎片化）
-    if new_cols:
-        empty_df = pd.DataFrame({col: [""] * len(main_plan_df) for col in new_cols})
-        main_plan_df = pd.concat([main_plan_df, empty_df], axis=1)
+                main_plan_df[col] = ""
 
     return forecast_months
 
