@@ -490,38 +490,34 @@ def generate_monthly_return_plan(main_plan_df: pd.DataFrame) -> pd.DataFrame:
     
 def format_monthly_grouped_headers(ws):
     """
-    从AC列开始，每13列为一个月块：
-    - 合并第1行写“x月”
-    - 去掉第2行每列前缀的“x月”
-    - 每月块用不同背景色填充前两行
+    处理格式为“2025-12成品投单计划”的字段：
+    - 从识别到的起始列开始，每13列为一个月份组
+    - 第1行合并写 “2025-12”
+    - 第2行去掉前缀“2025-12”，仅保留字段名
+    - 每月块使用不同颜色填充前两行
     """
-    # 自动查找第2行中第一个“销售数量”字段的列号
+    from openpyxl.styles import PatternFill, Alignment, Font
+    from openpyxl.utils import get_column_letter
+    import re
+
+    # 查找第2行中第一个“销售数量”字段的列号作为起点
     start_col = None
     for col_idx in range(1, ws.max_column + 1):
         cell_value = ws.cell(row=2, column=col_idx).value
         if isinstance(cell_value, str) and "销售数量" in cell_value:
             start_col = col_idx
             break
-    
     if start_col is None:
         raise ValueError("❌ 未在第2行找到“销售数量”字段，无法定位起始列")
 
-    row_1 = 1
-    row_2 = 2
+    row_1, row_2 = 1, 2
     max_col = ws.max_column
 
-    # 几组可循环的浅色背景（Excel兼容性好的十六进制RGB）
     fill_colors = [
-        "FFF2CC",  # 浅黄色
-        "D9EAD3",  # 浅绿色
-        "D0E0E3",  # 浅蓝色
-        "F4CCCC",  # 浅红色
-        "EAD1DC",  # 浅紫色
-        "CFE2F3",  # 浅青色
-        "FFE599",  # 明亮黄
+        "FFF2CC", "D9EAD3", "D0E0E3", "F4CCCC", "EAD1DC", "CFE2F3", "FFE599"
     ]
 
-    month_pattern = re.compile(r"^(\d{1,2})月(.+)")
+    month_pattern = re.compile(r"^(\d{4}-\d{2})(.+)$")
     col = start_col
     month_index = 0
 
@@ -533,6 +529,8 @@ def format_monthly_grouped_headers(ws):
 
         for offset in range(13):
             curr_col = col + offset
+            if curr_col > max_col:
+                break
             cell = ws.cell(row=row_2, column=curr_col)
             value = cell.value
             if isinstance(value, str):
@@ -540,18 +538,18 @@ def format_monthly_grouped_headers(ws):
                 if match:
                     if month_title is None:
                         month_title = match.group(1)
+                    # 更新字段名：只保留后缀，如“成品投单计划”
                     cell.value = match.group(2)
 
-            # 填充第2行颜色
+            # 应用颜色到第2行
             ws.cell(row=row_2, column=curr_col).fill = fill_color
 
         if month_title:
-            # 合并第1行
             start_letter = get_column_letter(col)
-            end_letter = get_column_letter(col + 12)
+            end_letter = get_column_letter(min(col + 12, max_col))
             ws.merge_cells(f"{start_letter}{row_1}:{end_letter}{row_1}")
             top_cell = ws.cell(row=row_1, column=col)
-            top_cell.value = f"{month_title}月"
+            top_cell.value = month_title
             top_cell.alignment = Alignment(horizontal="center", vertical="center")
             top_cell.font = Font(bold=True)
             top_cell.fill = fill_color
