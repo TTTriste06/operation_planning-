@@ -228,7 +228,7 @@ def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFram
     # 初始化结果表
     order_summary = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
     for m in forecast_months:
-        col = f"{m}月成品实际投单"
+        col = f"{m}成品实际投单"
         order_summary[col] = 0
 
     # 累加每一行订单数量至对应月份列
@@ -236,7 +236,7 @@ def aggregate_actual_fg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFram
         part = row["回货明细_回货品名"]
         qty = row["回货明细_回货数量"]
         month = row["下单月份"]
-        col_name = f"{month}月成品实际投单"
+        col_name = f"{month}成品实际投单"
         if month in forecast_months:
             match_idx = order_summary[order_summary["品名"] == part].index
             if not match_idx.empty:
@@ -276,14 +276,14 @@ def aggregate_actual_sfg_orders(main_plan_df: pd.DataFrame, df_order: pd.DataFra
     # 初始化结果 DataFrame
     sfg_summary = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
     for m in forecast_months:
-        sfg_summary[f"{m}月半成品实际投单"] = 0
+        sfg_summary[f"{m}半成品实际投单"] = 0
 
     # 逐行分配
     for _, row in df_order.iterrows():
         part = row["回货明细_回货品名"]
         qty = row["回货明细_回货数量"]
         month = row["下单月份"]
-        col_name = f"{month}月半成品实际投单"
+        col_name = f"{month}半成品实际投单"
 
         if part in semi_dict and month in forecast_months:
             new_part = semi_dict[part]
@@ -320,14 +320,14 @@ def aggregate_actual_arrivals(main_plan_df: pd.DataFrame, df_arrival: pd.DataFra
     # 初始化结果表
     result_df = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
     for m in forecast_months:
-        result_df[f"{m}月回货实际"] = 0
+        result_df[f"{m}回货实际"] = 0
 
     # 汇总每月数据
     for _, row in df_arrival.iterrows():
         part = row["品名"]
         qty = row["允收数量"]
         month = row["到货月份"]
-        col = f"{month}月回货实际"
+        col = f"{month}回货实际"
         if month in forecast_months:
             match_idx = result_df[result_df["品名"] == part].index
             if not match_idx.empty:
@@ -361,8 +361,8 @@ def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd
     result_qty = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
     result_amt = pd.DataFrame({"品名": main_plan_df["品名"].astype(str)})
     for m in forecast_months:
-        result_qty[f"{m}月销售数量"] = 0
-        result_amt[f"{m}月销售金额"] = 0
+        result_qty[f"{m}销售数量"] = 0
+        result_amt[f"{m}销售金额"] = 0
 
     for _, row in df_sales.iterrows():
         part = row["品名"]
@@ -370,8 +370,8 @@ def aggregate_sales_quantity_and_amount(main_plan_df: pd.DataFrame, df_sales: pd
         amt = row["原币金额"]
         month = row["销售月份"]
         if month in forecast_months:
-            col_qty = f"{month}月销售数量"
-            col_amt = f"{month}月销售金额"
+            col_qty = f"{month}销售数量"
+            col_amt = f"{month}销售金额"
             match_idx = result_qty[result_qty["品名"] == part].index
             if not match_idx.empty:
                 result_qty.loc[match_idx[0], col_qty] += qty
