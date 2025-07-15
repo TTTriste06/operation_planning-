@@ -11,7 +11,7 @@ from sheet_add import clean_df
 def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None) -> tuple[pd.DataFrame, list[str]]:
     """
     自动识别主计划中预测字段（如“2025-10预测”），添加 HEADER_TEMPLATE 中所有相关字段。
-    初始化为空字符串 ""。
+    初始化为空字符串 ""，并保留 start_date 对齐或之后的月份。
 
     返回：
     - 修改后的 main_plan_df（带新列）
@@ -23,17 +23,21 @@ def init_monthly_fields(main_plan_df: pd.DataFrame, start_date: datetime = None)
         "回货计划", "回货计划调整", "PC回货计划", "回货实际"
     ]
 
+    # 提取预测字段中符合格式的 YYYY-MM 字符串
     month_pattern = re.compile(r"^(\d{4}-\d{2})预测$")
-    forecast_months = sorted({
+    all_months = sorted({
         match.group(1) for col in main_plan_df.columns
         if isinstance(col, str) and (match := month_pattern.match(col.strip()))
     })
 
-    if not forecast_months:
+    if not all_months:
         return main_plan_df, []
 
-    df = main_plan_df.copy()
+    # 将 string 转为 Timestamp，并筛选大于等于 start_date 的月份
+    base_date = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp.today().replace(day=1)
+    forecast_months = [m for m in all_months if pd.Timestamp(m + "-01") >= base_date]
 
+    df = main_plan_df.copy()
     for ym in forecast_months:
         for header in HEADER_TEMPLATE:
             col = f"{ym}{header}"
