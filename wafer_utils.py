@@ -249,39 +249,59 @@ def merge_monthly_fab_wo_columns(ws: Worksheet, df: pd.DataFrame):
 
 def append_monthly_demand_from_fg_plan(df_unique_wafer: pd.DataFrame, main_plan_df: pd.DataFrame) -> pd.DataFrame:
     """
-    将主计划表中的成品投单计划列按月份提取，映射到 df_unique_wafer 中。
-    要求列名为“YYYY-MM月成品投单计划”。
-
-    参数：
-        df_unique_wafer: 晶圆唯一表
-        main_plan_df: 主计划 DataFrame，包含品名与预测列
-
-    返回：
-        添加了“YYYY-MM月需求”列的 df_unique_wafer
+    将 main_plan_df 中“YYYY-MM成品投单计划”字段按晶圆品名汇总为“YYYY-MM需求”，并差分添加至 df_unique_wafer：
+        - 第一个月：成品投单计划 - InvPart
+        - 后续月份：当前月 - 上月（可为负）
     """
     df = df_unique_wafer.copy()
+    df["晶圆品名"] = df["晶圆品名"].astype(str).str.strip()
+    main_plan_df["晶圆品名"] = main_plan_df["晶圆品名"].astype(str).str.strip()
 
-    # 正则匹配“YYYY-MM月成品投单计划”
-    pattern = re.compile(r"^(\d{4}-\d{2})月成品投单计划$")
-    plan_cols = [col for col in main_plan_df.columns if pattern.match(str(col))]
+    # ✅ 匹配所有 "YYYY-MM成品投单计划" 列
+    pattern = re.compile(r"^(\d{4})-(\d{2})成品投单计划$")
+    plan_cols = [col for col in main_plan_df.columns if pattern.match(col)]
 
     if not plan_cols:
-        raise ValueError("❌ 写入失败：主计划中没有任何 'YYYY-MM月成品投单计划' 列")
+        raise ValueError("❌ 未找到“YYYY-MM成品投单计划”列")
 
-    for col in plan_cols:
-        ym = pattern.match(col).group(1)
-        target_col = f"{ym}月需求"
-        df[target_col] = 0.0
+    # ✅ 按日期升序排序（保证顺序正确）
+    sorted_plan_cols = sorted(
+        plan_cols,
+        key=lambda col: pd.to_datetime(pattern.match(col).group(1) + "-" + pattern.match(col).group(2))
+    )
 
-        plan_month_df = main_plan_df[["品名", col]].copy()
-        plan_month_df[col] = pd.to_numeric(plan_month_df[col], errors="coerce").fillna(0.0)
+    # ✅ 聚合计划值
+    grouped = main_plan_df[["晶圆品名"] + sorted_plan_cols].copy()
+    grouped[sorted_plan_cols] = grouped[sorted_plan_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+    grouped = grouped.groupby("晶圆品名", as_index=False)[sorted_plan_cols].sum()
 
-        plan_month_df = plan_month_df.rename(columns={col: target_col})
+    # ✅ 差分需求
+    diff_df = grouped[["晶圆品名"]].copy()
+    for i, col in enumerate(sorted_plan_cols):
+        if i == 0:
+            diff_df[col] = grouped[col]
+        else:
+            prev_col = sorted_plan_cols[i - 1]
+            diff_df[col] = grouped[col] - grouped[prev_col]
 
-        df = df.merge(plan_month_df, on="品名", how="left")
-        df[target_col] = pd.to_numeric(df[target_col], errors="coerce").fillna(0.0)
+    # ✅ 合并进 df_unique_wafer 并减去 InvPart
+    temp_df = pd.merge(df, diff_df, on="晶圆品名", how="left")
 
-    return df
+    first_col = sorted_plan_cols[0]
+    if "InvPart" not in temp_df.columns:
+        raise ValueError("❌ df_unique_wafer 中缺少 InvPart 列")
+
+    temp_df[first_col] = temp_df[first_col] - temp_df["InvPart"]
+
+    # ✅ 重命名为 “YYYY-MM需求”
+    rename_dict = {col: f"{col[:-6]}需求" for col in sorted_plan_cols}  # 去掉“成品投单计划”6字
+    temp_df.rename(columns=rename_dict, inplace=True)
+
+    # ✅ 保留三位小数
+    for col in rename_dict.values():
+        temp_df[col] = temp_df[col].round(3)
+
+    return temp_df
 
 
 def merge_fg_plan_columns(ws: Worksheet, df: pd.DataFrame):
