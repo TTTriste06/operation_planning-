@@ -248,14 +248,24 @@ class PivotProcessor:
         if unfulfilled_df is not None and not unfulfilled_df.empty:
             main_plan_df = append_order_delivery_amount_columns(main_plan_df, unfulfilled_df, start_date)
             st.success("✅ 已合并发货金额")
-
+            
+            
+        st.write("投单计划之前")
+        st.write(main_plan_df)
+        
         # === 投单计划 ===
         forecast_months = init_monthly_fields(main_plan_df, start_date)
+
+        st.write("forecast_months")
+        st.write(main_plan_df)
 
         # 成品&半成品实际投单
         df_order = self.dataframes.get("赛卓-下单明细", pd.DataFrame())
         main_plan_df = aggregate_actual_fg_orders(main_plan_df, df_order, forecast_months)
         main_plan_df = aggregate_actual_sfg_orders(main_plan_df, df_order, mapping_semi, forecast_months)
+
+        st.write("成品&半成品实际投单")
+        st.write(main_plan_df)
 
         # 回货实际
         df_arrival = self.dataframes.get("赛卓-到货明细", pd.DataFrame())
