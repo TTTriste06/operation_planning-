@@ -177,10 +177,6 @@ def merge_unfulfilled_order_header(sheet):
     cell.value = "未交订单"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
-import pandas as pd
-from datetime import datetime
-import streamlit as st
-
 def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFrame, 
                                start_date: datetime = None) -> tuple[pd.DataFrame, list]:
     """
@@ -548,9 +544,8 @@ def append_forecast_accuracy_column(main_plan_df: pd.DataFrame, start_date: date
     today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
     current_year = today.strftime("%Y-%m")
     current_month = str(today.month)  # 输出 "6"
+    forecast_col = f"{current_year}预测"    # 最终是 "2025-07预测"
 
-
-    forecast_col = f"{current_month}月预测"
     unfulfilled_col = f"未交订单 {current_year}"
     fulfilled_col = f"{current_month}月销售数量"
     accuracy_col = "当月预测准确率(订单/预测)"
