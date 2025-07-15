@@ -349,12 +349,15 @@ def merge_inventory_header(sheet):
     cell.value = "成品库存"
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
+import pandas as pd
+
 def append_product_in_progress(summary_df: pd.DataFrame,
                                product_in_progress_df: pd.DataFrame,
                                mapping_df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
     """
     将成品在制表中数据按“品名”合并进主计划表：
     - 半成品通过 mapping_df 中“半成品”映射到“新品名”，填入“半成品在制”列；
+    - 若该“半成品”本身也在 summary_df 中，也将该值填入其自身行的“半成品在制”；
     - 其他数据直接匹配“产品品名” → “成品在制”列；
     返回合并后的表格与未匹配的品名列表。
     """
@@ -362,55 +365,55 @@ def append_product_in_progress(summary_df: pd.DataFrame,
     summary_df["成品在制"] = 0
     summary_df["半成品在制"] = 0
 
-    # 数值列：只处理数值型的未交列
-    numeric_cols = product_in_progress_df.select_dtypes(include='number').columns.tolist()
-    if "未交" not in product_in_progress_df.columns:
-        raise ValueError("❌ '成品在制'文件中未找到 '未交' 列")
+    # 校验并标准化列
+    for col in ["产品品名", "未交"]:
+        if col not in product_in_progress_df.columns:
+            raise ValueError(f"❌ 成品在制文件中未找到 '{col}' 列")
     
     product_in_progress_df["产品品名"] = product_in_progress_df["产品品名"].astype(str).str.strip()
     summary_df["品名"] = summary_df["品名"].astype(str).str.strip()
-    mapping_df["半成品"] = mapping_df["半成品"].astype(str).str.strip()
-    mapping_df["新品名"] = mapping_df["新品名"].astype(str).str.strip()
+    mapping_df["半成品"] = mapping_df["半成品"].fillna("").astype(str).str.strip()
+    mapping_df["新品名"] = mapping_df["新品名"].fillna("").astype(str).str.strip()
 
     used_keys = set()
     unmatched_keys = set()
 
     # === 处理半成品在制 ===
     semi_rows = mapping_df[mapping_df["半成品"] != ""]
-    matched_half = product_in_progress_df[
-        product_in_progress_df["产品品名"].isin(semi_rows["半成品"])
-    ]
+    semi_to_new = dict(zip(semi_rows["半成品"], semi_rows["新品名"]))
 
-    # 聚合半成品 → 新品名
-    for _, row in semi_rows.iterrows():
-        semi = row["半成品"]
-        new = row["新品名"]
-        value = matched_half.loc[
-            matched_half["产品品名"] == semi, "未交"
-        ].sum()
+    for semi_name, group in product_in_progress_df.groupby("产品品名"):
+        if semi_name in semi_to_new:
+            new_name = semi_to_new[semi_name]
+            qty = group["未交"].sum()
 
-        if new in summary_df["品名"].values:
-            summary_df.loc[summary_df["品名"] == new, "半成品在制"] += value
-            used_keys.add(new)
-        else:
-            unmatched_keys.add(new)
+            # 填入新品名对应行的“半成品在制”
+            if new_name in summary_df["品名"].values:
+                summary_df.loc[summary_df["品名"] == new_name, "半成品在制"] += qty
+                used_keys.add(new_name)
+            else:
+                unmatched_keys.add(new_name)
 
-    # === 删除已处理的半成品行 ===
-    remaining = product_in_progress_df[
-        ~product_in_progress_df["产品品名"].isin(semi_rows["半成品"])
-    ]
+            # 如果半成品本身也出现在 summary_df 中，也填入
+            if semi_name in summary_df["品名"].values:
+                summary_df.loc[summary_df["品名"] == semi_name, "半成品在制"] += qty
+                used_keys.add(semi_name)
+            else:
+                unmatched_keys.add(semi_name)
 
-    # === 处理成品在制 ===
-    for _, row in remaining.iterrows():
-        pname = row["产品品名"]
-        qty = row["未交"]
+    # === 剩余的成品处理 ===
+    processed_semis = set(semi_to_new.keys())
+    remaining_rows = product_in_progress_df[~product_in_progress_df["产品品名"].isin(processed_semis)]
+
+    for pname, group in remaining_rows.groupby("产品品名"):
+        qty = group["未交"].sum()
         if pname in summary_df["品名"].values:
             summary_df.loc[summary_df["品名"] == pname, "成品在制"] += qty
             used_keys.add(pname)
         else:
             unmatched_keys.add(pname)
 
-    return summary_df, sorted(list(unmatched_keys - used_keys))
+    return summary_df, sorted(unmatched_keys - used_keys)
 
 def merge_product_in_progress_header(sheet):
     """
