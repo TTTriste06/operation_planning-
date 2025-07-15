@@ -136,8 +136,6 @@ class PivotProcessor:
         if mapping_df is None or mapping_df.empty:
             raise ValueError("❌ 缺少新旧料号映射表，无法进行品名替换。")
 
-        st.write(self.additional_sheets.get("赛卓-预测"))
-
         mapping_new, mapping_semi, mapping_sub = extract_mappings(mapping_df)
         
         # === 构建主计划 ===
