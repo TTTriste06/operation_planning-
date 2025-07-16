@@ -6,6 +6,7 @@ from openpyxl.styles import PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.styles import Alignment
+from dateutil.relativedelta import relativedelta
 
 def merge_safety_inventory(summary_df: pd.DataFrame, safety_df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
     """
@@ -185,7 +186,6 @@ def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFra
     - 返回合并后的表格和未匹配的品名列表。
     """
     today = pd.Timestamp(start_date.replace(day=1)) if start_date else pd.Timestamp(datetime.today().replace(day=1))
-    this_year = today.year
 
     # ✅ 统一列名，标准化品名字段
     forecast_df = forecast_df.rename(columns={"生产料号": "品名"}).copy()
@@ -202,23 +202,23 @@ def append_forecast_to_summary(summary_df: pd.DataFrame, forecast_df: pd.DataFra
         st.warning("⚠️ 未找到任何‘x月预测’字段")
         return summary_df, []
 
-    # ✅ 按月份排序并推断年份（跨年处理）
-    sorted_month_cols = sorted(month_cols, key=lambda x: int(x[:x.index("月")]))  # 先按数字排序
-    future_month_cols = []
-    current_year = this_year
-    prev_month = -1
+    # ✅ 按 start_date 起推真实年月，匹配原始列
+    col_with_year = []
+    used_months = set()
+    current_date = today
 
-    for col in sorted_month_cols:
-        month = int(col[:col.index("月")])
-        if prev_month != -1 and month < prev_month:
-            current_year += 1  # 跨年
-        future_month_cols.append(((current_year, month), col))
-        prev_month = month
+    for _ in range(24):  # 最多查找未来两年，防止死循环
+        year = current_date.year
+        month = current_date.month
+        original_col = f"{month}月预测"
+        if original_col in month_cols and month not in used_months:
+            used_months.add(month)
+            col_with_year.append(((year, month), original_col))
+        current_date += relativedelta(months=1)
 
     # ✅ 构造带年份的新列名映射
-    renamed_cols = {col: f"{year}-{str(month).zfill(2)}预测" for (year, month), col in future_month_cols}
+    renamed_cols = {col: f"{year}-{str(month).zfill(2)}预测" for (year, month), col in col_with_year}
     forecast_df = forecast_df.rename(columns=renamed_cols)
-
 
     # ✅ 汇总相同品名的预测数据
     numeric_cols = list(renamed_cols.values())
@@ -348,8 +348,6 @@ def merge_inventory_header(sheet):
     cell = sheet.cell(row=1, column=start_col)
     cell.value = "成品库存"
     cell.alignment = Alignment(horizontal="center", vertical="center")
-
-import pandas as pd
 
 def append_product_in_progress(summary_df: pd.DataFrame,
                                product_in_progress_df: pd.DataFrame,
