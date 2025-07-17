@@ -383,7 +383,8 @@ def append_monthly_gap_columns(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
     # 匹配所有 "x月需求" 列
     pattern = re.compile(r"^(\d{1,2})月需求$")
     demand_cols = [col for col in df.columns if pattern.match(str(col))]
-
+    st.write(pattern)
+    
     for demand_col in demand_cols:
         month = pattern.match(demand_col).group(1)
         allocation_col = f"{month}月分配"
