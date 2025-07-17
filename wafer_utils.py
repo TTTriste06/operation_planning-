@@ -375,24 +375,21 @@ def merge_allocation_header(ws: Worksheet):
 
 def append_monthly_gap_columns(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
     """
-    在 df_unique_wafer 后添加每个月的 “x月缺口” 列：
+    在 df_unique_wafer 后添加每个月的 “yyyy-mm缺口” 列：
     缺口 = (需求 - 分配) / 单片数量，保留三位小数
     """
     df = df_unique_wafer.copy()
 
-    # 匹配所有 "x月需求" 列
-    pattern = re.compile(r"^(\d{1,2})月需求$")
+    # 匹配所有 “2025-xx需求” 列
+    pattern = re.compile(r"^(20\d{2}-\d{2})需求$")
     demand_cols = [col for col in df.columns if pattern.match(str(col))]
-    st.write(pattern)
-    
+
     for demand_col in demand_cols:
         month = pattern.match(demand_col).group(1)
-        allocation_col = f"{month}月分配"
-        gap_col = f"{month}月缺口"
-        st.write(allocation_col)
+        allocation_col = f"{month}分配"
+        gap_col = f"{month}缺口"
 
         if allocation_col in df.columns:
-            # 避免除以 0
             single_die = df["单片数量"].replace({0: float("nan")})
             df[gap_col] = (df[demand_col] - df[allocation_col]) / single_die
             df[gap_col] = df[gap_col].fillna(0).round(3)
@@ -400,6 +397,7 @@ def append_monthly_gap_columns(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
             raise ValueError(f"❌ 缺少对应的分配列：{allocation_col}")
 
     return df
+
 
 def merge_monthly_gap_columns(ws: Worksheet):
     """
