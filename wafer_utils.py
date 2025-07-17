@@ -306,26 +306,19 @@ def append_monthly_demand_from_fg_plan(df_unique_wafer: pd.DataFrame, main_plan_
 
 def merge_fg_plan_columns(ws: Worksheet, df: pd.DataFrame):
     """
-    将所有“x月需求”列中来源于成品投单计划的部分合并在第1行，写入“成品投单计划”。
-    默认以 df 中最后一批“x月需求”列为该类型的列。
+    将所有“yyyy-mm需求”列中来源于成品投单计划的部分合并在第1行，写入“成品投单计划”
     """
-    import re
-
-    # 所有“x月需求”列
-    demand_cols = [col for col in df.columns if re.match(r"^\d{1,2}月需求$", str(col))]
+    pattern = re.compile(r"^20\d{2}-\d{2}需求$")
+    demand_cols = [col for col in df.columns if pattern.match(str(col))]
 
     if not demand_cols:
         return
 
-    # 默认将这些列中“最晚追加”的部分视为成品投单计划（按顺序）
-    # 如果你有标记哪些列来自“成品投单计划”，也可以通过标记列表更明确
-    # 这里假设最后连续的一组“x月需求”是成品投单计划
-
-    # 从后往前找到连续的“x月需求”列
+    # 默认将最后一段连续的“需求”列作为“成品投单计划”
     end_idx = df.columns.get_loc(demand_cols[-1])
     start_idx = end_idx
     for i in reversed(range(end_idx)):
-        if str(df.columns[i]).endswith("需求"):
+        if pattern.match(str(df.columns[i])):
             start_idx = i
         else:
             break
@@ -337,6 +330,7 @@ def merge_fg_plan_columns(ws: Worksheet, df: pd.DataFrame):
     cell = ws.cell(row=1, column=start_col)
     cell.value = "成品投单计划"
     cell.alignment = Alignment(horizontal="center", vertical="center")
+
 
 def fill_columns_c_and_right_with_zero(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -350,10 +344,10 @@ def fill_columns_c_and_right_with_zero(df: pd.DataFrame) -> pd.DataFrame:
 
 def merge_allocation_header(ws: Worksheet):
     """
-    将所有“x月分配”列的标题行合并，并写上“晶圆分配（颗）”
+    将所有“yyyy-mm分配”列的标题行合并，并写上“晶圆分配（颗）”
     """
-    pattern = re.compile(r"^\d{1,2}月分配$")
-    header_row = 2  # 数据从第2行开始，第1行为合并标题行
+    pattern = re.compile(r"^20\d{2}-\d{2}分配$")
+    header_row = 2
     matched_cols = []
 
     for col_idx, cell in enumerate(ws[header_row], start=1):
@@ -361,7 +355,7 @@ def merge_allocation_header(ws: Worksheet):
             matched_cols.append(col_idx)
 
     if not matched_cols:
-        return  # 没有匹配列
+        return
 
     start_col = matched_cols[0]
     end_col = matched_cols[-1]
@@ -401,10 +395,10 @@ def append_monthly_gap_columns(df_unique_wafer: pd.DataFrame) -> pd.DataFrame:
 
 def merge_monthly_gap_columns(ws: Worksheet):
     """
-    将所有“x月缺口”列合并为一个上层标题“晶圆缺口（颗）”，位于第一行
+    将所有“yyyy-mm缺口”列合并为一个上层标题“晶圆缺口计算（片）”，位于第一行
     """
-    pattern = re.compile(r"^\d{1,2}月缺口$")
-    header_row = 2  # 标题行在第2行（数据行从第3行开始）
+    pattern = re.compile(r"^20\d{2}-\d{2}缺口$")
+    header_row = 2
     matched_cols = []
 
     for col_idx, cell in enumerate(ws[header_row], start=1):
@@ -412,7 +406,7 @@ def merge_monthly_gap_columns(ws: Worksheet):
             matched_cols.append(col_idx)
 
     if not matched_cols:
-        return  # 没有匹配列就直接返回
+        return
 
     start_col = matched_cols[0]
     end_col = matched_cols[-1]
@@ -647,14 +641,14 @@ def append_cumulative_gap_columns(df_unique_wafer: pd.DataFrame, start_date) -> 
 
 def merge_cumulative_gap_header(ws, df):
     """
-    合并“x月累积缺口”列第一行单元格，写入标题“晶圆缺口计算（片）”
+    合并“yyyy-mm累积缺口”列第一行单元格，写入标题“晶圆缺口累加（片）”
     """
-    # 找出所有“x月累积缺口”列
-    gap_cols = [col for col in df.columns if re.match(r"^\d{1,2}月累积缺口$", str(col))]
+    pattern = re.compile(r"^20\d{2}-\d{2}累积缺口$")
+    gap_cols = [col for col in df.columns if pattern.match(str(col))]
     if not gap_cols:
-        return  # 没有则不处理
+        return
 
-    start_col = df.columns.get_loc(gap_cols[0]) + 1  # openpyxl 从 1 开始
+    start_col = df.columns.get_loc(gap_cols[0]) + 1
     end_col = df.columns.get_loc(gap_cols[-1]) + 1
 
     start_letter = get_column_letter(start_col)
@@ -666,4 +660,3 @@ def merge_cumulative_gap_header(ws, df):
     cell = ws.cell(row=1, column=start_col)
     cell.value = "晶圆缺口累加（片）"
     cell.alignment = Alignment(horizontal="center", vertical="center")
-
